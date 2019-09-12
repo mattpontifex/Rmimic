@@ -1,0 +1,20 @@
+Package: Rmimic
+Type: Package
+Title: Rmimic
+Version: 0.1.0
+Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
+Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
+Description: Set of functions to roughly approximate the output of SPSS functions.
+Depends: R (>= 3.4.0)
+Imports:
+    testthat,
+    stats,
+    utils
+Suggests:
+    devtools,
+    roxygen2
+License: GPL-2 | GPL-3
+Encoding: UTF-8
+LazyData: true
+Date: 2019-9-12
+RoxygenNote: 6.1.1
