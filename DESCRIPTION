@@ -7,10 +7,10 @@ Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
 Description: Set of functions to roughly approximate the output of SPSS functions.
 Depends: R (>= 3.4.0)
 Imports:
-    testthat,
-    stats,
-    utils
+    stats
 Suggests:
+    utils,
+    testthat,
     devtools,
     roxygen2
 License: GPL-2 | GPL-3
