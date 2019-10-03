@@ -5,4 +5,4 @@ To use this package, from R run the following commands:
 
 tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
 
-tryCatch(library(Rmimic), error=function(e){devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)})
+devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)
