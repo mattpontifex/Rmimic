@@ -44,7 +44,7 @@ if (!(ttest$conf.int[1] <= meandiff) & (ttest$conf.int[2] >= meandiff)) {
   ttest$conf.int[1] <- ttestRev$conf.int[1]
   ttest$conf.int[2] <- ttestRev$conf.int[2]
 }
-rm(ttest1, ttest2, ttestRev, meandiff)
+rm(ttest1, ttest2, ttestRev, meandiff, comparison1, comparison2)
 
 
 
