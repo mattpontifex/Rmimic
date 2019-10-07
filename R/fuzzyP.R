@@ -43,23 +43,32 @@ fuzzyP <- function(datain) {
     } else if (datain < 0.1) {
       interpret <- round(datain, digits=2)
     } else if (datain < 0.7) {
-      interpret <- round(datain, digits=1)
+      interpret <- round(datain, digits=2)
       report <- sprintf('%0.2f', round(datain, digits=2))
+    } else if (datain > 0.99) {
+      interpret <- round(datain, digits=2)
+      report <- "0.99"
+      modifier <- ">"
     } else {
-      interpret <- round(datain, digits=1)
+      interpret <- round(datain, digits=2)
       report <- sprintf('%0.2f', round(datain, digits=1))
     }
-   if (interpret == 1) {
-     interpret <- round(datain, digits=2)
-   }
    
    # remove trailing zeros in hundreds place
    if (substr(report, nchar(report), nchar(report)) == "0") {
-     report <- substr(report, 1, nchar(report)-1)
+     if (substr(report, nchar(report)-1, nchar(report)-1) != ".") {
+      report <- substr(report, 1, nchar(report)-1)
+     }
    }
    # remove trailing zeros in tens place
    if (substr(report, nchar(report), nchar(report)) == "0") {
-     report <- substr(report, 1, nchar(report)-1)
+     if (substr(report, nchar(report)-1, nchar(report)-1) != ".") {
+      report <- substr(report, 1, nchar(report)-1)
+     }
+   }
+   if (interpret > 0.99) {
+     report <- "0.99"
+     modifier <- ">"
    }
    
  } else {
