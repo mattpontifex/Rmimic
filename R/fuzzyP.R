@@ -22,11 +22,11 @@ fuzzyP <- function(datain) {
 
  modifier <- "="
  if (!is.na(datain)) {
-   report <- round(datain, digits=3)
+   report <- sprintf('%0.3f', round(datain, digits=3))
    interpret <- report
     if (datain < 0.001) {
       interpret <- 0.001
-      report <- interpret
+      report <- '0.001'
       modifier <- "<"
     } else if (datain < 0.01) {
       interpret <- round(datain, digits=3)
@@ -42,8 +42,12 @@ fuzzyP <- function(datain) {
       interpret <- round(datain, digits=3)
     } else if (datain < 0.1) {
       interpret <- round(datain, digits=2)
+    } else if (datain < 0.7) {
+      interpret <- round(datain, digits=1)
+      report <- sprintf('%0.2f', round(datain, digits=2))
     } else {
       interpret <- round(datain, digits=1)
+      report <- sprintf('%0.2f', round(datain, digits=1))
     }
    if (interpret == 1) {
      interpret <- round(datain, digits=2)
