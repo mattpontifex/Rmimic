@@ -1,0 +1,98 @@
+tryCatch(library(lawstat), error=function(e){install.packages("lawstat"); library(lawstat)})
+tryCatch(library(MBESS), error=function(e){install.packages("MBESS"); library(MBESS)})
+
+# Setup exemplar data
+mockdatabase <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))
+
+
+
+# Example of independent samples parametric test
+varianceEqual <- TRUE
+variancetest <- lawstat::levene.test(mockdatabase[,'X'], mockdatabase[,'Group'], location="median")
+if (variancetest$p.value <= 0.05) {
+  varianceEqual <- FALSE
+}
+ttest <- stats::t.test(x=mockdatabase[which(mockdatabase$Group == 1),'X'], y=mockdatabase[which(mockdatabase$Group == 2),'X'], alternative='two.sided', paired=FALSE, var.equal=varianceEqual, conf.level=0.95)
+comparison1 <- mockdatabase[which(mockdatabase$Group == 1),'X']
+comparison2 <- mockdatabase[which(mockdatabase$Group == 2),'X']
+ttest$effectsize <- ttest$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2)))
+ncp <- MBESS::conf.limits.nct(ncp = ttest$statistic, df = ttest$parameter, conf.level = 0.95)
+ttest$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
+ttest$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
+rm(varianceEqual, variancetest, ncp, comparison1, comparison2)
+
+
+
+# Example of mann-whitney t-test (independent samples)
+comparison1 <- mockdatabase[which(mockdatabase$Group == 1),'X']
+comparison2 <- mockdatabase[which(mockdatabase$Group == 2),'X']
+# The U statistic changes depending on the order the variables are entered,
+# Convention says take the smallest U value as the P value remains the same either way.
+ttest1 <- stats::wilcox.test(x=comparison1, y=comparison2, paired=FALSE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
+ttest2 <- stats::wilcox.test(x=comparison2, y=comparison1, paired=FALSE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
+if (ttest1$statistic < ttest2$statistic) {
+  ttest <- ttest1
+  ttestRev <- ttest2
+} else {
+  ttest <- ttest2
+  ttestRev <- ttest1
+}
+ttest$z.value <- abs(stats::qnorm(ttest$p.value/ 2))
+ttest$effectsize <- abs(stats::qnorm(ttest$p.value/ 2))/sqrt(length(comparison1)+length(comparison2))
+meandiff <- mean(comparison2)-mean(comparison1)
+if (!(ttest$conf.int[1] <= meandiff) & (ttest$conf.int[2] >= meandiff)) {
+  ttest$conf.int[1] <- ttestRev$conf.int[1]
+  ttest$conf.int[2] <- ttestRev$conf.int[2]
+}
+rm(ttest1, ttest2, ttestRev, meandiff)
+
+
+
+# Example of paired samples parametric test
+compdatabase <- rbind(data.frame(DV = mockdatabase[,'X']), data.frame(DV = mockdatabase[,'Y']))
+compdatabase$Comparison <- c(rep_len(1, nrow(mockdatabase)),rep_len(2, nrow(mockdatabase)))
+varianceEqual <- TRUE
+variancetest <- lawstat::levene.test(compdatabase[,'DV'], compdatabase[,'Comparison'], location="median")
+if (variancetest$p.value <= 0.05) {
+  varianceEqual <- FALSE
+}
+comparison1 <- compdatabase[which(compdatabase$Comparison == 1),'DV']
+comparison2 <- compdatabase[which(compdatabase$Comparison == 2),'DV']
+ttest <- stats::t.test(x=comparison1, y=comparison2, alternative='two.sided', paired=TRUE, var.equal=varianceEqual, conf.level=0.95)
+correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = 0.95, use = "complete.obs")
+ttest$correlation <- correlationtest$estimate[[1]]
+ttest$correlation.p.value <- correlationtest$p.value[[1]]
+ttest$effectsize <- ttest$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/nrow(mockdatabase))
+ncp <- MBESS::conf.limits.nct(ncp = ttest$statistic, df = ttest$parameter, conf.level = 0.95)
+ttest$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/nrow(mockdatabase))
+ttest$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/nrow(mockdatabase))
+rm(varianceEqual, variancetest, correlationtest, ncp, compdatabase, comparison1, comparison2)
+
+
+
+
+# Example of Wilcoxon signed rank test (paired samples)
+compdatabase <- rbind(data.frame(DV = mockdatabase[,'X']), data.frame(DV = mockdatabase[,'Y']))
+compdatabase$Comparison <- c(rep_len(1, nrow(mockdatabase)),rep_len(2, nrow(mockdatabase)))
+
+comparison1 <- compdatabase[which(compdatabase$Comparison == 1),'DV']
+comparison2 <- compdatabase[which(compdatabase$Comparison == 2),'DV']
+# The V statistic changes depending on the order the variables are entered,
+# Convention says take the smallest V value as the P value remains the same either way.
+ttest1 <- stats::wilcox.test(x=comparison1, y=comparison2, paired=TRUE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
+ttest2 <- stats::wilcox.test(x=comparison2, y=comparison1, paired=TRUE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
+if (ttest1$statistic < ttest2$statistic) {
+  ttest <- ttest1
+  ttestRev <- ttest2
+} else {
+  ttest <- ttest2
+  ttestRev <- ttest1
+}
+ttest$z.value <- abs(stats::qnorm(ttest$p.value/ 2))
+ttest$effectsize <- abs(stats::qnorm(ttest$p.value/ 2))/sqrt(length(comparison1)+length(comparison2))
+meandiff <- mean(comparison2)-mean(comparison1)
+if (!(ttest$conf.int[1] <= meandiff) & (ttest$conf.int[2] >= meandiff)) {
+  ttest$conf.int[1] <- ttestRev$conf.int[1]
+  ttest$conf.int[2] <- ttestRev$conf.int[2]
+}
+rm(ttest1, ttest2, ttestRev, meandiff, compdatabase, comparison1, comparison2)
