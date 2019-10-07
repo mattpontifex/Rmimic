@@ -52,6 +52,16 @@ fuzzyP <- function(datain) {
    if (interpret == 1) {
      interpret <- round(datain, digits=2)
    }
+   
+   # remove trailing zeros in hundreds place
+   if (substr(report, nchar(report), nchar(report)) == "0") {
+     report <- substr(report, 1, nchar(report)-1)
+   }
+   # remove trailing zeros in tens place
+   if (substr(report, nchar(report), nchar(report)) == "0") {
+     report <- substr(report, 1, nchar(report)-1)
+   }
+   
  } else {
    report <- NA
    interpret <- 1
