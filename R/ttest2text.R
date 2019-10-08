@@ -15,7 +15,7 @@
 
 ttest2text <- function(datalist, verbose=TRUE) {
   
-  dataframeout <- matrix(NA,nrow=1,ncol=14)
+  dataframeout <- data.frame(matrix(NA,nrow=1,ncol=14))
   colnames(dataframeout) <- c('statistic', 'df', 'p.value', 'conf.int.lower', 'conf.int.upper', 'alternative', 'method', 'z.value', 'effectsize', 'effectsize.conf.int.lower', 'effectsize.conf.int.upper', 'correlation', 'correlation.p.value', 'stud.conf.int')
   
   # Load stat
