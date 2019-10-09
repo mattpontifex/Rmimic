@@ -4,7 +4,6 @@ An R package with miscellaneous R functions that are useful to mimic functionali
 To use this package, from R run the following commands:
 
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
-
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)
 
 # Main Function List
@@ -14,6 +13,9 @@ To use this package, from R run the following commands:
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;returns: *c(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0)*
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;desc <- descriptives(tempdata, groupvariable=c("Group"), verbose=TRUE)  
+
 * **identifyoutliers**: Function to identify outliers based upon the interquartile range (as SPSS does for boxplots) and replace those values with NA.
 * **multipleimputation**: Function that uses the mice package to replace missing data points.
 * **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for use in an APA style manuscript (i.e., t(18) = 2.3, p = 0.031) with proper rounding.
