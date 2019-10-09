@@ -68,6 +68,14 @@ ttest2text <- function(datalist, verbose=TRUE) {
     
     if (ttesttype != FALSE) {
     
+      spancharacter <- "-"
+      operatingsystem <- Sys.info()['sysname']
+      if (operatingsystem == "Windows") {
+        spancharacter <- "_"
+      } else if (operatingsystem == "Darwin") {
+        spancharacter <- "-"
+      }
+      
       # Setup initial output
       if (!is.na(dataframeout[[1,'statistic']])) {
         dataframeout[[1,'statistic']] <- sprintf('%.1f', round(abs(as.double(dataframeout[[1,'statistic']])), digits = 1))
@@ -105,9 +113,17 @@ ttest2text <- function(datalist, verbose=TRUE) {
         dataframeout[[1,'effectsize']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize']]), digits = 2))
         if (ttestdist == "parametric") {
           if (ttesttype == "independent") {
-            tryCatch(res$text <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']]), error=function(e){res$text <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])})
+            if (operatingsystem == "Windows") {
+              res$text <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
+            } else {
+              res$text <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
+            }
           } else {
-            tryCatch(res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']]), error=function(e){res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])})
+            if (operatingsystem == "Windows") {
+              res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+            } else {
+              res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+            }
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {
             dataframeout[[1,'effectsize.conf.int.lower']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.lower']]), digits = 2))
