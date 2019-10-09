@@ -45,7 +45,7 @@ ttest2text <- function(datalist, verbose=TRUE) {
     ttesttype <- "independent"
     ttestdist <- "parametric"
   
-    if (dataframeout[[1,'method']] == " Two Sample t-test") {
+    if ((dataframeout[[1,'method']] == " Two Sample t-test") | (dataframeout[[1,'method']] == "Welch Two Sample t-test")) {
       #independent samples t-test
       ttesttype <- "independent"
       ttestdist <- "parametric"
