@@ -3,12 +3,19 @@ An R package with miscellaneous R functions that are useful to mimic functionali
 
 To use this package, from R run the following commands:
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})*
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)*
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)
 
-# Function List
-**ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for use in an APA style manuscript (i.e., t(21) = 2.1, p = 0.001) with proper rounding.
-**descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
-**clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are above or below some threshold and of some minimum cluster size.
-**multipleimputation**: Function that uses the mice package to replace missing data points.
+# Main Function List
+* **clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are above or below some threshold and of some minimum cluster size (i.e., a cluster of 30 points all below 0.05).
+* **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
+* **identifyoutliers**: Function to identify outliers based upon the interquartile range (as SPSS does for boxplots) and replace those values with NA.
+* **multipleimputation**: Function that uses the mice package to replace missing data points.
+* **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for use in an APA style manuscript (i.e., t(21) = 2.1, p = 0.01) with proper rounding.
+
+# Accessory Function List
+* **decimalplaces**: Function to obtain the number of decimal places of precision in a vector.
+* **determineallpossiblecombinations**: Function to determine all possible combinations of an input array. For instance, an array containing A, B, and C could be assessed looking at A, B, C, A:B, A:C, B:C, or A:B:C.
+* **fuzzyP**: Function to round P values for reporting. Because there is no reason to report p = 0.912 to three digits of precision.
+* **typewriter**: Function to control the text outputted to the console to create a consistent indent.
