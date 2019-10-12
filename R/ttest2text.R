@@ -122,7 +122,7 @@ ttest2text <- function(datalist, verbose=TRUE) {
             if (operatingsystem == "Windows") {
               res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
             } else {
-              res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+              res$text <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
             }
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {
