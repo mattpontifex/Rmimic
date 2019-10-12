@@ -89,7 +89,7 @@ if (ttest1$statistic < ttest2$statistic) {
   ttestRev <- ttest1
 }
 ttest$z.value <- abs(stats::qnorm(ttest$p.value/ 2))
-ttest$effectsize <- abs(stats::qnorm(ttest$p.value/ 2))/sqrt(length(comparison1)+length(comparison2))
+ttest$effectsize <- abs(stats::qnorm(ttest$p.value/ 2))/sqrt(nrow(mockdatabase))
 meandiff <- mean(comparison2)-mean(comparison1)
 if (!(ttest$conf.int[1] <= meandiff) & (ttest$conf.int[2] >= meandiff)) {
   ttest$conf.int[1] <- ttestRev$conf.int[1]
