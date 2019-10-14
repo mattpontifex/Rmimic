@@ -81,11 +81,14 @@ ttest2text <- function(datalist, verbose=TRUE) {
         dataframeout[[1,'statistic']] <- sprintf('%.1f', round(abs(as.double(dataframeout[[1,'statistic']])), digits = 1))
       }
       if (!is.na(dataframeout[[1,'df']])) {
-        if (all.equal(as.double(dataframeout[[1,'df']]), as.integer(as.double(dataframeout[[1,'df']])))) {
-          dataframeout[[1,'df']] <- sprintf('%s', dataframeout[[1,'df']])
-        } else {
-          dataframeout[[1,'df']] <- sprintf('%.1f', round(as.double(dataframeout[[1,'df']]), digits = 1))
+        dataframeout[[1,'df']] <- sprintf('%.1f', round(as.double(dataframeout[[1,'df']]), digits = 1)) 
+        pullvalue <- dataframeout[[1,'df']]
+        if (substr(pullvalue, nchar(pullvalue), nchar(pullvalue)) == "0") {
+          if (substr(pullvalue, nchar(pullvalue)-1, nchar(pullvalue)-1) == ".") {
+            pullvalue <- substr(pullvalue, 1, nchar(pullvalue)-2)
+          }
         }
+        dataframeout[[1,'df']] <- pullvalue
       }
       if (ttestdist == "parametric") {
         res$text <- sprintf('t(%s) = %s', dataframeout[[1,'df']], dataframeout[[1,'statistic']])
