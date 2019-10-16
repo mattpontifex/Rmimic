@@ -12,15 +12,16 @@ These functions mimic the overarching outputs of popular statistics software pac
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttestresult <- RmimicTtest(PlantGrowth, dependentvariable='weight',  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;subjectid=NULL, between='group', within=NULL,  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nonparametric=FALSE, posthoc="Holm-Bonferroni", verbose=TRUE)  
+* **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;desc <- descriptives(tempdata, groupvariable=c("Group"), verbose=TRUE)  
 
 ## Main Function List
 * **clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are above or below some threshold and of some minimum cluster size (i.e., a cluster of 30 points all below 0.05).
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- c(0.2, 0.3, 0.05, 0.04, 0.06, 0.08, 0.009, 0.05, 0.02, 0.03, 0.08, 0.1, 0.4)  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clusterthreshold1d(tempdata, crit = 0.05, clustersize = 3, direction = 'LessThan')  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**returns**: *c(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0)*
-* **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;desc <- descriptives(tempdata, groupvariable=c("Group"), verbose=TRUE)  
+
 * **identifyoutliers**: Function to identify outliers based upon the interquartile range (as SPSS does for boxplots) and replace those values with NA.
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- runif(100,1,10); tempdata[6] <- 1000; tempdata[10] <- 1000  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- identifyoutliers(tempdata, iqrlimit = 3, verbose=TRUE)  
