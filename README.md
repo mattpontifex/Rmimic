@@ -6,6 +6,13 @@ To use this package, from R run the following commands:
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)
 
+## Super Function List
+These functions mimic the overarching outputs of popular statistics software packages that lump together several related or inherently sequential tests.
+* **RmimicTtest**: Function that computes SPSS style t-tests with effect size and confidence intervals. Optional parameters are also provided to compute non-parametric t-tests with appropriate non-parametric effect size estimates. For parametric test the function automatically determines if the variances are equal using levene's test and outputs the correct statistcs. The function can handle factors with more than 2 levels and will perform t-tests for each comparison with post-hoc comparison corrections.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttestresult <- RmimicTtest(PlantGrowth, dependentvariable='weight',  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;subjectid=NULL, between='group', within=NULL,  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nonparametric=FALSE, posthoc="Holm-Bonferroni", verbose=TRUE)  
+
 ## Main Function List
 * **clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are above or below some threshold and of some minimum cluster size (i.e., a cluster of 30 points all below 0.05).
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- c(0.2, 0.3, 0.05, 0.04, 0.06, 0.08, 0.009, 0.05, 0.02, 0.03, 0.08, 0.1, 0.4)  
