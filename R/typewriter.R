@@ -139,7 +139,7 @@ typewriter <- function(textstring = NULL, tabs = NULL, spaces = NULL, characters
          # if the character span exceeds the width of the screen or
          # if the end of the row has been reached
           outputvect[1,1] <- sprintf("%s",spanstring)
-          outputmat <- base:cbind(outputmat, outputvect)
+          outputmat <- cbind(outputmat, outputvect)
           rowindex <- rowindex + 1
           startindex <- substringIndex + 1
         }
@@ -150,7 +150,7 @@ typewriter <- function(textstring = NULL, tabs = NULL, spaces = NULL, characters
       if ((nchar(spanstring) < characters) & (nchar(spanstring) < wid)) {
         # text does not have any spaces and is shorter than the requested length
         outputvect[1,1] <- sprintf("%s",spanstring)
-        outputmat <- base:cbind(outputmat, outputvect)
+        outputmat <- cbind(outputmat, outputvect)
       } else {
         # text is too long so need to force it to wrap
         rowindex <- 1
@@ -169,7 +169,7 @@ typewriter <- function(textstring = NULL, tabs = NULL, spaces = NULL, characters
             # if the character span exceeds the width of the screen or
             # if the end of the row has been reached
             outputvect[1,1] <- sprintf("%s",spanstring)
-            outputmat <- base:cbind(outputmat, outputvect)
+            outputmat <- cbind(outputmat, outputvect)
             rowindex <- rowindex + 1
             startindex <- substringIndex + 1
           }
