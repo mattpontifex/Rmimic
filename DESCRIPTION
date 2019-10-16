@@ -1,7 +1,7 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic
-Version: 0.1.0.9200
+Version: 0.1.0.9400
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
 Description: Set of functions to roughly approximate the output of SPSS functions.
@@ -9,7 +9,9 @@ Depends:
     R (>= 3.4.0),
     mice
 Imports:
-    stats
+    stats,
+    lawstat,
+    MBESS
 Suggests:
     utils,
     testthat,
