@@ -6,7 +6,7 @@ To use this package, from R run the following commands:
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)  
 
-You may be prompted to update packages, you can select 'None' (3 typically) to just install Rmimic. You may also get a backports error installing devtools, this may require you to restart R and then run: install.packages("backports"); then you can try the code above again.
+You may be prompted to update packages, you can select 'None' (3 typically) to just install Rmimic. You may also get a backports error installing devtools, this may require you to restart R and then run: install.packages("backports"); after you do so you can try the code above again.
 
 ## Super Function List
 These functions mimic the overarching outputs of popular statistics software packages that lump together several related or inherently sequential tests.
