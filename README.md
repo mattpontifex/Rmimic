@@ -1,10 +1,12 @@
 # Rmimic
-An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics software packages. This package deviates from the typical R ethos such that most functions will output results in the console window (results are also available as environment variables; and output can be suppressed using verbose calls to the function).
+An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics software packages. This package deviates from the typical R ethos such that "super functions" will output results to the console window in a style that roughly mimics the output of popular statistics software packages. Test results are also available as environmental variables and console oututs can be suppressed using verbose calls to the function.
 
 To use this package, from R run the following commands:
 
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)  
+
+You may be prompted to update packages, you can select 'None' (3 typically) to just install Rmimic.
 
 ## Super Function List
 These functions mimic the overarching outputs of popular statistics software packages that lump together several related or inherently sequential tests.
