@@ -4,7 +4,7 @@ An R package with miscellaneous R functions that are useful to mimic functionali
 To use this package, from R run the following commands:
 
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic"); library(Rmimic)
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)
 
 ## Super Function List
 These functions mimic the overarching outputs of popular statistics software packages that lump together several related or inherently sequential tests.
