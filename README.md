@@ -31,9 +31,9 @@ These functions mimic the overarching outputs of popular statistics software pac
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- multipleimputation(tempdata, imputations=10)  
 * **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for use in an APA style manuscript (i.e., t(18) = 2.3, p = 0.031) with proper rounding. Supports independent and paired t-tests for both parametric and nonparametric data.
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comparison1 <- c(2, 3, 4, 6, 8, 9, 10, 11, 13, 15); comparison2 <- c( 5, 7, 9, 10, 13, 15, 16, 17, 18, 20)  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttest <- stats::t.test(x= comparison1, y=comparison2, paired=FALSE, var.equal=TRUE)  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttest$effectsize <- ttest$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2)))  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempout <- ttest2text(ttest, verbose=TRUE)  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttestresult <- stats::t.test(x= comparison1, y=comparison2, paired=FALSE, var.equal=TRUE)  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttestresult$effectsize <- ttestresult$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2)))  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempout <- ttest2text(ttestresult, verbose=TRUE)  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**returns**: *t(18) = 2.3, p = 0.031, ds = -1.04.*
 
 
