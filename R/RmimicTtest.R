@@ -4,7 +4,7 @@
 #'
 #' @param data Data frame in long format containing the dependent variable in one column and subject id, between, and within subject variables in other columns.
 #' @param dependentvariable Variable name or list of variables to use as dependent variables.
-#' @param subjectid Variable name corresponding to the subject id column in the data.
+#' @param subjectid Variable name corresponding to the subject id column in the data. Required for paired tests of within subjects variables, encouraged otherwise.
 #' @param between Variable name or list of variables to use to compute independent samples t tests.
 #' @param within Variable name or list of variables to use to compute paired samples t tests.
 #' @param nonparametric Parameter to determine if non parametric tests should be run. Default is FALSE.
@@ -51,9 +51,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     } else {
       posthoc <- "Bonferroni"
     }
-  } else {
-    posthoc <- "Bonferroni"
-  }
+  } 
   
   # Assess what got fed into the function
   dependentvariableL <- length(dependentvariable)
@@ -156,13 +154,17 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             # test variance
             varianceEqual <- TRUE
             variancetest <- lawstat::levene.test(tempframe[,'DV'], tempframe[,'Group'], location="median")
-            if (variancetest$p.value <= 0.05) {
+            if (variancetest$p.value <= studywiseAlpha) {
               varianceEqual <- FALSE
             }
             ttestresult <- stats::t.test(x=comparison1, y=comparison2, alternative='two.sided', paired=FALSE, var.equal=varianceEqual, conf.level=confidenceinterval)
             ttestresult$statistic <- abs(ttestresult$statistic)
             ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2))))
-            ncp <- MBESS::conf.limits.nct(ncp = ttestresult$statistic, df = ttestresult$parameter, conf.level = confidenceinterval)
+            temptstat <- ttestresult$statistic
+            if (temptstat > 37.6) {
+              temptstat <- temptstat
+            }
+            ncp <- MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval)
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
             ttestresult$stud.conf.int <- confidenceinterval
@@ -200,7 +202,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           
           # populate output
           dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
-          dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s', between[cB], spfactorscomparisons[cComparison])
+          dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s-%s', between[cB], tempvect[1], tempvect[2])
           dataframeout[dataframeoutL,names(tempout$statistics)] <- tempout$statistics
           dataframeout[dataframeoutL,'textoutput'] <- tempout$text
           dataframeout[dataframeoutL,'Group1.label'] <- tempvect[1]
@@ -311,7 +313,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             # test variance
             varianceEqual <- TRUE
             variancetest <- lawstat::levene.test(tempframe[,'DV'], tempframe[,'Group'], location="median")
-            if (variancetest$p.value <= 0.05) {
+            if (variancetest$p.value <= studywiseAlpha) {
               varianceEqual <- FALSE
             }
             ttestresult <- stats::t.test(x=comparison1, y=comparison2, alternative='two.sided', paired=TRUE, var.equal=varianceEqual, conf.level=confidenceinterval)
@@ -413,7 +415,11 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     temptextout0 <- "No significant differences were observed between"
     temptextout1 <- sprintf("%s (%.1f +/- %.1f) and %s (%.1f +/- %.1f)", dataframeout$Group1.label[cI], dataframeout$Group1.mean[cI], dataframeout$Group1.sd[cI], dataframeout$Group2.label[cI], dataframeout$Group2.mean[cI], dataframeout$Group2.sd[cI])
     temptextout2 <- ""
-    temptextout3 <- sprintf("for %s; %s", dataframeout$Variable[cI], dataframeout$textoutput[cI])
+    if (dependentvariableL > 1) {
+      temptextout3 <- sprintf("for %s; %s", dataframeout$Variable[cI], dataframeout$textoutput[cI])
+    } else {
+      temptextout3 <- sprintf("; %s", dataframeout$textoutput[cI])
+    }
     
     outPvalue <- fuzzyP(dataframeout$p.value[cI])
     if (outPvalue$interpret <= studywiseAlpha) {
@@ -689,7 +695,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                 }
               } else if (vectnames[cC] == "p.value") {
                 # report P value
-                outPvalue <- fuzzyP(pullvalue)
+                outPvalue <- Rmimic::fuzzyP(pullvalue)
                 if (outPvalue$modifier == "=") {
                   pullvalue <- outPvalue$report
                 } else {
