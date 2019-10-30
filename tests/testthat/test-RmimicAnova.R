@@ -10,8 +10,8 @@ test_that("RmimicAnova works", {
                    within = NULL, 
                    verbose=FALSE)
   
-  #expect_true(length(testout) > 1)
-  #expect_true(testout$descriptives$N[1] == 10)
-  #expect_true(testout$stats$df[1] == 18)
+  expect_true(names(testout) == 4)
+  expect_true(round(testout$stats$p[1], digits=4) == 0.0159)
+  expect_true(round(testout$posthocttest$p[1], digits=4) == 0.249)
   
 })
