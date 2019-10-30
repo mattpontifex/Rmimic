@@ -6,15 +6,15 @@
 \usage{
 RmimicTtest(data, dependentvariable = NULL, subjectid = NULL,
   between = NULL, within = NULL, nonparametric = FALSE,
-  collapse = TRUE, posthoc = NULL, confidenceinterval = 0.95,
-  studywiseAlpha = 0.05, verbose = TRUE)
+  collapse = TRUE, posthoc = NULL, criticaldiff = NULL,
+  confidenceinterval = 0.95, studywiseAlpha = 0.05, verbose = TRUE)
 }
 \arguments{
 \item{data}{Data frame in long format containing the dependent variable in one column and subject id, between, and within subject variables in other columns.}
 
 \item{dependentvariable}{Variable name or list of variables to use as dependent variables.}
 
-\item{subjectid}{Variable name corresponding to the subject id column in the data.}
+\item{subjectid}{Variable name corresponding to the subject id column in the data. Required for paired tests of within subjects variables, encouraged otherwise.}
 
 \item{between}{Variable name or list of variables to use to compute independent samples t tests.}
 
@@ -25,6 +25,8 @@ RmimicTtest(data, dependentvariable = NULL, subjectid = NULL,
 \item{collapse}{Paramater to determine if multiple observations should be collapsed to a single observation for each participant. Default is TRUE.}
 
 \item{posthoc}{Parameter to determine what post-hoc comparison approach to use. Options are Bonferroni, Sidak, or Holm-Bonferroni.}
+
+\item{criticaldiff}{Parameter to specify the critical difference used in Tukey and Scheffe post-hoc comparison approaches.}
 
 \item{confidenceinterval}{Parameter to control the confidence interval. Default is 0.95.}
 
@@ -48,6 +50,7 @@ Compute SPSS style t-test with effect size and confidence intervals. Optional pa
           within=NULL, 
           nonparametric=FALSE,
           posthoc="Holm-Bonferroni")
+
 
 }
 \author{

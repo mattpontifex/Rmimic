@@ -10,6 +10,7 @@
 #' @param nonparametric Parameter to determine if non parametric tests should be run. Default is FALSE.
 #' @param collapse Paramater to determine if multiple observations should be collapsed to a single observation for each participant. Default is TRUE.
 #' @param posthoc Parameter to determine what post-hoc comparison approach to use. Options are Bonferroni, Sidak, or Holm-Bonferroni.
+#' @param criticaldiff Parameter to specify the critical difference used in Tukey and Scheffe post-hoc comparison approaches.
 #' @param confidenceinterval Parameter to control the confidence interval. Default is 0.95.
 #' @param studywiseAlpha Parameter to control the study wise alpha for use in the post hoc compairsons. Default is 0.05.
 #' @param verbose Parameter to print all output to console. Default is TRUE.
@@ -34,9 +35,10 @@
 #'           nonparametric=FALSE,
 #'           posthoc="Holm-Bonferroni")
 #'
+#'
 #' @export
 
-RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, nonparametric=FALSE, collapse=TRUE, posthoc=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
+RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, nonparametric=FALSE, collapse=TRUE, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
   
   if (!is.null(posthoc)) {
     if (toupper(posthoc) == toupper("Bonferroni")) {
@@ -45,11 +47,16 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       posthoc <- "Sidak"
     } else if (toupper(posthoc) == toupper("Holm-Bonferroni")) {
       posthoc <- "Holm-Bonferroni"
+    } else if (toupper(posthoc) == toupper("Tukey")) {
+      posthoc <- "Tukey"
+    } else if (toupper(posthoc) == toupper("Scheffe")) {
+      posthoc <- "Scheffe"
     } else if (posthoc == FALSE) {
-      # no real reason to ever have it disabled...
-      posthoc <- "Bonferroni"
+      posthoc <- NULL
+    } else if (toupper(posthoc) == toupper("False Discovery Rate Control")) {
+      posthoc <- NULL # handled externally
     } else {
-      posthoc <- "Bonferroni"
+      posthoc <- NULL
     }
   } 
   
@@ -453,7 +460,23 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           outPvalue <- fuzzyP(submatrix$p.value[cR])
           if (outPvalue$interpret <= studywiseAlpha) {
             if (outPvalue$interpret > critp) {
-              submatrix$interpretation[cR] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s', submatrix$interpretation[cR], criticalphrase)
+              submatrix$interpretation[cR] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s.', submatrix$interpretation[cR], criticalphrase)
+            }
+          }
+        }
+      }
+      
+      if ((toupper(posthoc) == toupper("Tukey")) | (toupper(posthoc) == toupper("Scheffe"))) {
+        if (!is.null(criticaldiff)) {
+          for (cR in 1:nrow(dataframeout)) {
+            actdiff <- abs(as.numeric(dataframeout$Group1.mean[cR]) - as.numeric(dataframeout$Group2.mean[cR]))
+            if (actdiff < as.numeric(criticaldiff)) {
+              if (toupper(posthoc) == toupper("Tukey")) {
+                criticalphrase <- sprintf("(Tukey critical difference = %.2f)", round(criticaldiff,digits=2))
+              } else {
+                criticalphrase <- sprintf("(Scheffe critical difference = %.2f)", round(criticaldiff,digits=2))
+              }
+              dataframeout$interpretation[cR] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s.', dataframeout$interpretation[cR], criticalphrase)
             }
           }
         }
@@ -482,7 +505,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
               if (as.numeric(temp$p.value[rank]) > as.numeric(temppval)) {
                 # P value is no longer considered significant
                 criticalphrase <- sprintf("(Holm-Bonferroni critical alpha = %.4f)", round(temppval, digits=4))
-                submatrix$interpretation[temp$location[rank]] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s', submatrix$interpretation[temp$location[rank]], criticalphrase)
+                submatrix$interpretation[temp$location[rank]] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s.', submatrix$interpretation[temp$location[rank]], criticalphrase)
               }
             } else {
               # P value is not significant
