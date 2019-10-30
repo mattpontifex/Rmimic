@@ -151,29 +151,32 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
               Rmimic::typewriter(outval, tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
               forworkingsubposthocANOVA <- workingsubposthocANOVA[which(forlist == unique(forlist)[cF]),]
               
-              # strip off preceeding breakdowns
-              for (cFA in 1:nrow(forworkingsubposthocANOVA)) {
-                workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
-                for (cFAL in 1:length(workinglabels)) {
-                  tempval <- unlist(strsplit(as.character(forworkingsubposthocANOVA[cFA, workinglabels[cFAL]]),"[;]"))
-                  if (length(tempval) == 1) {
-                    tempvaltext <- forworkingsubposthocANOVA$Effect[cFA]
-                  } else if (length(tempval) == 2) {
-                    tempvaltext <- trimws(tempval[2])
-                  } else if (length(tempval) > 2) {
-                    tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
-                  }
-                  if (length(tempvaltext) > 0) {
-                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- tempvaltext
-                  } else {
-                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- NA
-                  }
-                  
-                }
-              }
               backflipanovaout <- list()
-              backflipanovaout$stats <- forworkingsubposthocANOVA
-              rm(forworkingsubposthocANOVA)
+              if (nrow(forworkingsubposthocANOVA) > 0) {
+                # strip off preceeding breakdowns
+                for (cFA in 1:nrow(forworkingsubposthocANOVA)) {
+                  workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
+                  for (cFAL in 1:length(workinglabels)) {
+                    tempval <- unlist(strsplit(as.character(forworkingsubposthocANOVA[cFA, workinglabels[cFAL]]),"[;]"))
+                    tempvaltext <- NA
+                    if (length(tempval) == 1) {
+                      tempvaltext <- forworkingsubposthocANOVA$Effect[cFA]
+                    } else if (length(tempval) == 2) {
+                      tempvaltext <- trimws(tempval[2])
+                    } else if (length(tempval) > 2) {
+                      tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+                    }
+                    if (length(tempvaltext) > 0) {
+                      forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- tempvaltext
+                    } else {
+                      forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- NA
+                    }
+                    
+                  }
+                }
+                backflipanovaout$stats <- forworkingsubposthocANOVA
+                rm(forworkingsubposthocANOVA)
+              }
               
               if (boolTTEST == TRUE) {
                 hitlistTTEST <- c()
@@ -184,29 +187,32 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
                     hitlistTTEST <- c(hitlistTTEST, cFA)
                   }
                 }
-                forsubposthocttest <- subposthocttest[hitlistTTEST,]
-                
-                # strip off preceeding breakdowns
-                for (cFA in 1:nrow(forsubposthocttest)) {
-                  workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
-                  for (cFAL in 1:length(workinglabels)) {
-                    tempval <- unlist(strsplit(as.character(forsubposthocttest[cFA, workinglabels[cFAL]]),"[;]"))
-                    if (length(tempval) == 1) {
-                      tempvaltext <- forsubposthocttest$Effect[cFA]
-                    } else if (length(tempval) == 2) {
-                      tempvaltext <- trimws(tempval[2])
-                    } else if (length(tempval) > 2) {
-                      tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
-                    }
-                    if (length(tempvaltext) > 0) {
-                      forsubposthocttest[cFA, workinglabels[cFAL]] <- tempvaltext
-                    } else {
-                      forsubposthocttest[cFA, workinglabels[cFAL]] <- NA
+                if (!is.empty(hitlistTTEST)) {
+                  forsubposthocttest <- subposthocttest[hitlistTTEST,]
+                  
+                  # strip off preceeding breakdowns
+                  for (cFA in 1:nrow(forsubposthocttest)) {
+                    workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
+                    for (cFAL in 1:length(workinglabels)) {
+                      tempval <- unlist(strsplit(as.character(forsubposthocttest[cFA, workinglabels[cFAL]]),"[;]"))
+                      tempvaltext <- NA
+                      if (length(tempval) == 1) {
+                        tempvaltext <- forsubposthocttest$Effect[cFA]
+                      } else if (length(tempval) == 2) {
+                        tempvaltext <- trimws(tempval[2])
+                      } else if (length(tempval) > 2) {
+                        tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+                      }
+                      if (length(tempvaltext) > 0) {
+                        forsubposthocttest[cFA, workinglabels[cFAL]] <- tempvaltext
+                      } else {
+                        forsubposthocttest[cFA, workinglabels[cFAL]] <- NA
+                      }
                     }
                   }
+                  backflipanovaout$posthocttest <- forsubposthocttest
+                  rm(forsubposthocttest)
                 }
-                backflipanovaout$posthocttest <- forsubposthocttest
-                rm(forsubposthocttest)
               }
               
               # this is where you could do a backflip into this same function!
