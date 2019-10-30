@@ -35,6 +35,7 @@ These functions mimic the overarching outputs of popular statistics software pac
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- data.frame("X" = runif(100), "Y" = runif(100))  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata[6,'X'] <- NA; tempdata[10,'Y'] <- NA;   
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tempdata <- multipleimputation(tempdata, imputations=10)  
+
 * **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for use in an APA style manuscript (i.e., t(18) = 2.3, p = 0.031) with proper rounding. Supports independent and paired t-tests for both parametric and nonparametric data.
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comparison1 <- c(2, 3, 4, 6, 8, 9, 10, 11, 13, 15); comparison2 <- c( 5, 7, 9, 10, 13, 15, 16, 17, 18, 20)  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ttestresult <- stats::t.test(x= comparison1, y=comparison2, paired=FALSE, var.equal=TRUE)  
@@ -44,7 +45,11 @@ These functions mimic the overarching outputs of popular statistics software pac
 
 
 ## Accessory Function List
+* **cell2span**: Function that takes a vector of data table cells and creates a character string of a particular length. The text empty will result in an open span in the output.
 * **decimalplaces**: Function to obtain the number of decimal places of precision in a vector.
 * **determineallpossiblecombinations**: Function to determine all possible combinations of an input array. For instance, an array containing A, B, and C could be assessed looking at A, B, C, A:B, A:C, B:C, or A:B:C.
+* **ezANOVA2text**: Function to output ezANOVA results in APA style format with effect sizes and confidence intervals.
 * **fuzzyP**: Function to round P values for reporting. Because reporting p = 0.912 to three digits of precision is a bit silly.
+* **posthoc2text**: Function to output ANOVA posthoc results in APA style format with effect sizes and confidence intervals.
+* **table2console**: Function that takes a data table and prints a nicely formatted table to the console.
 * **typewriter**: Function to control the text outputted to the console to create a consistent indent.
