@@ -58,17 +58,11 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
         # subset posthoc tests for this effect
         subposthocttest <- result$posthocttest[which(result$posthocttest$EffectLabel == effectname),]
         if (nrow(subposthocttest) > 0) {
-          #removelist <- c()
           Rmimic::typewriter(sprintf("%s Post hoc Comparisons %s", paste(replicate(5, spancharacter), collapse = ""), paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
           for (cE in 1:nrow(subposthocttest)) {
             Rmimic::typewriter(subposthocttest$interpretation[cE], tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
             cat(sprintf("\n"))
-            #removelist <- c(removelist, rownames(subposthocttest)[cE])
           }
-          # remove specified elements
-          #for (cE in 1:length(removelist)) {
-          #  result$posthocttest <- result$posthocttest[which(rownames(result$posthocttest) == removelist[cE]),]
-          #}
         }
         rm(subposthocttest, cE)
       }
@@ -163,12 +157,18 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
                 for (cFAL in 1:length(workinglabels)) {
                   tempval <- unlist(strsplit(as.character(forworkingsubposthocANOVA[cFA, workinglabels[cFAL]]),"[;]"))
                   if (length(tempval) == 1) {
-                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- forworkingsubposthocANOVA$Effect[cFA]
+                    tempvaltext <- forworkingsubposthocANOVA$Effect[cFA]
                   } else if (length(tempval) == 2) {
-                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- trimws(tempval[2])
+                    tempvaltext <- trimws(tempval[2])
                   } else if (length(tempval) > 2) {
-                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+                    tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
                   }
+                  if (length(tempvaltext) > 0) {
+                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- tempvaltext
+                  } else {
+                    forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- NA
+                  }
+                  
                 }
               }
               backflipanovaout <- list()
@@ -192,11 +192,16 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
                   for (cFAL in 1:length(workinglabels)) {
                     tempval <- unlist(strsplit(as.character(forsubposthocttest[cFA, workinglabels[cFAL]]),"[;]"))
                     if (length(tempval) == 1) {
-                      forsubposthocttest[cFA, workinglabels[cFAL]] <- forsubposthocttest$Effect[cFA]
+                      tempvaltext <- forsubposthocttest$Effect[cFA]
                     } else if (length(tempval) == 2) {
-                      forsubposthocttest[cFA, workinglabels[cFAL]] <- trimws(tempval[2])
+                      tempvaltext <- trimws(tempval[2])
                     } else if (length(tempval) > 2) {
-                      forsubposthocttest[cFA, workinglabels[cFAL]] <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+                      tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+                    }
+                    if (length(tempvaltext) > 0) {
+                      forsubposthocttest[cFA, workinglabels[cFAL]] <- tempvaltext
+                    } else {
+                      forsubposthocttest[cFA, workinglabels[cFAL]] <- NA
                     }
                   }
                 }

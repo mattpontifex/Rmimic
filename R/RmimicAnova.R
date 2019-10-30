@@ -95,6 +95,12 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       posthoc <- "False Discovery Rate Control"
     }
   }
+  subposthoc <- posthoc
+  if (!is.null(posthoc)) {
+    if (toupper(posthoc) == toupper("False Discovery Rate Control")) {
+      subposthoc <- FALSE
+    }
+  }
   
   spansize <- 95
   spancharacter <- "-"
@@ -408,7 +414,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                 subjectid=subjectid[1], 
                 between=subbetween, 
                 within=subwithin,
-                collapse=TRUE, nonparametric=nonparametric, posthoc=posthoc,
+                collapse=TRUE, nonparametric=nonparametric, posthoc=subposthoc,
                 confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE)
           
           # modify output to indicate subtest
@@ -506,7 +512,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                        subjectid=subjectid[1], 
                        between=subbetween, 
                        within=subwithin,
-                       collapse=TRUE, nonparametric=nonparametric, posthoc=posthoc,
+                       collapse=TRUE, nonparametric=nonparametric, posthoc=subposthoc,
                        confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE)
 
                 # modify output to indicate subtest
@@ -539,7 +545,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                        subjectid=subjectid[1], 
                        between=subbetween, 
                        within=subwithin,
-                       nonparametric=nonparametric, posthoc=posthoc,
+                       nonparametric=nonparametric, posthoc=subposthoc,
                        sphericity=sphericity, planned=posthocplanned,
                        verbose=FALSE)
                 
@@ -566,25 +572,27 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                 }
                 
                 # modify Posthoc ttest output to indicate subtest
-                for (cE in 1:nrow(subresult$posthocttest)) {
-                  #subresult$posthocttest$Comparison[cE] <- sprintf('Interaction of %s; %s: %s, %s', as.character(result$ANOVA$Effect[cR]), currentfactorinvolved, currentfactorlevelsinvolved[cD], subresult$posthocttest$Comparison[cE])
-                  if ("EffectLabel" %in% colnames(subresult$posthocttest)) {
-                    # backflip has occurred
-                    subresult$posthocttest$EffectLabel[cE] <- sprintf('%s; %s', as.character(result$ANOVA$Effect[cR]), subresult$posthocttest$EffectDirection[cE])
-                    subresult$posthocttest$EffectDirection[cE] <- sprintf('%s; %s', decompdir, subresult$posthocttest$EffectDirection[cE])
-                    subresult$posthocttest$DecompFor[cE] <- sprintf('%s; %s', as.character(currentfactorlevelsinvolved[cD]), subresult$posthocttest$DecompFor[cE])
-                    subresult$posthocttest$Decomptext[cE] <- sprintf('%s; %s', decomptext, subresult$posthocttest$Decomptext[cE])
-                  } else {
-                    subresult$posthocttest$EffectLabel <- as.character(result$ANOVA$Effect[cR])
-                    subresult$posthocttest$EffectDirection <- decompdir
-                    subresult$posthocttest$DecompFor <- as.character(currentfactorlevelsinvolved[cD])
-                    subresult$posthocttest$Decomptext <- decomptext
+                if ('posthocttest' %in% names(subresult)) {
+                  for (cE in 1:nrow(subresult$posthocttest)) {
+                    #subresult$posthocttest$Comparison[cE] <- sprintf('Interaction of %s; %s: %s, %s', as.character(result$ANOVA$Effect[cR]), currentfactorinvolved, currentfactorlevelsinvolved[cD], subresult$posthocttest$Comparison[cE])
+                    if ("EffectLabel" %in% colnames(subresult$posthocttest)) {
+                      # backflip has occurred
+                      subresult$posthocttest$EffectLabel[cE] <- sprintf('%s; %s', as.character(result$ANOVA$Effect[cR]), subresult$posthocttest$EffectDirection[cE])
+                      subresult$posthocttest$EffectDirection[cE] <- sprintf('%s; %s', decompdir, subresult$posthocttest$EffectDirection[cE])
+                      subresult$posthocttest$DecompFor[cE] <- sprintf('%s; %s', as.character(currentfactorlevelsinvolved[cD]), subresult$posthocttest$DecompFor[cE])
+                      subresult$posthocttest$Decomptext[cE] <- sprintf('%s; %s', decomptext, subresult$posthocttest$Decomptext[cE])
+                    } else {
+                      subresult$posthocttest$EffectLabel <- as.character(result$ANOVA$Effect[cR])
+                      subresult$posthocttest$EffectDirection <- decompdir
+                      subresult$posthocttest$DecompFor <- as.character(currentfactorlevelsinvolved[cD])
+                      subresult$posthocttest$Decomptext <- decomptext
+                    }
                   }
-                }
-                if (is.null(posthocttest)) {
-                  posthocttest <- subresult$posthocttest
-                } else {
-                  posthocttest <- rbind(posthocttest,subresult$posthocttest)
+                  if (is.null(posthocttest)) {
+                    posthocttest <- subresult$posthocttest
+                  } else {
+                    posthocttest <- rbind(posthocttest,subresult$posthocttest)
+                  }
                 }
               }
               rm (subworkingdatabase, booltrig)

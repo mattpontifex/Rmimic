@@ -423,7 +423,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     temptextout1 <- sprintf("%s (%.1f +/- %.1f) and %s (%.1f +/- %.1f)", dataframeout$Group1.label[cI], dataframeout$Group1.mean[cI], dataframeout$Group1.sd[cI], dataframeout$Group2.label[cI], dataframeout$Group2.mean[cI], dataframeout$Group2.sd[cI])
     temptextout2 <- ""
     if (dependentvariableL > 1) {
-      temptextout3 <- sprintf("for %s; %s", dataframeout$Variable[cI], dataframeout$textoutput[cI])
+      temptextout3 <- sprintf(" for %s; %s", dataframeout$Variable[cI], dataframeout$textoutput[cI])
     } else {
       temptextout3 <- sprintf("; %s", dataframeout$textoutput[cI])
     }
@@ -432,9 +432,9 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     if (outPvalue$interpret <= studywiseAlpha) {
       temptextout0 <- "The difference between"
       temptextout2 <- "was statistically significant"
-      dataframeout$interpretation[cI] <- sprintf("%s %s %s %s", temptextout0, temptextout1, temptextout2, temptextout3)
+      dataframeout$interpretation[cI] <- sprintf("%s %s %s%s", temptextout0, temptextout1, temptextout2, temptextout3)
     } else {
-      dataframeout$interpretation[cI] <- sprintf("%s %s %s", temptextout0, temptextout1, temptextout3)
+      dataframeout$interpretation[cI] <- sprintf("%s %s%s", temptextout0, temptextout1, temptextout3)
     }
     rm(outPvalue)
   }
