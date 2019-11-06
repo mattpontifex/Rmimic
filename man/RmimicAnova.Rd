@@ -7,8 +7,9 @@
 RmimicAnova(data, dependentvariable = NULL, subjectid = NULL,
   between = NULL, within = NULL, sphericity = NULL, feffect = NULL,
   nonparametric = FALSE, posthoc = "False Discovery Rate Control",
-  FDRC = 0.05, planned = NULL, confidenceinterval = 0.95,
-  studywiseAlpha = 0.05, verbose = TRUE, verbosedescriptives = TRUE)
+  FDRC = 0.05, planned = NULL, suppressposthoc = NULL,
+  confidenceinterval = 0.95, studywiseAlpha = 0.05, verbose = TRUE,
+  verbosedescriptives = TRUE, posthoclimit = 6)
 }
 \arguments{
 \item{data}{Database containing data}
@@ -33,6 +34,8 @@ RmimicAnova(data, dependentvariable = NULL, subjectid = NULL,
 
 \item{planned}{Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.}
 
+\item{suppressposthoc}{Parameter to specify a posthoc effect to ignore even if it is significant.}
+
 \item{confidenceinterval}{Decimal representation of confidence interval. Default 0.95.}
 
 \item{studywiseAlpha}{Decimal representation of alpha level. Default 0.05.}
@@ -40,15 +43,16 @@ RmimicAnova(data, dependentvariable = NULL, subjectid = NULL,
 \item{verbose}{Boolean operator for if interpretations of the statistics should be printed. Default is TRUE.}
 
 \item{verbosedescriptives}{Boolean operator for if descriptive statistics should be printed. Default is TRUE.}
+
+\item{posthoclimit}{Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.}
 }
 \value{
 \item{stats}{ANOVA summary table.}
 \item{aov}{An aov object corresponding to the requested ANOVA.}
-\item{posthocANOVA}{ANOVA summary table for posthoc decompositions.}
 \item{posthocttest}{A t test summary table for posthoc decompositions.}
 }
 \description{
-Compute SPSS style univariate ANOVA with effect size and confidence intervals using the ezANOVA function. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. Note: Data should be in long format.
+Compute SPSS style univariate ANOVA with effect size and confidence intervals using the ezANOVA function. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. Subsequent posthoc ANOVAs are outputted as seperate entries in the results for clarity. Note: Data should be in long format.
 }
 \examples{
 

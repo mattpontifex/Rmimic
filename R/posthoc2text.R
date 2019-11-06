@@ -152,11 +152,12 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
                   outlabel <- sprintf('PosthocANOVA_%s_%s_%s', paste(factorsinvolved, collapse="By"), currentfactorlevelsinvolved[cD], paste(otherfactorsinvolved, collapse="By"))
                   if (outlabel %in% names(result)) {
                   
+                    backflipanovaout <- NULL
                     funcal <- sprintf('backflipanovaout <- result$%s', outlabel)
                     suppressWarnings(eval(parse(text=funcal)))
                     
                     # perform backflip
-                    posthoc2text(backflipanovaout, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=currentlevelout+3)
+                    Rmimic::posthoc2text(backflipanovaout, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=currentlevelout+3)
                     
                   }
                 } # end t test or anova

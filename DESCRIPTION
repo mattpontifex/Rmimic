@@ -1,10 +1,10 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic
-Version: 0.1.0.9702
+Version: 0.1.0.9800
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
-Description: Set of functions to roughly approximate the output of SPSS functions.
+Description: An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics software packages.
 Depends:
     R (>= 3.4.0),
     mice
@@ -15,6 +15,7 @@ Imports:
     doBy,
     psychometric,
     MBESS,
+    pkgcond,
     utils
 Suggests:
     testthat,
@@ -23,5 +24,5 @@ Suggests:
 License: GPL-2 | GPL-3
 Encoding: UTF-8
 LazyData: true
-Date: 2019-10-17
+Date: 2019-11-06
 RoxygenNote: 6.1.1

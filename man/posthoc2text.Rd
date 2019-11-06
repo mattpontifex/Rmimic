@@ -5,7 +5,7 @@
 \title{posthoc2text}
 \usage{
 posthoc2text(result, studywiseAlpha = 0.05, spansize = 95,
-  currentlevelout = 0)
+  currentlevelout = 0, posthoclimit = 6)
 }
 \arguments{
 \item{result}{Anova and posthoc test output}
@@ -15,6 +15,8 @@ posthoc2text(result, studywiseAlpha = 0.05, spansize = 95,
 \item{spansize}{Number of characters to include on a line.}
 
 \item{currentlevelout}{Integer for tab indenting used in recursion.}
+
+\item{posthoclimit}{Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.}
 }
 \description{
 Output ANOVA posthoc results in APA style format with effect sizes and confidence intervals.

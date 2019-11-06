@@ -56,7 +56,6 @@
 RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, sphericity=NULL, feffect=NULL, nonparametric=FALSE, posthoc="False Discovery Rate Control", FDRC=0.05, planned=NULL, suppressposthoc=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, verbosedescriptives=TRUE, posthoclimit=6) {
 
   # revise to incorporate data screening to provide useful error information.
-  # FDRC needs to be updated since we are now kicking posthoc ANOVA to seperate entries 
   
   options(contrasts = c("contr.sum", "contr.poly"))
   oldw <- getOption("warn")
@@ -246,7 +245,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   rm(funcal)
   
   # obtain effect size estimates and confidence intervals
-  result <- ezANOVA2text(result, numparticipants=length(indivparticipant), feffect=feffect, sphericity=sphericity, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha)
+  result <- Rmimic::ezANOVA2text(result, numparticipants=length(indivparticipant), feffect=feffect, sphericity=sphericity, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha)
   
   res$aov <- result$aov
   res$stats <- result$ANOVA
@@ -582,7 +581,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                 if (forcetrig > 0) {
                   posthocplanned <- TRUE
                 }
-                subresult <- RmimicAnova(subworkingdatabase,
+                subresult <- Rmimic::RmimicAnova(subworkingdatabase,
                        dependentvariable=dependentvariable[1], 
                        subjectid=subjectid[1], 
                        between=subbetween, 
