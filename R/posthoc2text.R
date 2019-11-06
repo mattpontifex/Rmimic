@@ -6,12 +6,13 @@
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param spansize Number of characters to include on a line.
 #' @param currentlevelout Integer for tab indenting used in recursion.
+#' @param posthoclimit Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 30, 2019
 #' 
 #' @export
 
-posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelout=0) {
+posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelout=0, posthoclimit=6) {
   
   spancharacter <- "-"
   bigspancharacter <- " - "
@@ -51,178 +52,120 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
     rm(outtext)
     cat(sprintf("\n"))
     
-    if (length(temp) == 1) {
-      # must be a main effect
-      # look for associated t tests
-      if ("posthocttest" %in% names(result)) {
-        # subset posthoc tests for this effect
-        subposthocttest <- result$posthocttest[which(result$posthocttest$EffectLabel == effectname),]
-        if (nrow(subposthocttest) > 0) {
-          Rmimic::typewriter(sprintf("%s Post hoc Comparisons %s", paste(replicate(5, spancharacter), collapse = ""), paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
-          for (cE in 1:nrow(subposthocttest)) {
-            Rmimic::typewriter(subposthocttest$interpretation[cE], tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
-            cat(sprintf("\n"))
-          }
-        }
-        rm(subposthocttest, cE)
-      }
-    } else {
-      # must be an interaction
-      
-      # loop through each factor involved
-      for (cB in 1:length(temp)) {
-        currentfactorinvolved <- temp[cB]
-        otherfactorsinvolved <- temp[which(temp != currentfactorinvolved)]
-        decompdir <- c(currentfactorinvolved, otherfactorsinvolved)
-        decompdir <- paste(decompdir, collapse=sprintf(" \u00D7 "))
-        
-        # determine what was done first
-        boolANOVA <- FALSE
-        hitlistANOVA <- c()
-        boolTTEST <- FALSE
-        hitlistTTEST <- c()
-        if ("posthocANOVA" %in% names(result)) {
-          for (cA in 1:nrow(result$posthocANOVA)) {
-            tempcounteffectlabel <- unlist(strsplit(as.character(result$posthocANOVA$EffectLabel[cA]),"[;]"))
-            tempcounteffectdirection <- unlist(strsplit(as.character(result$posthocANOVA$EffectDirection[cA]),"[;]"))
-            if ((tempcounteffectlabel[1] == effectname) & (tempcounteffectdirection[1] == decompdir)) {
-              # matches first pull
-              boolANOVA <- TRUE
-              hitlistANOVA <- c(hitlistANOVA, cA)
+    # if posthoc tests were run
+    if (outPvalue$interpret <= studywiseAlpha) {
+      if (result$stats$EffectPostHoc[cR] == 1) {
+        if (length(temp) == 1) {
+          # must be a main effect
+          # look for associated t tests
+          if ("posthocttest" %in% names(result)) {
+            # subset posthoc tests for this effect
+            subposthocttest <- result$posthocttest[which(result$posthocttest$EffectNumber == cR),]
+            if (nrow(subposthocttest) > 0) {
+              numswitchtext <- "Comparison"
+              if (nrow(subposthocttest) > 1) {
+                numswitchtext <- sprintf('%ss', numswitchtext)
+              }
+              Rmimic::typewriter(sprintf("%s Post hoc %s %s", paste(replicate(5, spancharacter), collapse = ""), numswitchtext, paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
+              for (cE in 1:nrow(subposthocttest)) {
+                Rmimic::typewriter(subposthocttest$interpretation[cE], tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
+                cat(sprintf("\n"))
+              }
             }
+            rm(subposthocttest, cE)
           }
-        }
-        if ("posthocttest" %in% names(result)) {
-          for (cA in 1:nrow(result$posthocttest)) {
-            tempcounteffectlabel <- unlist(strsplit(as.character(result$posthocttest$EffectLabel[cA]),"[;]"))
-            tempcounteffectdirection <- unlist(strsplit(as.character(result$posthocttest$EffectDirection[cA]),"[;]"))
-            if ((tempcounteffectlabel[1] == effectname) & (tempcounteffectdirection[1] == decompdir)) {
-              # matches first pull
-              boolTTEST <- TRUE
-              hitlistTTEST <- c(hitlistTTEST, cA)
-            }
-          }
-        }
-        
-        if ((boolTTEST == TRUE) & (boolANOVA == FALSE)) {
-          # Interaction must have been able to be broken down with just t-tests
-          Rmimic::typewriter(sprintf("%s Breakdown Approach %d %s", paste(replicate(5, spancharacter), collapse = ""), cB, paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
-          subposthocttest <- result$posthocttest[hitlistTTEST,]
+        } else {
+          # must be an interaction
           
-          # check for multiple approaches
-          approachlist <- unique(unlist(as.character(subposthocttest$Decomptext)))
-          for (cA in 1:length(approachlist)) {
-            Rmimic::typewriter(approachlist[cA], tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
-            cat(sprintf('\n'))
-            workingsubposthocttest <- subposthocttest[which(subposthocttest$Decomptext == approachlist[cA]),]
+          if (length(temp) > posthoclimit) {
             
-            for (cAS in 1:nrow(workingsubposthocttest)) {
-              outval <- sprintf('For %s: %s', currentfactorinvolved, workingsubposthocttest$DecompFor[cAS])
-              Rmimic::typewriter(outval, tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
-              Rmimic::typewriter(workingsubposthocttest$interpretation[cAS], tabs=currentlevelout+3, spaces=0, characters=floor(spansize*.9))
-              cat(sprintf('\n'))
+            outtext <- sprintf("For clarity purposes, interactions exceeding %d variables are not automatically printed. The Rmimic::posthoc2text() function can be used to show these results.\n", (posthoclimit-1))
+            Rmimic::typewriter(outtext, tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
+            rm(outtext)
+            
+          } else {
+            
+            # reconstruct ANOVA levels
+            factorsinvolved <- unlist(strsplit(as.character(result$stats$Effect[cR]),"[:]"))
+            factorsinvolvedL <- length(factorsinvolved)
+            factorlengthmatrix <- data.frame(matrix(NA,nrow=2, ncol=factorsinvolvedL))
+            colnames(factorlengthmatrix) <- factorsinvolved
+            effectlevels <- trimws(unlist(strsplit(substr(result$stats$EffectLevels[cR],2,nchar(result$stats$EffectLevels[cR])-1),"[:]")))
+            for (currentLevels in 1:length(effectlevels)) {
+              tempvect <- trimws(unlist(strsplit(effectlevels[currentLevels], "[(]")))
+              factorlengthmatrix[1,trimws(unlist(strsplit(tempvect[1], " ")))[1]] <- trimws(unlist(strsplit(tempvect[1], " ")))[2]
+              factorlengthmatrix[2,trimws(unlist(strsplit(tempvect[1], " ")))[1]] <- substr(tempvect[2],1,nchar(tempvect[2])-1)
             }
-          }
-        } else if (boolANOVA == TRUE) {
-          # Interaction must have required another anova
-          Rmimic::typewriter(sprintf("%s Breakdown Approach %d %s", paste(replicate(5, spancharacter), collapse = ""), cB, paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
-          subposthocANOVA <- result$posthocANOVA[hitlistANOVA,]
-          if (boolTTEST == TRUE) {
-            # one of the ANOVA effects must have been broken down
-            subposthocttest <- result$posthocttest[hitlistTTEST,]
-          }
-          # check for multiple approaches
-          approachlist <- c()
-          for (cA in 1:nrow(subposthocANOVA)) {
-            tempval <- unlist(strsplit(as.character(subposthocANOVA$Decomptext[cA]),"[;]"))
-            approachlist <- c(approachlist, tempval[1])
-          }
-          for (cA in 1:length(unique(approachlist))) {
-            Rmimic::typewriter(unique(approachlist)[cA], tabs=currentlevelout+1, spaces=0, characters=floor(spansize*.9))
-            cat(sprintf('\n'))
-            workingsubposthocANOVA <- subposthocANOVA[which(approachlist == unique(approachlist)[cA]),]
-            forlist <- c()
-            for (cF in 1:nrow(workingsubposthocANOVA)) {
-              tempval <- unlist(strsplit(as.character(workingsubposthocANOVA$DecompFor[cF]),"[;]"))
-              forlist <- c(forlist, tempval[1])
-            }
-            for (cF in 1:length(unique(forlist))) {
-              outval <- sprintf('For %s: %s', currentfactorinvolved, unique(forlist)[cF])
-              Rmimic::typewriter(outval, tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
-              forworkingsubposthocANOVA <- workingsubposthocANOVA[which(forlist == unique(forlist)[cF]),]
+            
+            # loop through each factor involved
+            for (cB in 1:factorsinvolvedL) {
+              currentfactorinvolved <- factorsinvolved[cB]
+              currentfactorlevelsinvolved <- trimws(unlist(strsplit(factorlengthmatrix[2, currentfactorinvolved], ",")))
+              otherfactorsinvolved <- factorsinvolved[which(factorsinvolved != currentfactorinvolved)]
               
-              backflipanovaout <- list()
-              if (nrow(forworkingsubposthocANOVA) > 0) {
-                # strip off preceeding breakdowns
-                for (cFA in 1:nrow(forworkingsubposthocANOVA)) {
-                  workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
-                  for (cFAL in 1:length(workinglabels)) {
-                    tempval <- unlist(strsplit(as.character(forworkingsubposthocANOVA[cFA, workinglabels[cFAL]]),"[;]"))
-                    tempvaltext <- NA
-                    if (length(tempval) == 1) {
-                      tempvaltext <- forworkingsubposthocANOVA$Effect[cFA]
-                    } else if (length(tempval) == 2) {
-                      tempvaltext <- trimws(tempval[2])
-                    } else if (length(tempval) > 2) {
-                      tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
+              if (length(otherfactorsinvolved) == 1) {
+                decomptext <- sprintf("Post-hoc decomposition of the %s interaction was conducted by examining the effect of %s within each %s.", paste(factorsinvolved, collapse=sprintf(" \u00D7 ")), otherfactorsinvolved[1], currentfactorinvolved[1])
+              } else {
+                decomptext <- sprintf("Post-hoc decomposition of the %s interaction was conducted by examining the interaction of %s within each %s.", paste(factorsinvolved, collapse=sprintf(" \u00D7 ")), paste(otherfactorsinvolved, collapse=sprintf(" \u00D7 ")), currentfactorinvolved[1])
+              }
+              Rmimic::typewriter(sprintf("%s Breakdown Approach %d %s", paste(replicate(5, spancharacter), collapse = ""), cB, paste(replicate(5, spancharacter), collapse = "")), tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
+              Rmimic::typewriter(decomptext, tabs=currentlevelout+2, spaces=0, characters=floor(spansize*.9))
+              cat(sprintf("\n"))
+              decompdir <- paste(otherfactorsinvolved, collapse=sprintf(" \u00D7 "))
+              
+              # hold current factor level constant and subset
+              for (cD in 1:length(currentfactorlevelsinvolved)) {
+                decompconst <- sprintf('For %s: %s', currentfactorinvolved, currentfactorlevelsinvolved[cD])
+                Rmimic::typewriter(decompconst, tabs=currentlevelout+3, spaces=0, characters=floor(spansize*.9))
+                
+                # determine what needed to be done for this breakdown
+                booltrig <- 0
+                # more than one additional variable
+                if (length(otherfactorsinvolved) > 1) { 
+                  booltrig <- 2
+                } else {
+                  # one factor but with more than 2 levels
+                  if (as.numeric(factorlengthmatrix[1,otherfactorsinvolved]) > 2) { 
+                    booltrig <- 1
+                  }
+                }
+                
+                if (booltrig == 0) {
+                  # only a single factor with less than 3 levels
+                  # only a t-test is required
+                
+                  # subset posthoc tests for this effect
+                  if ("posthocttest" %in% names(result)) {
+                    subposthocttest <- result$posthocttest[which(result$posthocttest$EffectDirection == sprintf('[%s] %s', decompconst, decompdir)),]
+                    if (nrow(subposthocttest) > 0) {
+                      for (cE in 1:nrow(subposthocttest)) {
+                        Rmimic::typewriter(subposthocttest$interpretation[cE], tabs=currentlevelout+4, spaces=0, characters=floor(spansize*.9))
+                        cat(sprintf("\n"))
+                      }
                     }
-                    if (length(tempvaltext) > 0) {
-                      forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- tempvaltext
-                    } else {
-                      forworkingsubposthocANOVA[cFA, workinglabels[cFAL]] <- NA
-                    }
+                    rm(subposthocttest, cE)
+                  }
+                } else {
+                  # a full ANVOA should have been run
+                  # these now exist as seperate entries
+                  
+                  outlabel <- sprintf('PosthocANOVA_%s_%s_%s', paste(factorsinvolved, collapse="By"), currentfactorlevelsinvolved[cD], paste(otherfactorsinvolved, collapse="By"))
+                  if (outlabel %in% names(result)) {
+                  
+                    funcal <- sprintf('backflipanovaout <- result$%s', outlabel)
+                    suppressWarnings(eval(parse(text=funcal)))
+                    
+                    # perform backflip
+                    posthoc2text(backflipanovaout, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=currentlevelout+3)
                     
                   }
-                }
-                backflipanovaout$stats <- forworkingsubposthocANOVA
-                rm(forworkingsubposthocANOVA)
-              }
-              
-              if (boolTTEST == TRUE) {
-                hitlistTTEST <- c()
-                for (cFA in 1:nrow(subposthocttest)) {
-                  tempcounteffectlabel <- unlist(strsplit(as.character(subposthocttest$Decomptext[cFA]),"[;]"))
-                  tempcounteffectdirection <- unlist(strsplit(as.character(subposthocttest$DecompFor[cFA]),"[;]"))
-                  if ((tempcounteffectlabel[1] == unique(approachlist)[cA]) & (tempcounteffectdirection[1] == unique(forlist)[cF])) {
-                    hitlistTTEST <- c(hitlistTTEST, cFA)
-                  }
-                }
-                if (!is.empty(hitlistTTEST)) {
-                  forsubposthocttest <- subposthocttest[hitlistTTEST,]
-                  
-                  # strip off preceeding breakdowns
-                  for (cFA in 1:nrow(forsubposthocttest)) {
-                    workinglabels <- c('EffectLabel', 'EffectDirection', 'DecompFor', 'Decomptext')
-                    for (cFAL in 1:length(workinglabels)) {
-                      tempval <- unlist(strsplit(as.character(forsubposthocttest[cFA, workinglabels[cFAL]]),"[;]"))
-                      tempvaltext <- NA
-                      if (length(tempval) == 1) {
-                        tempvaltext <- forsubposthocttest$Effect[cFA]
-                      } else if (length(tempval) == 2) {
-                        tempvaltext <- trimws(tempval[2])
-                      } else if (length(tempval) > 2) {
-                        tempvaltext <- trimws(paste(tempval[2:length(tempval)], collapse=";"))
-                      }
-                      if (length(tempvaltext) > 0) {
-                        forsubposthocttest[cFA, workinglabels[cFAL]] <- tempvaltext
-                      } else {
-                        forsubposthocttest[cFA, workinglabels[cFAL]] <- NA
-                      }
-                    }
-                  }
-                  backflipanovaout$posthocttest <- forsubposthocttest
-                  rm(forsubposthocttest)
-                }
-              }
-              
-              # this is where you could do a backflip into this same function!
-              posthoc2text(backflipanovaout, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=currentlevelout+2)
-              
-            }
+                } # end t test or anova
+              } # end cD
+            } # end cB
           }
-        }
-      }
-    } # end main effect vs interaction
+        } # end interaction check
+      } # end posthoc check
+    } # was significant
     cat(sprintf("\n"))
   } # end each row of stats
 }

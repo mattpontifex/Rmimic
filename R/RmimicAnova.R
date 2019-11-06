@@ -1,6 +1,6 @@
 #' RmimicAnova
 #'
-#' @description Compute SPSS style univariate ANOVA with effect size and confidence intervals using the ezANOVA function. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. Note: Data should be in long format.
+#' @description Compute SPSS style univariate ANOVA with effect size and confidence intervals using the ezANOVA function. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. Subsequent posthoc ANOVAs are outputted as seperate entries in the results for clarity. Note: Data should be in long format.
 #'
 #' @param data Database containing data
 #' @param dependentvariable Dependent Variable label
@@ -13,15 +13,16 @@
 #' @param posthoc Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Scheffe, Sidak, Tukey, or False Discovery Rate Control.
 #' @param FDRC Decimal representation of false discocvery rate control. Default is 0.05.
 #' @param planned Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.
+#' @param suppressposthoc Parameter to specify a posthoc effect to ignore even if it is significant.
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param verbose Boolean operator for if interpretations of the statistics should be printed. Default is TRUE.
 #' @param verbosedescriptives Boolean operator for if descriptive statistics should be printed. Default is TRUE.
+#' @param posthoclimit Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.
 #'
 #' @return
 #' \item{stats}{ANOVA summary table.}
 #' \item{aov}{An aov object corresponding to the requested ANOVA.}
-#' \item{posthocANOVA}{ANOVA summary table for posthoc decompositions.}
 #' \item{posthocttest}{A t test summary table for posthoc decompositions.}
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 30, 2019
@@ -29,6 +30,8 @@
 #' @importFrom ez ezANOVA
 #' @importFrom doBy summaryBy
 #' @importFrom utils packageDate
+#' @importFrom pkgcond suppress_conditions
+#' 
 #'
 #' @examples
 #'
@@ -50,9 +53,10 @@
 #'
 #' @export
 
-RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, sphericity=NULL, feffect=NULL, nonparametric=FALSE, posthoc="False Discovery Rate Control", FDRC=0.05, planned=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, verbosedescriptives=TRUE) {
+RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, sphericity=NULL, feffect=NULL, nonparametric=FALSE, posthoc="False Discovery Rate Control", FDRC=0.05, planned=NULL, suppressposthoc=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, verbosedescriptives=TRUE, posthoclimit=6) {
 
   # revise to incorporate data screening to provide useful error information.
+  # FDRC needs to be updated since we are now kicking posthoc ANOVA to seperate entries 
   
   options(contrasts = c("contr.sum", "contr.poly"))
   oldw <- getOption("warn")
@@ -194,7 +198,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     if (verbosedescriptives != FALSE) {
       outputdataframe <- res$demographics[,c("CollapsedName", "N", "Mean","Median","SD","SE","Min","Max","Distribution")]
       for (cC in 3:8) {
-        outputdataframe[,cC] <- round(outputdataframe[,cC], digits=1)
+        outputdataframe[,cC] <- sprintf('%0.1f', round(outputdataframe[,cC], digits=1))
       }
       colnames(outputdataframe)[1] <- 'empty'
       Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
@@ -204,7 +208,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   } # end verbose
   
   # ezANOVA is not presently able to take inputs using dynamic variable names
-  funcal <- sprintf('result <- ez::ezANOVA(data=completedata,dv=%s,wid=%s,', dependentvariable[1], subjectid[1])
+  funcal <- sprintf('result <- pkgcond::suppress_conditions(ez::ezANOVA(data=completedata,dv=%s,wid=%s,', dependentvariable[1], subjectid[1])
   if (!is.null(between)) {
     tfuncal <- '.('
     for (cB in 1:betweenvariableL) {
@@ -234,7 +238,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   } else {
     funcal <- sprintf('%s, within=NULL,', funcal)
   }
-  funcal <- sprintf('%stype=3,detailed=TRUE,return_aov=TRUE)', funcal)
+  funcal <- sprintf('%stype=3,detailed=TRUE,return_aov=TRUE))', funcal)
   
   # Evaluate the text string and tell ezANOVA to shut up, outputs to results
   suppressWarnings(eval(parse(text=funcal)))
@@ -348,12 +352,34 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   } # end verbose
   
   # populate posthoc decompositions
+  posthoclinkmatrix <- data.frame(matrix(NA, nrow=0, ncol=3))
+  colnames(posthoclinkmatrix) <- c('p.value', 'Link', 'Row')
   overloadflag <- FALSE
   posthocANOVA <- NULL
   posthocttest <- NULL
-  for (cR in 1:nrow(result$ANOVA)) {
+  for (currentAnovaLine in 1:nrow(res$stats)) {
     
-    effectname <- result$ANOVA$Effect[cR]
+    effectname <- res$stats$Effect[currentAnovaLine]
+    
+    # populate a bit more information regarding levels for the ANOVA table
+    factorsinvolved <- unlist(strsplit(as.character(res$stats$Effect[currentAnovaLine]),"[:]"))
+    factorsinvolvedL <- length(factorsinvolved)
+    factorlengthmatrix <- data.frame(matrix(NA,nrow=2, ncol=factorsinvolvedL))
+    colnames(factorlengthmatrix) <- factorsinvolved
+    for (cB in 1:factorsinvolvedL) {
+      templist <- unique(unlist(as.character(completedata[,factorsinvolved[cB]])))
+      factorlengthmatrix[1,factorsinvolved[cB]] <- length(templist)
+      factorlengthmatrix[2,factorsinvolved[cB]] <- paste(templist, collapse=", ")
+    }
+    templist <- ''
+    for (cB in 1:factorsinvolvedL) {
+      templist <- sprintf('%s%s %s (%s)', templist, colnames(factorlengthmatrix)[cB], factorlengthmatrix[1,factorsinvolved[cB]], factorlengthmatrix[2,factorsinvolved[cB]])
+      if (cB < factorsinvolvedL) {
+        templist <- sprintf('%s : ', templist)
+      }
+    } 
+    res$stats$EffectLevels[currentAnovaLine] <- sprintf('[%s]', templist)
+    rm(cB, templist)
     
     # check to see if planned contrast
     forcetrig <- 0
@@ -369,17 +395,25 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         rm(cXR)
       }
     }
+    if (!is.null(suppressposthoc)) {
+      for (cXR in 1:length(suppressposthoc)) {
+        if (effectname == suppressposthoc[cXR]) {
+          forcetrig <- -1
+        }
+      }
+      rm(cXR)
+    }
     
     # snag p value 
-    outPvalue <- Rmimic::fuzzyP(as.numeric(result$ANOVA$p[cR]))
+    outPvalue <- Rmimic::fuzzyP(as.numeric(res$stats$p[currentAnovaLine]))
+    res$stats$EffectPostHoc[currentAnovaLine] <- 0
     
-    if ((outPvalue$interpret <= studywiseAlpha) | (forcetrig > 0)) {
+    if (((outPvalue$interpret <= studywiseAlpha) | (forcetrig > 0)) & (!(forcetrig < 0))) {
       # effect was significant or planned
-      factorsinvolved <- unlist(strsplit(as.character(result$ANOVA$Effect[cR]),"[:]"))
-      factorsinvolvedL <- length(factorsinvolved)
-      if (factorsinvolvedL < 4) {
+      if (factorsinvolvedL < posthoclimit) {
         
         # subset database for only those factors
+        res$stats$EffectPostHoc[currentAnovaLine] <- 1
         workingdatabase <- completedata[,c(subjectid[1], dependentvariable[1], factorsinvolved)]
         
         # make sure data is collapsed across unnecessary observations
@@ -419,18 +453,23 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           
           # modify output to indicate subtest
           for (cE in 1:nrow(ttestresult$stats)) {
-            #ttestresult$stats$Comparison[cE] <- sprintf('Main effect of %s; %s', as.character(result$ANOVA$Effect[cR]), ttestresult$stats$Comparison[cE])
-            ttestresult$stats$EffectLabel <- as.character(result$ANOVA$Effect[cR])
-            ttestresult$stats$EffectDirection <- as.character(result$ANOVA$Effect[cR])
-            ttestresult$stats$DecompFor <- NA
-            ttestresult$stats$Decomptext <- NA
+            ttestresult$stats$EffectNumber[cE] <- currentAnovaLine
+            ttestresult$stats$EffectDirection[cE] <- as.character(res$stats$Effect[currentAnovaLine])
           }
           
           # merge output 
+          posthocttestL <- 1
           if (is.null(posthocttest)) {
             posthocttest <- ttestresult$stats
           } else {
+            posthocttestL <- nrow(posthocttest)+1
             posthocttest <- rbind(posthocttest,ttestresult$stats)
+          }
+          for (cE in posthocttestL:nrow(posthocttest)) {
+            posthoclinkmatrixL <- nrow(posthoclinkmatrix) + 1
+            posthoclinkmatrix[posthoclinkmatrixL, 'p.value'] <- posthocttest$p.value[cE]
+            posthoclinkmatrix[posthoclinkmatrixL, 'Link'] <- 'posthocttest'
+            posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
           }
           
           rm(subbetween,subwithin, ttestresult)
@@ -443,12 +482,10 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           for (cB in 1:factorsinvolvedL) {
             factorlengthmatrix[1,factorsinvolved[cB]] <- length(unique(unlist(as.character(workingdatabase[,factorsinvolved[cB]]))))
           }
-          # deal with the most factors first
-          factorlengthmatrix <- factorlengthmatrix[,order(-factorlengthmatrix[1,])]
           
           # loop through each factor
-          for (cB in 1:factorsinvolvedL) {
-            currentfactorinvolved <- colnames(factorlengthmatrix)[cB]
+          for (currentFactorinvolved in 1:factorsinvolvedL) {
+            currentfactorinvolved <- colnames(factorlengthmatrix)[currentFactorinvolved]
             currentfactorlevelsinvolved <- unique(unlist(as.character(workingdatabase[,currentfactorinvolved])))
             otherfactorsinvolved <- factorsinvolved[which(factorsinvolved != currentfactorinvolved)]
             
@@ -457,12 +494,12 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             } else {
               decomptext <- sprintf("Post-hoc decomposition of the %s interaction was conducted by examining the interaction of %s within each %s.", paste(factorsinvolved, collapse=sprintf(" \u00D7 ")), paste(otherfactorsinvolved, collapse=sprintf(" \u00D7 ")), currentfactorinvolved[1])
             }
-            decompdir <- c(currentfactorinvolved, otherfactorsinvolved)
-            decompdir <- paste(decompdir, collapse=sprintf(" \u00D7 "))
+            decompdir <- paste(otherfactorsinvolved, collapse=sprintf(" \u00D7 "))
             
             # hold current factor level constant and subset
             for (cD in 1:length(currentfactorlevelsinvolved)) {
-              subworkingdatabase <- workingdatabase[which(workingdatabase[,currentfactorinvolved] == currentfactorlevelsinvolved[cD]),]
+              decompconst <- sprintf('[For %s: %s]', currentfactorinvolved[1], currentfactorlevelsinvolved[cD])
+              subworkingdatabase <- workingdatabase[which(workingdatabase[,currentfactorinvolved[1]] == currentfactorlevelsinvolved[cD]),]
               
               # make sure data is collapsed across unnecessary observations
               tempcal <- sprintf("subworkingdatabase <- doBy::summaryBy(%s ~", dependentvariable[1])
@@ -482,10 +519,10 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
               subwithin <- NULL
               for (cE in 1:length(otherfactorsinvolved)) {
                 if (otherfactorsinvolved[cE] %in% between) {
-                  subbetween <- otherfactorsinvolved[cE]
+                  subbetween <- c(subbetween, otherfactorsinvolved[cE])
                 }
                 if (otherfactorsinvolved[cE] %in% within) {
-                  subwithin <- otherfactorsinvolved[cE]
+                  subwithin <- c(subwithin, otherfactorsinvolved[cE])
                 }
               }
               rm(cE)
@@ -517,18 +554,23 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
 
                 # modify output to indicate subtest
                 for (cE in 1:nrow(ttestresult$stats)) {
-                  #ttestresult$stats$Comparison[cE] <- sprintf('Interaction of %s; %s: %s, %s', as.character(result$ANOVA$Effect[cR]), currentfactorinvolved, currentfactorlevelsinvolved[cD], ttestresult$stats$Comparison[cE])
-                  ttestresult$stats$EffectLabel <- as.character(result$ANOVA$Effect[cR])
-                  ttestresult$stats$EffectDirection <- decompdir
-                  ttestresult$stats$DecompFor <- as.character(currentfactorlevelsinvolved[cD])
-                  ttestresult$stats$Decomptext <- decomptext
+                  ttestresult$stats$EffectNumber[cE] <- currentAnovaLine
+                  ttestresult$stats$EffectDirection[cE] <- sprintf('%s %s', decompconst, decompdir)
                 }
                 
                 # merge output 
+                posthocttestL <- 1
                 if (is.null(posthocttest)) {
                   posthocttest <- ttestresult$stats
                 } else {
+                  posthocttestL <- nrow(posthocttest) + 1
                   posthocttest <- rbind(posthocttest,ttestresult$stats)
+                }
+                for (cE in posthocttestL:nrow(posthocttest)) {
+                  posthoclinkmatrixL <- nrow(posthoclinkmatrix) + 1
+                  posthoclinkmatrix[posthoclinkmatrixL, 'p.value'] <- posthocttest$p.value[cE]
+                  posthoclinkmatrix[posthoclinkmatrixL, 'Link'] <- 'posthocttest'
+                  posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
                 }
                 
                 rm(subbetween,subwithin, ttestresult, subworkingdatabase)
@@ -549,51 +591,23 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                        sphericity=sphericity, planned=posthocplanned,
                        verbose=FALSE)
                 
-                # modify ANOVA output to indicate subtest
-                for (cE in 1:nrow(subresult$stats)) {
-                  #subresult$stats$Effect[cE] <- sprintf('Interaction of %s; %s: %s, %s', as.character(result$ANOVA$Effect[cR]), currentfactorinvolved, currentfactorlevelsinvolved[cD], subresult$stats$Effect[cE])
-                  if ("EffectLabel" %in% colnames(subresult$stats)) {
-                    # backflip has occurred
-                    subresult$stats$EffectLabel[cE] <- sprintf('%s; %s', as.character(result$ANOVA$Effect[cR]),subresult$stats$EffectLabel[cE])
-                    subresult$stats$EffectDirection[cE] <- sprintf('%s; %s', decompdir,subresult$stats$EffectDirection[cE])
-                    subresult$stats$DecompFor[cE] <- sprintf('%s; %s', as.character(currentfactorlevelsinvolved[cD]),subresult$stats$DecompFor[cE])
-                    subresult$stats$Decomptext[cE] <- sprintf('%s; %s', decomptext, subresult$stats$Decomptext[cE])
-                  } else {
-                    subresult$stats$EffectLabel <- as.character(result$ANOVA$Effect[cR])
-                    subresult$stats$EffectDirection <- decompdir
-                    subresult$stats$DecompFor <- as.character(currentfactorlevelsinvolved[cD])
-                    subresult$stats$Decomptext <- decomptext
-                  }
-                }
-                if (is.null(posthocANOVA)) {
-                  posthocANOVA <- subresult$stats
-                } else {
-                  posthocANOVA <- rbind(posthocANOVA,subresult$stats)
-                }
                 
-                # modify Posthoc ttest output to indicate subtest
-                if ('posthocttest' %in% names(subresult)) {
-                  for (cE in 1:nrow(subresult$posthocttest)) {
-                    #subresult$posthocttest$Comparison[cE] <- sprintf('Interaction of %s; %s: %s, %s', as.character(result$ANOVA$Effect[cR]), currentfactorinvolved, currentfactorlevelsinvolved[cD], subresult$posthocttest$Comparison[cE])
-                    if ("EffectLabel" %in% colnames(subresult$posthocttest)) {
-                      # backflip has occurred
-                      subresult$posthocttest$EffectLabel[cE] <- sprintf('%s; %s', as.character(result$ANOVA$Effect[cR]), subresult$posthocttest$EffectDirection[cE])
-                      subresult$posthocttest$EffectDirection[cE] <- sprintf('%s; %s', decompdir, subresult$posthocttest$EffectDirection[cE])
-                      subresult$posthocttest$DecompFor[cE] <- sprintf('%s; %s', as.character(currentfactorlevelsinvolved[cD]), subresult$posthocttest$DecompFor[cE])
-                      subresult$posthocttest$Decomptext[cE] <- sprintf('%s; %s', decomptext, subresult$posthocttest$Decomptext[cE])
-                    } else {
-                      subresult$posthocttest$EffectLabel <- as.character(result$ANOVA$Effect[cR])
-                      subresult$posthocttest$EffectDirection <- decompdir
-                      subresult$posthocttest$DecompFor <- as.character(currentfactorlevelsinvolved[cD])
-                      subresult$posthocttest$Decomptext <- decomptext
+                # send to output as seperate entry
+                res$tempoutputlabel <- subresult
+                tempeffectname <- unlist(strsplit(as.character(res$stats$Effect[currentAnovaLine]), split=":"))
+                tempeffectname <- paste(tempeffectname, collapse="By")
+                if ('posthoclinkmatrix' %in% names(res$tempoutputlabel)) {
+                  if (nrow(res$tempoutputlabel$posthoclinkmatrix) > 0) {
+                    for (cE in 1:nrow(res$tempoutputlabel$posthoclinkmatrix)) {
+                      posthoclinkmatrixL <- nrow(posthoclinkmatrix) + 1
+                      posthoclinkmatrix[posthoclinkmatrixL, 'p.value']  <- res$tempoutputlabel$posthoclinkmatrix[cE, 'p.value']
+                      posthoclinkmatrix[posthoclinkmatrixL, 'Link']  <- sprintf('PosthocANOVA_%s_%s_%s$%s', tempeffectname, currentfactorlevelsinvolved[cD], paste(otherfactorsinvolved, collapse="By"), res$tempoutputlabel$posthoclinkmatrix[cE, 'Link'])
+                      posthoclinkmatrix[posthoclinkmatrixL, 'Row']  <- res$tempoutputlabel$posthoclinkmatrix[cE, 'Row']
                     }
                   }
-                  if (is.null(posthocttest)) {
-                    posthocttest <- subresult$posthocttest
-                  } else {
-                    posthocttest <- rbind(posthocttest,subresult$posthocttest)
-                  }
                 }
+                names(res)[which(names(res) == 'tempoutputlabel')] <- sprintf('PosthocANOVA_%s_%s_%s', tempeffectname, currentfactorlevelsinvolved[cD], paste(otherfactorsinvolved, collapse="By"))
+                
               }
               rm (subworkingdatabase, booltrig)
             }
@@ -605,8 +619,8 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       } # less than 4 factors involved
     } # effect is significant
   } # for each effect
-  res$posthocANOVA <- posthocANOVA
   res$posthocttest <- posthocttest
+  res$posthoclinkmatrix <- posthoclinkmatrix
   
   # Perform Posthoc Adjustments
   if (!is.null(posthoc)) {
@@ -614,42 +628,53 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     
     if (toupper(posthoc) == toupper("False Discovery Rate Control")) {
       # Glickman, M. E., Rao, S. R., Schultz, M. R. (2014). False discovery rate control is a recommended alternative to Bonferroni-type adjustments in health studies. Journal of Clinical Epidemiology, 67, 850-857.
+      
       if ((!is.numeric(FDRC)) | ((FDRC < 0) | (FDRC > 0.99))) {
         FDRC <- 0.05
       }
-      temp <- res$posthocttest
-      temp$originalorder <- 1:nrow(temp)
-      temp <- temp[order(temp$p.value),]
-      ncomp <- nrow(temp)
-      # Loop through P values
-      for (rank in 1:nrow(temp)) {
-        outPvalue <- Rmimic::fuzzyP(as.numeric(temp$p.value[rank]))
-        if (outPvalue$interpret <= studywiseAlpha) {
-          temppval <- (FDRC*(rank/ncomp))
-          if (as.numeric(temp$p.value[rank]) > as.numeric(temppval)) {
-            # P value is no longer considered significant
-            criticalphrase <- sprintf("(Benjamini-Hochberg critical alpha = %.3f)", temppval)
-            temp$interpretation[rank] <- sprintf("%s However, that difference did not remain significant following false discovery rate control %s.", temp$interpretation[rank], criticalphrase)
+      if (nrow(res$posthoclinkmatrix) > 0) {
+        temp <- posthoclinkmatrix[order(posthoclinkmatrix$p.value),]
+        ncomp <- nrow(temp)
+        # Loop through P values
+        for (rank in 1:nrow(temp)) {
+          outPvalue <- Rmimic::fuzzyP(as.numeric(temp$p.value[rank]))
+          if (outPvalue$interpret <= studywiseAlpha) {
+            temppval <- (FDRC*(rank/ncomp))
+            if (as.numeric(temp$p.value[rank]) > as.numeric(temppval)) {
+              # P value is no longer considered significant
+              criticalphrase <- sprintf("(Benjamini-Hochberg critical alpha = %.3f)", temppval)
+              
+              templocation <- temp$Link[rank]
+              temprow <- temp$Row[rank]
+              funcal <- sprintf('tempinterlocation <- res$%s$interpretation[%d]',templocation,temprow)
+              suppressWarnings(eval(parse(text=funcal)))
+              tempinterlocation <- sprintf("%s However, that difference did not remain significant following false discovery rate control %s.", tempinterlocation, criticalphrase)
+              funcal <- sprintf('res$%s$interpretation[%d] <- tempinterlocation',templocation,temprow)
+              suppressWarnings(eval(parse(text=funcal)))
+              rm(templocation, temprow, funcal, tempinterlocation)
+              
+            }
           }
         }
+        rm(ncomp, temp, rank, outPvalue, temppval, criticalphrase)
       }
-      # reorder and pull new text
-      temp <- temp[order(temp$originalorder),]
-      res$posthocttest$interpretation <- temp$interpretation
-      rm(ncomp, temp, rank, outPvalue, temppval, criticalphrase)
     }
   }
   
   if (verbose == TRUE) {
     if (overloadflag == TRUE) {
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
-      outtext <- sprintf("An interaction exceeding 3 variables was detected. To conserve computational resouces, interactions exceeding 3 variables should be decomposed in a stepwise fashion manually.")
+      outtext <- sprintf("An interaction exceeding %d variables was detected. To conserve computational resouces, interactions exceeding %d variables should be decomposed in a stepwise fashion manually.", (posthoclimit-1), (posthoclimit-1))
       Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
       rm(outtext)
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
     }
     
-    Rmimic::posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0)
+    shortposthoclimit <- (posthoclimit-3)
+    if (shortposthoclimit < 3) {
+      shortposthoclimit <- 3
+    }
+    posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0, posthoclimit=shortposthoclimit)
     cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
   }
   
