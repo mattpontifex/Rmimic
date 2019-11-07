@@ -106,15 +106,15 @@ descriptives <- function(comparisondataframe, groupvariable=FALSE, verbose=TRUE,
     subvect <- workingdf[,as.character(datamatrix$Variable[cB])]
     
     datamatrix$N[cB] <- length(subvect)
-    datamatrix$Missing[cB] <- length(subvect) - length(stats::complete.cases(subvect))
+    datamatrix$Missing[cB] <- sum(is.na(subvect))
     
     if (is.numeric(subvect)) {
-      subvect < subvect[stats::complete.cases(subvect)]
+      subvect <- subvect[stats::complete.cases(subvect)]
       datamatrix$Mean[cB] <- mean(subvect)
       datamatrix$Median[cB] <- stats::median(subvect)
       datamatrix$SD[cB] <- stats::sd(subvect)
       datamatrix$SE[cB] <- stats::sd(subvect)/sqrt(length(subvect))
-      if (length(subvect) > 0) {
+      if (length(subvect) > 1) {
         datamatrix$Min[cB] <- min(subvect)
         datamatrix$Max[cB] <- max(subvect)
       }
