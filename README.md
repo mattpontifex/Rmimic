@@ -11,13 +11,13 @@ Installation
 ------------
 To use this package, from R run the following commands:
 ```r
-&nbsp;tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
-&nbsp;devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)  
+    tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
+    devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)  
 ```
 You may be prompted to update packages, you can select 'None' (3 typically) to just install Rmimic. You may
 also get a backports error installing devtools, this may require you to restart R and then run:
 ```r
-install.packages("backports"); 
+    install.packages("backports"); 
 ```
 After completing that step, you can repeat the installation instructions above.
 
