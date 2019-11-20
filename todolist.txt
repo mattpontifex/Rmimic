@@ -1,3 +1,3 @@
-Correlation
-Regression
+Correlation (stats::cor.test, stats::qnorm, ppcor::pcor.test and psych::r.con)
+Regression (fmsb)
 MLM
