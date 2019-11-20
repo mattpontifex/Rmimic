@@ -4,9 +4,13 @@
 \alias{descriptives}
 \title{descriptives}
 \usage{
-descriptives(comparisondataframe, groupvariable = FALSE,
-  verbose = TRUE, verbosedescriptives = TRUE,
-  verbosefrequencies = TRUE)
+descriptives(
+  comparisondataframe,
+  groupvariable = FALSE,
+  verbose = TRUE,
+  verbosedescriptives = TRUE,
+  verbosefrequencies = TRUE
+)
 }
 \arguments{
 \item{comparisondataframe}{Data frame with each column containing a variable (includes both data and grouping variables if group descriptives are specified)}

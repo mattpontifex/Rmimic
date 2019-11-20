@@ -4,8 +4,13 @@
 \alias{identifyoutliers}
 \title{identifyoutliers}
 \usage{
-identifyoutliers(datavector, iqrlimit = 3, direction = "NA",
-  minuniquesamples = 10, verbose = TRUE)
+identifyoutliers(
+  datavector,
+  iqrlimit = 3,
+  direction = "NA",
+  minuniquesamples = 10,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{datavector}{Vector of data}

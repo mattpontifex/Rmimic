@@ -4,10 +4,20 @@
 \alias{RmimicTtest}
 \title{RmimicTtest}
 \usage{
-RmimicTtest(data, dependentvariable = NULL, subjectid = NULL,
-  between = NULL, within = NULL, nonparametric = FALSE,
-  collapse = TRUE, posthoc = NULL, criticaldiff = NULL,
-  confidenceinterval = 0.95, studywiseAlpha = 0.05, verbose = TRUE)
+RmimicTtest(
+  data,
+  dependentvariable = NULL,
+  subjectid = NULL,
+  between = NULL,
+  within = NULL,
+  nonparametric = FALSE,
+  collapse = TRUE,
+  posthoc = NULL,
+  criticaldiff = NULL,
+  confidenceinterval = 0.95,
+  studywiseAlpha = 0.05,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{data}{Data frame in long format containing the dependent variable in one column and subject id, between, and within subject variables in other columns.}

@@ -4,12 +4,25 @@
 \alias{RmimicAnova}
 \title{RmimicAnova}
 \usage{
-RmimicAnova(data, dependentvariable = NULL, subjectid = NULL,
-  between = NULL, within = NULL, sphericity = NULL, feffect = NULL,
-  nonparametric = FALSE, posthoc = "False Discovery Rate Control",
-  FDRC = 0.05, planned = NULL, suppressposthoc = NULL,
-  confidenceinterval = 0.95, studywiseAlpha = 0.05, verbose = TRUE,
-  verbosedescriptives = TRUE, posthoclimit = 6)
+RmimicAnova(
+  data,
+  dependentvariable = NULL,
+  subjectid = NULL,
+  between = NULL,
+  within = NULL,
+  sphericity = NULL,
+  feffect = NULL,
+  nonparametric = FALSE,
+  posthoc = "False Discovery Rate Control",
+  FDRC = 0.05,
+  planned = NULL,
+  suppressposthoc = NULL,
+  confidenceinterval = 0.95,
+  studywiseAlpha = 0.05,
+  verbose = TRUE,
+  verbosedescriptives = TRUE,
+  posthoclimit = 6
+)
 }
 \arguments{
 \item{data}{Database containing data}

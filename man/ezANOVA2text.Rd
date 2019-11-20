@@ -4,9 +4,14 @@
 \alias{ezANOVA2text}
 \title{ezANOVA2text}
 \usage{
-ezANOVA2text(result, numparticipants = NULL, feffect = NULL,
-  sphericity = NULL, confidenceinterval = 0.95,
-  studywiseAlpha = 0.05)
+ezANOVA2text(
+  result,
+  numparticipants = NULL,
+  feffect = NULL,
+  sphericity = NULL,
+  confidenceinterval = 0.95,
+  studywiseAlpha = 0.05
+)
 }
 \arguments{
 \item{result}{ezANOVA output}

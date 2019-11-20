@@ -4,8 +4,14 @@
 \alias{table2console}
 \title{table2console}
 \usage{
-table2console(dataframein, sepgap = NULL, spansize = 95,
-  headers = TRUE, alternate = FALSE, seperators = FALSE)
+table2console(
+  dataframein,
+  sepgap = NULL,
+  spansize = 95,
+  headers = TRUE,
+  alternate = FALSE,
+  seperators = FALSE
+)
 }
 \arguments{
 \item{dataframein}{Data frame to be printed}

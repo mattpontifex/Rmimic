@@ -4,8 +4,13 @@
 \alias{posthoc2text}
 \title{posthoc2text}
 \usage{
-posthoc2text(result, studywiseAlpha = 0.05, spansize = 95,
-  currentlevelout = 0, posthoclimit = 6)
+posthoc2text(
+  result,
+  studywiseAlpha = 0.05,
+  spansize = 95,
+  currentlevelout = 0,
+  posthoclimit = 6
+)
 }
 \arguments{
 \item{result}{Anova and posthoc test output}

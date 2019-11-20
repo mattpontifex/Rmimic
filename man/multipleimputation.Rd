@@ -4,8 +4,14 @@
 \alias{multipleimputation}
 \title{multipleimputation}
 \usage{
-multipleimputation(database, method = "pmm", imputations = 50,
-  maxiterations = 0, restrict = TRUE, seed = 500)
+multipleimputation(
+  database,
+  method = "pmm",
+  imputations = 50,
+  maxiterations = 0,
+  restrict = TRUE,
+  seed = 500
+)
 }
 \arguments{
 \item{database}{Database of variables.}

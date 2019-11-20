@@ -4,9 +4,15 @@
 \alias{computechange}
 \title{computechange}
 \usage{
-computechange(data, method = NULL, dependentvariable = NULL,
-  subjectid = NULL, within = NULL, relativeto = NULL,
-  control = NULL)
+computechange(
+  data,
+  method = NULL,
+  dependentvariable = NULL,
+  subjectid = NULL,
+  within = NULL,
+  relativeto = NULL,
+  control = NULL
+)
 }
 \arguments{
 \item{data}{Database containing data}
@@ -30,7 +36,8 @@ computechange(data, method = NULL, dependentvariable = NULL,
 Function to compute the change or difference between conditions.
 }
 \examples{
-    mockdatabase <- data.frame("ID" = rep_len(1:20,60), "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
+    mockdatabase <- data.frame("ID" = rep_len(1:20,60), 
+    "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
     mockdatabase <- computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
 
 }
