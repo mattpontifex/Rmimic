@@ -62,6 +62,16 @@ above or below some threshold and of some minimum cluster size (i.e., a cluster 
     # returns: c(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0)
 ```
 
+* **computechange**: Function to compute the change or difference between within subjects conditions. A new 
+variable is returned to the data containing the change calculation. Optional parameters are included for
+computing PercentChange, specifying the factor level to use as the baseline, and for other factors to control
+for.
+```r
+    mockdatabase <- data.frame("ID" = rep_len(1:20,60), 
+    "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
+    mockdatabase <- computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
+```
+
 * **identifyoutliers**: Function to identify outliers based upon the interquartile range (as SPSS does for
 boxplots) and replace those values with NA.
 ```r
