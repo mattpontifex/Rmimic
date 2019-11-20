@@ -15,6 +15,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, August 18, 2017
 #'
 #' @import mice
+#' @importFrom pkgcond suppress_conditions
 #' 
 #' @examples
 #'
@@ -35,37 +36,57 @@ multipleimputation <- function(database, method="pmm", imputations=50, maxiterat
   }
 
   # Run multiple imputation
-  tempData <- mice::mice(database, m=imputations, maxit=maxiterations, method=method, printFlag=FALSE, seed=seed)
+  tempData <- pkgcond::suppress_conditions(mice::mice(database, m=imputations, maxit=maxiterations, method=method, printFlag=FALSE, seed=seed))
 
   # Populate list of variable names
-  for (cB in 1:(length(colnames(database)))) {
+  for (cColumns in 1:(length(colnames(database)))) {
 
-    # Obtain the estimates
-    temp <- data.frame(tempData$imp[cB])
-
-    # Check that imputation was needed
-    if (nrow(temp) > 0) {
-
+    if (tempData$nmis[[cColumns]] > 0) {
+      
       # Obtain the precision
-      precisioninteger <- decimalplaces(tempData$data[,cB])
-
-      # Restrict values to the range of observed values
-      if (restrict == TRUE) {
-        outvarmin <- min(tempData$data[,cB], na.rm = TRUE)
-        outvarmax <- max(tempData$data[,cB], na.rm = TRUE)
-        for (cR in 1:(nrow(temp))) {
-          temp[cR,which(temp[cR,] < outvarmin)] <- NA
-          temp[cR,which(temp[cR,] > outvarmax)] <- NA
+      temp <- tempData$data[,cColumns]
+      precisioninteger <- NA
+      if (is.numeric(temp)) {
+        temp <- temp[complete.cases(temp)]
+        precisioninteger <- Rmimic::decimalplaces(temp)
+      }
+      availablelevels <- sort(unique(unlist(as.character(temp))))
+      
+      # Loop through each missing datapoint
+      missingpoints <- which(unlist(as.character(tempData$where[,cColumns])) == TRUE)
+      for (cMissing in 1:length(missingpoints)) {
+        
+        # pull imputed results
+        imputeddata <- tempData$imp[[cColumns]]
+        imputeddata <- imputeddata[cMissing,]
+        if (ncol(imputeddata) > 0) {
+        
+          outval <- NA
+          if (!is.na(precisioninteger)) {
+            # dealing with numbers
+            
+            # Restrict values to the range of observed values
+            if (restrict == TRUE) {
+              outvarmin <- min(temp, na.rm = TRUE)
+              outvarmax <- max(temp, na.rm = TRUE)
+              imputeddata[1,which(imputeddata[1,] < outvarmin)] <- NA
+              imputeddata[1,which(imputeddata[1,] > outvarmax)] <- NA
+            }
+            
+            # Compute the mean estimate
+            outval <- as.numeric(sprintf("%.*f", precisioninteger, round(mean(as.numeric(imputeddata), na.rm = TRUE), digits = precisioninteger)))
+            
+          } else {
+            # dealing with factors
+            outval <- imputeddata[1]
+          }
+          
+          # Replace the missing observation
+          database[missingpoints[cMissing], cColumns] <- outval
         }
       }
-
-      # Compute the mean estimate for each missing observation
-      outpartindex <- as.integer(row.names(temp))
-      for (cR in 1:(nrow(temp))) {
-        database[outpartindex[cR],cB] <- as.numeric(sprintf("%.*f", precisioninteger, round(mean(as.numeric(temp[cR,]), na.rm = TRUE), digits = precisioninteger)))
-      }
-
     }
   }
   return(database)
 }
+

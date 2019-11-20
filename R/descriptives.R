@@ -132,7 +132,7 @@ descriptives <- function(comparisondataframe, groupvariable=FALSE, verbose=TRUE,
       }
     }
     frequentcases <- sort(unique(unlist(as.character(subvect))))
-    if ((length(frequentcases) < 10) & (length(subvect) > 0)) {
+    if ((length(frequentcases) > 0) & (length(frequentcases) < 10) & (length(subvect) > 0)) {
       freqoutcom <- ''
       for (cF in 1:length(frequentcases)) {
         freqoutcom <- sprintf('%s%s = %d', freqoutcom,frequentcases[cF], length(subvect[which(subvect == frequentcases[cF])]))

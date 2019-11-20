@@ -1,7 +1,7 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic
-Version: 0.1.0.9802
+Version: 0.1.0.9804
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
 Description: An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics software packages.
@@ -24,5 +24,5 @@ Suggests:
 License: GPL-2 | GPL-3
 Encoding: UTF-8
 LazyData: true
-Date: 2019-11-07
+Date: 2019-11-20
 RoxygenNote: 6.1.1
