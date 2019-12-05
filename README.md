@@ -4,7 +4,7 @@ Rmimic
 An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics
 software packages. This package deviates from the typical R ethos such that "super functions" will output
 results to the console window in a style that roughly mimics the output of popular statistics software
-packages. Test results are also available as environmental variables and console oututs can be suppressed
+packages. Test results are also available as environmental variables and console outputs can be suppressed
 using verbose calls to the function.
 
 Installation
