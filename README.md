@@ -86,6 +86,22 @@ boxplots) and replace those values with NA.
     tempdata <- multipleimputation(tempdata, imputations=10)  
 ```
 
+* **ezANOVA2text**: Function to output ezANOVA results in APA style format with effect sizes and confidence
+intervals.
+```r
+    result <- ez::ezANOVA(data=elashoff,dv=Alertness,wid=PartID,
+    between=Group,within=.(Drug,Dose),type=3,detailed=TRUE,return_aov=TRUE)
+    result <- ezANOVA2text(result, numparticipants=16, feffect="Generalized Eta Squared", 
+    sphericity="Greenhouse-Geisser", confidenceinterval=0.95, studywiseAlpha=0.05)
+```
+
+* **lmer2text**: Function to output lmerTest::lmer results in APA style format with effect sizes and confidence
+intervals.
+```r
+    fit <- lmerTest::lmer(Alertness ~ Group*Drug*Dose + (1 | PartID), data=elashoff)
+    result <- lmer2text(fit, df="Kenward-Roger", numparticipants=16, numfactors=4)
+```
+
 * **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for
 use in an APA style manuscript (i.e., t(18) = 2.3, p = 0.031) with proper rounding. Supports independent and
 paired t-tests for both parametric and nonparametric data.
@@ -103,8 +119,6 @@ length. The text empty will result in an open span in the output.
 * **decimalplaces**: Function to obtain the number of decimal places of precision in a vector.
 * **determineallpossiblecombinations**: Function to determine all possible combinations of an input array. For
 instance, an array containing A, B, and C could be assessed looking at A, B, C, A:B, A:C, B:C, or A:B:C.
-* **ezANOVA2text**: Function to output ezANOVA results in APA style format with effect sizes and confidence
-intervals.
 * **fuzzyP**: Function to round P values for reporting. Because reporting p = 0.912 to three digits of precision
 is a bit silly.
 * **posthoc2text**: Function to output ANOVA posthoc results in APA style format with effect sizes and confidence
