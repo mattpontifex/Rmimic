@@ -68,7 +68,7 @@ computing PercentChange, specifying the factor level to use as the baseline, and
 for.
 ```r
     mockdatabase <- data.frame("ID" = rep_len(1:20,60), 
-    "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
+                            "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
     mockdatabase <- computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
 ```
 
@@ -90,9 +90,9 @@ boxplots) and replace those values with NA.
 intervals.
 ```r
     result <- ez::ezANOVA(data=elashoff,dv=Alertness,wid=PartID,
-    between=Group,within=.(Drug,Dose),type=3,detailed=TRUE,return_aov=TRUE)
+                            between=Group,within=.(Drug,Dose),type=3,detailed=TRUE,return_aov=TRUE)
     result <- ezANOVA2text(result, numparticipants=16, feffect="Generalized Eta Squared", 
-    sphericity="Greenhouse-Geisser", confidenceinterval=0.95, studywiseAlpha=0.05)
+                            sphericity="Greenhouse-Geisser", confidenceinterval=0.95, studywiseAlpha=0.05)
 ```
 
 * **lmer2text**: Function to output lmerTest::lmer results in APA style format with effect sizes and confidence
