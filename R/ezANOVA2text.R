@@ -21,12 +21,6 @@
 
 ezANOVA2text <- function(result, numparticipants=NULL, feffect=NULL, sphericity=NULL, confidenceinterval=0.95, studywiseAlpha=0.05) {
   
-  feffect <- NULL
-  sphericity <- NULL
-  confidenceinterval<-0.95
-  studywiseAlpha<-0.05
-  numparticipants <- 60
-  
   if (is.null(sphericity)) {
     sphericity <- "Greenhouse-Geisser"
   } else {

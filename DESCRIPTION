@@ -1,7 +1,7 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic
-Version: 0.1.0.99
+Version: 0.1.1.02
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
 Description: An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics software packages.
@@ -16,6 +16,11 @@ Imports:
     psychometric,
     MBESS,
     pkgcond,
+    lme4,
+    lmerTest,
+    pbkrtest,
+    MuMIn,
+    emmeans,
     utils
 Suggests:
     testthat,
@@ -24,5 +29,5 @@ Suggests:
 License: GPL-2 | GPL-3
 Encoding: UTF-8
 LazyData: true
-Date: 2019-11-20
+Date: 2019-12-19
 RoxygenNote: 7.0.0
