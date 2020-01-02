@@ -68,7 +68,8 @@ computing PercentChange, specifying the factor level to use as the baseline, and
 for.
 ```r
     mockdatabase <- data.frame("ID" = rep_len(1:20,60), 
-                            "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)), "X" = runif(60))
+                            "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)),
+                            "X" = runif(60))
     mockdatabase <- computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
 ```
 
