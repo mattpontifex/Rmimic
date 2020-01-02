@@ -163,8 +163,8 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     # Compute R^2
     #Nakagawa, S., & Schielzeth, H. (2012). A general and simple method for obtaining R2 from generalized linear mixed-effects models. Methods in Ecology and Evolution, 4, 133-142. doi: 10.1111/j.2041-210x.2012.00261.x
     #Nakagawa, S., Johnson, P. C., & Schielzeth, H. (2017). The coefficient of determination R^2 and intra-class correlation coefficient from generalized linear mixed-effects models revisited and expanded. Journal of the Royal Society Interface, 14(134), 20170213. doi:10.1098/rsif.2017.0213
-    dataframeout <- data.frame(matrix(NA,nrow=1,ncol=6))
-    colnames(dataframeout) <- c("FixedEffects", "FixedEffects.ci.lower", "FixedEffects.ci.upper", "RandomEffects", "RandomEffects.ci.lower", "RandomEffects.ci.upper")
+    dataframeout <- data.frame(matrix(NA,nrow=1,ncol=9))
+    colnames(dataframeout) <- c("FixedEffects", "FixedEffects.ci.lower", "FixedEffects.ci.upper", "RandomEffects", "RandomEffects.ci.lower", "RandomEffects.ci.upper", "Model", "Model.ci.lower", "Model.ci.upper")
     
     dataframeout$FixedEffects <- suppressWarnings(MuMIn::r.squaredGLMM(fit)[1])
     temp <- psychometric::CI.Rsq(dataframeout$FixedEffects[1], numparticipants, numfactors, level=confidenceinterval)
@@ -177,7 +177,18 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     dataframeout$FixedEffects.ci.lower <- temp$LCL[1]
     dataframeout$FixedEffects.ci.upper <- temp$UCL[1]
     
-    dataframeout$RandomEffects <- suppressWarnings(MuMIn::r.squaredGLMM(fit)[2])
+    dataframeout$Model <- suppressWarnings(MuMIn::r.squaredGLMM(fit)[2])
+    temp <- psychometric::CI.Rsq(dataframeout$Model[1], numparticipants, numfactors, level=confidenceinterval)
+    if (temp$LCL[1]<0) {
+      temp$LCL[1] <- 0
+    } 
+    if (temp$UCL[1] > 1) {
+      temp$UCL[1] <- Inf
+    }
+    dataframeout$Model.ci.lower <- temp$LCL[1]
+    dataframeout$Model.ci.upper <- temp$UCL[1]
+    
+    dataframeout$RandomEffects <- dataframeout$Model - dataframeout$FixedEffects
     temp <- psychometric::CI.Rsq(dataframeout$RandomEffects[1], numparticipants, numfactors, level=confidenceinterval)
     if (temp$LCL[1]<0) {
       temp$LCL[1] <- 0
