@@ -97,7 +97,7 @@ intervals.
 ```
 
 * **lmer2text**: Function to output lmerTest::lmer results in APA style format with effect sizes and confidence
-intervals.
+intervals. The function will also work with lme4:lmer models, however these models do not report probability values.
 ```r
     fit <- lmerTest::lmer(Alertness ~ Group*Drug*Dose + (1 | PartID), data=elashoff)
     result <- lmer2text(fit, df="Kenward-Roger", numparticipants=16, numfactors=4)
