@@ -1,19 +1,39 @@
-mockdatabase <- data.frame("PartID" = rep_len(1:180,360),
-                           "Age" = round(stats::runif(360, 19, 23), digits = 0),
-                           "Sex" = round(stats::runif(360, 0, 1), digits = 0),
-                           "Congruency" = rep_len(c(rep_len("Congruent",180),rep_len("Incongruent",180)),360),
-                           "Attribute" = round(stats::runif(360, 0, 100), digits = 1),
-                           "DV" = round(stats::runif(360, 200, 500), digits = 1))
-# Force some effects
-mockdatabase$AttributeZ = (mockdatabase$Attribute-mean(mockdatabase$Attribute))/sd(mockdatabase$Attribute)
-selectidx = which(mockdatabase$Congruency == 'Incongruent')
-selectidx = sort(sample(selectidx, floor(length(selectidx)/3)))
-mockdatabase$DV[selectidx] = mockdatabase$DV[selectidx] + (mockdatabase$AttributeZ[selectidx] * 2)
-
+tryCatch(library(ggplot2), error=function(e){install.packages("ggplot2"); library(ggplot2)})
 tryCatch(library(lme4), error=function(e){install.packages("lme4"); library(lme4)})
 tryCatch(library(lmerTest), error=function(e){install.packages("lmerTest"); library(lmerTest)}) # modifies lme4
 tryCatch(library(emmeans), error=function(e){install.packages("emmeans"); library(emmeans)}) #lsmeans
 
-fit <- lmerTest::lmer(DV ~ Congruency*Attribute + (1 | PartID) + (1 | Age) + (1 | Sex), data=mockdatabase, REML=FALSE)
-result <- anova(fit, type = 3)
-show(result)
+Age <- round(stats::runif(180, 7, 12), digits = 0)
+AgeZ <- scale(Age)
+Sex <- round(stats::runif(180, 0, 1), digits = 0)
+SexZ <- scale(Sex)
+Attribute <- round(stats::runif(180, 0, 100), digits = 1)
+AttributeZ <- scale(Attribute)
+mockdatabase <- data.frame("PartID" = rep_len(1:180,180),
+                           "Age" = Age,
+                           "Sex" = Sex,
+                           "Attribute" = Attribute,
+                           "AgeZ" = AgeZ,
+                           "SexZ" = SexZ,
+                           "AttributeZ" = AttributeZ)
+rm(Age, AgeZ, Sex, SexZ, Attribute, AttributeZ)
+mockdatabase = rbind(mockdatabase, mockdatabase)
+mockdatabase$Congruency = rep_len(c(rep_len("Congruent",180),rep_len("Incongruent",180)),360)
+mockdatabase$DV = round(stats::runif(360, 20, 30), digits = 2)
+
+ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
+
+# force effects
+selectidx = which(mockdatabase$Congruency == 'Incongruent')
+mockdatabase$DV[selectidx] = mockdatabase$DV[selectidx] - 6  # Congruency intercept shift
+mockdatabase$DV = mockdatabase$DV + (mockdatabase$AgeZ * 2) # Age intercept shift
+
+ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
+
+# standard regression
+simplefit <- lm(DV ~ Age + Sex + Congruency, data = mockdatabase)
+summary(simplefit)
+
+# multilevel model
+fit <- lmerTest::lmer(DV ~ Age + Sex + Congruency + (1 | PartID), data=mockdatabase, REML=FALSE)
+summary(fit)
