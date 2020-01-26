@@ -1,4 +1,6 @@
 tryCatch(library(ggplot2), error=function(e){install.packages("ggplot2"); library(ggplot2)})
+tryCatch(library(MASS), error=function(e){install.packages("MASS"); library(MASS)}) # MASS::rlm
+tryCatch(library(sfsmisc), error=function(e){install.packages("sfsmisc"); library(sfsmisc)}) # sfsmisc::f.robftest
 tryCatch(library(lme4), error=function(e){install.packages("lme4"); library(lme4)})
 tryCatch(library(lmerTest), error=function(e){install.packages("lmerTest"); library(lmerTest)}) # modifies lme4
 tryCatch(library(emmeans), error=function(e){install.packages("emmeans"); library(emmeans)}) #lsmeans
@@ -33,6 +35,13 @@ ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
 # standard regression
 simplefit <- lm(DV ~ Age + Sex + Congruency, data = mockdatabase)
 summary(simplefit)
+
+# # robust linear regression
+fit <- MASS::rlm(DV ~ Age + Sex + Congruency, data = mockdatabase)
+summary(fit) # model fit
+sfsmisc::f.robftest(fit, var = "Age")
+sfsmisc::f.robftest(fit, var = "Sex")
+sfsmisc::f.robftest(fit, var = "CongruencyIncongruent")
 
 # multilevel model
 simplefit <- lmerTest::lmer(DV ~ 1 + (1 | PartID), data=mockdatabase, REML=FALSE)
