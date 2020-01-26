@@ -1,3 +1,5 @@
 Correlation (stats::cor.test, stats::qnorm, ppcor::pcor.test and psych::r.con)
 Regression (fmsb)
 MLM
+
+https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html
