@@ -1,9 +1,6 @@
 tryCatch(library(ggplot2), error=function(e){install.packages("ggplot2"); library(ggplot2)})
-tryCatch(library(MASS), error=function(e){install.packages("MASS"); library(MASS)}) # MASS::rlm
-tryCatch(library(sfsmisc), error=function(e){install.packages("sfsmisc"); library(sfsmisc)}) # sfsmisc::f.robftest
-tryCatch(library(lme4), error=function(e){install.packages("lme4"); library(lme4)})
-tryCatch(library(lmerTest), error=function(e){install.packages("lmerTest"); library(lmerTest)}) # modifies lme4
-tryCatch(library(emmeans), error=function(e){install.packages("emmeans"); library(emmeans)}) #lsmeans
+tryCatch(library(interactions), error=function(e){install.packages("interactions"); library(interactions)})
+tryCatch(library(sandwich), error=function(e){install.packages("sandwich"); library(sandwich)})
 
 Age <- round(stats::runif(180, 7, 12), digits = 0)
 AgeZ <- scale(Age)
@@ -29,6 +26,8 @@ ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
 selectidx = which(mockdatabase$Congruency == 'Incongruent')
 mockdatabase$DV[selectidx] = mockdatabase$DV[selectidx] - 6  # Congruency intercept shift
 mockdatabase$DV = mockdatabase$DV + (mockdatabase$AgeZ * 2) # Age intercept shift
+selectidx = which(mockdatabase$Congruency == 'Incongruent')
+mockdatabase$DV[selectidx] = mockdatabase$DV[selectidx] + (mockdatabase$AttributeZ[selectidx] * 2) # fitness x congruency interaction
 
 ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
 
@@ -36,7 +35,16 @@ ggplot(mockdatabase, aes(x=Attribute, y=DV, color=Congruency)) + geom_point()
 simplefit <- lm(DV ~ Age + Sex + Congruency, data = mockdatabase)
 summary(simplefit)
 
-# # robust linear regression
+## interaction
+fit <- lm(DV ~ Age + Sex + Congruency*Attribute, data = mockdatabase)
+ss <- interactions::sim_slopes(fit, pred = Attribute, modx = Congruency, cond.int = TRUE, johnson_neyman = FALSE, control.fdr = TRUE)
+summary(fit)
+show(ss)
+interactions::interact_plot(fit, pred = Attribute, modx = Congruency, plot.points = TRUE, interval = TRUE, int.width = 0.95)
+
+# robust linear regression
+tryCatch(library(MASS), error=function(e){install.packages("MASS"); library(MASS)}) # MASS::rlm
+tryCatch(library(sfsmisc), error=function(e){install.packages("sfsmisc"); library(sfsmisc)}) # sfsmisc::f.robftest
 fit <- MASS::rlm(DV ~ Age + Sex + Congruency, data = mockdatabase)
 summary(fit) # model fit
 sfsmisc::f.robftest(fit, var = "Age")
@@ -44,6 +52,9 @@ sfsmisc::f.robftest(fit, var = "Sex")
 sfsmisc::f.robftest(fit, var = "CongruencyIncongruent")
 
 # multilevel model
+tryCatch(library(lme4), error=function(e){install.packages("lme4"); library(lme4)})
+tryCatch(library(lmerTest), error=function(e){install.packages("lmerTest"); library(lmerTest)}) # modifies lme4
+tryCatch(library(emmeans), error=function(e){install.packages("emmeans"); library(emmeans)}) #lsmeans
 simplefit <- lmerTest::lmer(DV ~ 1 + (1 | PartID), data=mockdatabase, REML=FALSE)
 fit <- lmerTest::lmer(DV ~ Age + Sex + Congruency + (1 | PartID), data=mockdatabase, REML=FALSE)
 summary(fit) # model fit
