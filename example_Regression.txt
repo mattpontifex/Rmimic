@@ -35,5 +35,11 @@ simplefit <- lm(DV ~ Age + Sex + Congruency, data = mockdatabase)
 summary(simplefit)
 
 # multilevel model
+simplefit <- lmerTest::lmer(DV ~ 1 + (1 | PartID), data=mockdatabase, REML=FALSE)
 fit <- lmerTest::lmer(DV ~ Age + Sex + Congruency + (1 | PartID), data=mockdatabase, REML=FALSE)
-summary(fit)
+summary(fit) # model fit
+anova(simplefit, fit) # are the models different
+
+# logistic multilevel model
+fit <- lme4::glmer(Sex ~ DV + (1 | PartID), data=mockdatabase, family=binomial(link="logit"))
+summary(fit) # model fit
