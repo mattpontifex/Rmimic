@@ -47,6 +47,13 @@ and will perform t-tests for each comparison with post-hoc comparison correction
                             nonparametric=FALSE, posthoc='Holm-Bonferroni', verbose=TRUE)   
 ```
 
+* **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model.
+```r
+    ttestresult <- RmimicLMcontrast(PlantGrowth, dependentvariable='weight',  
+                            subjectid=NULL, between='group', within=NULL,  
+                            nonparametric=FALSE, posthoc='Holm-Bonferroni', verbose=TRUE)   
+```
+
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
     tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
