@@ -63,3 +63,40 @@ anova(simplefit, fit) # are the models different
 # logistic multilevel model
 fit <- lme4::glmer(Sex ~ DV + (1 | PartID), data=mockdatabase, family=binomial(link="logit"))
 summary(fit) # model fit
+
+
+
+#B-spline regression with polynomial splines
+#B-spline regression uses smaller segments of linear or polynomial regression which are stitched together to make a single model.  It is #useful to fit a curve to data when you don’t have a theoretical model to use (e.g. neither linear, nor polynomial, nor nonlinear).  It #does not assume a linear relationship between the variables, but the residuals should still be normal and independent.  The model may #be influenced by outliers.
+library(splines)
+Input = ("
+ Length  Clutch
+ 284      3 
+ 290      2 
+ 290      7
+ 290      7 
+ 298     11 
+ 299     12
+ 302     10 
+ 306      8 
+ 306      8
+ 309      9 
+ 310     10 
+ 311     13
+ 317      7 
+ 317      9 
+ 320      6
+ 323     13 
+ 334      2 
+ 334      8
+")
+
+Data = read.table(textConnection(Input),header=TRUE)
+model = lm(Clutch ~ bs(Length,
+                        knots = 5,     # How many internal segment nodes?
+                        degree = 2),   # 1=local linear fits, 2=quadratic
+           data = Data)
+
+summary(model) 
+
+
