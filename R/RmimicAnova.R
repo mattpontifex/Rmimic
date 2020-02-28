@@ -635,6 +635,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         temp <- posthoclinkmatrix[order(posthoclinkmatrix$p.value),]
         ncomp <- nrow(temp)
         # Loop through P values
+        criticalphrase <- ''
         for (rank in 1:nrow(temp)) {
           outPvalue <- Rmimic::fuzzyP(as.numeric(temp$p.value[rank]))
           if (outPvalue$interpret <= studywiseAlpha) {
