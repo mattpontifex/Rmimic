@@ -676,7 +676,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     if (shortposthoclimit < 3) {
       shortposthoclimit <- 3
     }
-    posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0, posthoclimit=shortposthoclimit)
+    posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0, posthoclimit=shortposthoclimit, planned=planned, suppressposthoc=suppressposthoc)
     cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
   }
   

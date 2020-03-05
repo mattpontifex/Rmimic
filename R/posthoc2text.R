@@ -7,12 +7,14 @@
 #' @param spansize Number of characters to include on a line.
 #' @param currentlevelout Integer for tab indenting used in recursion.
 #' @param posthoclimit Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.
+#' @param planned Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.
+#' @param suppressposthoc Parameter to specify a posthoc effect to ignore even if it is significant.
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 30, 2019
 #' 
 #' @export
 
-posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelout=0, posthoclimit=6) {
+posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelout=0, posthoclimit=6, planned=NULL, suppressposthoc=NULL) {
   
   spancharacter <- "-"
   bigspancharacter <- " - "
@@ -52,8 +54,31 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
     rm(outtext)
     cat(sprintf("\n"))
     
+    # check to see if planned contrast
+    forcetrig <- 0
+    if (!is.null(planned)) {
+      if (planned == TRUE) {
+        forcetrig <- 2
+      } else {
+        for (cXR in 1:length(planned)) {
+          if (effectname == planned[cXR]) {
+            forcetrig <- 1
+          }
+        }
+        rm(cXR)
+      }
+    }
+    if (!is.null(suppressposthoc)) {
+      for (cXR in 1:length(suppressposthoc)) {
+        if (effectname == suppressposthoc[cXR]) {
+          forcetrig <- -1
+        }
+      }
+      rm(cXR)
+    }
+    
     # if posthoc tests were run
-    if (outPvalue$interpret <= studywiseAlpha) {
+    if (((outPvalue$interpret <= studywiseAlpha) | (forcetrig > 0)) & (!(forcetrig < 0))) {
       if (result$stats$EffectPostHoc[cR] == 1) {
         if (length(temp) == 1) {
           # must be a main effect
