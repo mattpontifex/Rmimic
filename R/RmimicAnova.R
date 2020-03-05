@@ -403,8 +403,6 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       rm(cXR)
     }
     
-    cat('LINE 406\n')
-    
     # snag p value 
     outPvalue <- Rmimic::fuzzyP(as.numeric(res$stats$p[currentAnovaLine]))
     res$stats$EffectPostHoc[currentAnovaLine] <- 0
