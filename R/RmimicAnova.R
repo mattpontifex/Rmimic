@@ -403,6 +403,8 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       rm(cXR)
     }
     
+    cat('LINE 406\n')
+    
     # snag p value 
     outPvalue <- Rmimic::fuzzyP(as.numeric(res$stats$p[currentAnovaLine]))
     res$stats$EffectPostHoc[currentAnovaLine] <- 0
@@ -430,12 +432,14 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         rm(tempcal, cB)
         
         subbetween <- NULL
-        if (factorsinvolved %in% between) {
-          subbetween <- factorsinvolved
-        }
         subwithin <- NULL
-        if (factorsinvolved %in% within) {
-          subwithin <- factorsinvolved
+        for (cB in 1:length(factorsinvolved)) {
+          if (factorsinvolved[cB] %in% between) {
+            subbetween <- c(subbetween, factorsinvolved[cB])
+          }
+          if (factorsinvolved[cB] %in% within) {
+            subwithin <- c(subwithin, factorsinvolved[cB])
+          }
         }
         
         if (factorsinvolvedL == 1) {
@@ -572,7 +576,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                   posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
                 }
                 
-                rm(subbetween,subwithin, ttestresult, subworkingdatabase)
+                rm(subbetween,subwithin, ttestresult)
                 
               } else {
                 # need to run full anova again
@@ -608,7 +612,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                 names(res)[which(names(res) == 'tempoutputlabel')] <- sprintf('PosthocANOVA_%s_%s_%s', tempeffectname, currentfactorlevelsinvolved[cD], paste(otherfactorsinvolved, collapse="By"))
                 
               }
-              rm (subworkingdatabase, booltrig)
+              rm (booltrig)
             }
             rm(cD)
           }
@@ -635,7 +639,6 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         temp <- posthoclinkmatrix[order(posthoclinkmatrix$p.value),]
         ncomp <- nrow(temp)
         # Loop through P values
-        criticalphrase <- ''
         for (rank in 1:nrow(temp)) {
           outPvalue <- Rmimic::fuzzyP(as.numeric(temp$p.value[rank]))
           if (outPvalue$interpret <= studywiseAlpha) {
