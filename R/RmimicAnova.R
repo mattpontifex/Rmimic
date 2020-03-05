@@ -407,6 +407,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     outPvalue <- Rmimic::fuzzyP(as.numeric(res$stats$p[currentAnovaLine]))
     res$stats$EffectPostHoc[currentAnovaLine] <- 0
     
+    
     if (((outPvalue$interpret <= studywiseAlpha) | (forcetrig > 0)) & (!(forcetrig < 0))) {
       # effect was significant or planned
       if (factorsinvolvedL < posthoclimit) {
