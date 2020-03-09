@@ -14,6 +14,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 3, 2019
 #'
 #' @importFrom stats shapiro.test complete.cases median sd
+#' @importFrom Rmisc CI
 #' 
 #' @examples
 #' 
@@ -82,6 +83,8 @@ descriptives <- function(comparisondataframe, groupvariable=FALSE, verbose=TRUE,
   datamatrix$Max <- NA
   datamatrix$Distribution <- NA
   datamatrix$Frequencies <- NA
+  datamatrix$CI.Lower <- NA
+  datamatrix$CI.Upper <- NA
   
   # subset data
   for (cB in 1:nrow(datamatrix)) {
@@ -118,6 +121,10 @@ descriptives <- function(comparisondataframe, groupvariable=FALSE, verbose=TRUE,
         datamatrix$Min[cB] <- min(subvect)
         datamatrix$Max[cB] <- max(subvect)
       }
+      
+      tempci <- Rmisc::CI(subvect, ci = 0.95)
+      datamatrix$CI.Lower[cB] <- tempci[3]
+      datamatrix$CI.Upper[cB] <- tempci[1]
       
       testouttemp <- 1 # assume normal unless definitely not
       tryCatch(testouttemp <- stats::shapiro.test(subvect)$p.value, error=function(e){})
