@@ -9,7 +9,9 @@ posthoc2text(
   studywiseAlpha = 0.05,
   spansize = 95,
   currentlevelout = 0,
-  posthoclimit = 6
+  posthoclimit = 6,
+  planned = NULL,
+  suppressposthoc = NULL
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ posthoc2text(
 \item{currentlevelout}{Integer for tab indenting used in recursion.}
 
 \item{posthoclimit}{Parameter to specify the limit for breaking down interaction terms. Default is 6 indicating a 6 way interaction would not be automatically broken down.}
+
+\item{planned}{Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.}
+
+\item{suppressposthoc}{Parameter to specify a posthoc effect to ignore even if it is significant.}
 }
 \description{
 Output ANOVA posthoc results in APA style format with effect sizes and confidence intervals.
