@@ -15,7 +15,7 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, January 31, 2020
 #'
-#' @importFrom stats confint extractAIC
+#' @importFrom stats confint extractAIC pf anova
 #' @importFrom lm.beta lm.beta
 #' @importFrom fmsb VIF
 #' @importFrom psychometric CI.Rsq
@@ -65,7 +65,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   res$stats$DFn[1] <- ms$fstatistic[2]
   res$stats$DFd[1] <- ms$fstatistic[3]
   res$stats$F.value[1] <- ms$fstatistic[1]
-  res$stats$p.value[1] <- pf(q=ms$fstatistic[1], df1=ms$fstatistic[2], df2=ms$fstatistic[3], lower.tail=FALSE)
+  res$stats$p.value[1] <- stats::pf(q=ms$fstatistic[1], df1=ms$fstatistic[2], df2=ms$fstatistic[3], lower.tail=FALSE)
   res$stats$r.squared[1] <- ms$r.squared
   res$stats$r.squaredadj[1] <- ms$adj.r.squared
   res$stats$AIC[1] <- stats::extractAIC(fit)[2]
@@ -114,13 +114,13 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   res$stats$DFn[2] <- msalt$fstatistic[2]
   res$stats$DFd[2] <- msalt$fstatistic[3]
   res$stats$F.value[2] <- msalt$fstatistic[1]
-  res$stats$p.value[2] <- pf(q=msalt$fstatistic[1], df1=msalt$fstatistic[2], df2=msalt$fstatistic[3], lower.tail=FALSE)
+  res$stats$p.value[2] <- stats::pf(q=msalt$fstatistic[1], df1=msalt$fstatistic[2], df2=msalt$fstatistic[3], lower.tail=FALSE)
   res$stats$r.squared[2] <- msalt$r.squared
   res$stats$r.squaredadj[2] <- msalt$adj.r.squared
   res$stats$AIC[2] <- stats::extractAIC(altfit)[2]
   res$stats$VIF[2] <- fmsb::VIF(altfit)[1]
   
-  changeresult <- anova(fit, altfit)
+  changeresult <- stats::anova(fit, altfit)
   res$changestats$Model[2] <- res$stats$Model[2]
   res$changestats$r.squared.change[2] <- res$stats$r.squared[2] - res$stats$r.squared[1]
   res$changestats$DFn[2] <- res$stats$DFn[2]

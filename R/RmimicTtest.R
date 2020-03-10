@@ -36,7 +36,7 @@
 #'           posthoc="Holm-Bonferroni")
 #'
 #'
-#' @export
+#' @export 
 
 RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, nonparametric=FALSE, collapse=TRUE, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
   

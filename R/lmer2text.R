@@ -22,7 +22,7 @@
 #' #Note, use lmerTest::lmer instead of lme4::lmer for inclusion of p values
 #' result <- lmer2text(fit, df="Kenward-Roger", numparticipants=30, numfactors=4)
 #' 
-#' @importFrom stats residuals
+#' @importFrom stats residuals anova
 #' @importFrom MuMIn r.squaredGLMM
 #' @importFrom psychometric CI.Rsq
 #' @importFrom lmerTest ranova
@@ -65,9 +65,9 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
   if (toupper(model) == toupper("ANOVA")) {
     as <- NULL
     if (toupper(df) == toupper("Shattertwaite")) {
-      as <- data.frame(anova(fit, type = 3))
+      as <- data.frame(stats::anova(fit, type = 3))
     } else {
-      as <- data.frame(anova(fit, type = 3, ddf = "Kenward-Roger"))
+      as <- data.frame(stats::anova(fit, type = 3, ddf = "Kenward-Roger"))
     }
     
     dataframeout <- data.frame(matrix(NA,nrow=nrow(as),ncol=12))
@@ -227,9 +227,13 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
       temptext <- sprintf('Likelihood Ratio (%s)', pullvalue)
       
       # LRT stat
-      pullvalue <- sprintf(' = %.1f', round(as.numeric(result$RandomEffectsANOVA$LRT[cR]), digits = 1))
-      if (pullvalue == " = 0.0") {
+      if (round(as.numeric(result$RandomEffectsANOVA$LRT[cR]), digits = 1) < 0.0) {
         pullvalue = " < 0.1"
+      } else {
+        pullvalue <- sprintf(' = %.1f', round(as.numeric(result$RandomEffectsANOVA$LRT[cR]), digits = 1))
+        if (pullvalue == " = 0.0") {
+          pullvalue = " < 0.1"
+        }
       }
       temptext <- sprintf('%s%s,', temptext, pullvalue)
       
