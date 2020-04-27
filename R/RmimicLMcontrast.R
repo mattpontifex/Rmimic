@@ -1,6 +1,6 @@
 #' RmimicLMcontrast
 #'
-#' @description Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model.
+#' @description Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. For logistic regression, pseudo r2 values are reported using Tjurs 2009 approach.
 #'
 #' @param fit fit from a basic linear model
 #' @param altfit fit from a linear model of interest
@@ -13,12 +13,13 @@
 #' \item{changestats}{ANOVA summary table of change statistics.}
 #' \item{coefficients}{A summary table of regression coefficients.}
 #'
-#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, January 31, 2020
+#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, April 27, 2020
 #'
-#' @importFrom stats confint extractAIC pf anova
+#' @importFrom stats confint extractAIC pf anova coef predict residuals
 #' @importFrom lm.beta lm.beta
 #' @importFrom fmsb VIF
 #' @importFrom psychometric CI.Rsq
+#' @importFrom performance r2_tjur
 #' 
 #'
 #' @examples
@@ -30,7 +31,29 @@
 #'
 #' @export
 
-RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
+RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {  
+  
+  # debug variables
+  #fit <- lm(mpg ~ 1, data = mtcars)
+  #fit <- lm(mpg ~ am + wt, data = mtcars)
+  #altfit <- lm(mpg ~ am + wt + qsec, data = mtcars)
+  #confidenceinterval<-0.95
+  #studywiseAlpha<-0.05
+  #verbose<-TRUE
+  
+  logisticfit <- FALSE
+  if (!is.null(fit$family)) {
+    if (toupper(fit$family[1]) == "BINOMIAL") {
+      logisticfit <- TRUE
+    }
+  }
+  
+  logistic <- FALSE
+  if (!is.null(altfit$family)) {
+    if (toupper(altfit$family[1]) == "BINOMIAL") {
+      logistic <- TRUE
+    }
+  }
   
   spansize <- 95
   spancharacter <- "-"
@@ -58,16 +81,49 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   mci <- stats::confint(fit, level=confidenceinterval)
   ms <- summary(fit)
   mcoef <- ms$coefficients
-  mbeta <- lm.beta::lm.beta(fit)
+  if (logisticfit) {
+    mbeta <- exp(stats::coef(fit))
+    #Tjur, T. (2009). Coefficients of determination in logistic regression models - A new proposal: The coefficient of discrimination. The American Statistician, 63(4), 366-372.
+    ms$r.squared <- performance::r2_tjur(fit)[[1]]
+    ms$adj.r.squared <- ms$r.squared
+    ms$residuals <- ms$deviance.resid
+  } else {
+    mbeta <- lm.beta::lm.beta(fit)
+  }
+  
   ms$f.squared <- ms$r.squared / (1-ms$r.squared)
   temp <- unlist(strsplit(as.character(ms$call), ","))
   res$stats$Model[1] <- temp[2]
-  res$stats$DFn[1] <- ms$fstatistic[2]
-  res$stats$DFd[1] <- ms$fstatistic[3]
-  res$stats$F.value[1] <- ms$fstatistic[1]
-  res$stats$p.value[1] <- stats::pf(q=ms$fstatistic[1], df1=ms$fstatistic[2], df2=ms$fstatistic[3], lower.tail=FALSE)
-  res$stats$r.squared[1] <- ms$r.squared
-  res$stats$r.squaredadj[1] <- ms$adj.r.squared
+  
+  if (is.null(ms$fstatistic[3])) {
+    if (logisticfit) {
+      tempmodel <- anova(update(fit, ~1), fit, test="Chisq")# update here produces null model for comparison
+      res$stats$DFn[1] <- abs(tempmodel$Df[2])
+      res$stats$DFd[1] <- abs(tempmodel$`Resid. Df`[2])
+      res$stats$F.value[1] <- abs(tempmodel$Deviance[2])
+      res$stats$p.value[1] <- abs(tempmodel$`Pr(>Chi)`[2])
+      if (is.na(abs(tempmodel$`Pr(>Chi)`[2]))) {
+        res$stats$p.value[1] <- 1
+      }
+    } else {
+      res$stats$DFn[1] <- 0
+      res$stats$DFd[1] <- 0
+      res$stats$F.value[1] <- 0
+      res$stats$p.value[1] <- 1
+    }
+  } else {
+    res$stats$DFn[1] <- ms$fstatistic[2]
+    res$stats$DFd[1] <- ms$fstatistic[3]
+    res$stats$F.value[1] <- ms$fstatistic[1]
+    res$stats$p.value[1] <- stats::pf(q=ms$fstatistic[1], df1=ms$fstatistic[2], df2=ms$fstatistic[3], lower.tail=FALSE)
+  }
+  if (is.null(ms$r.squared[1])) {
+    res$stats$r.squared[1] <- 0
+    res$stats$r.squaredadj[1] <- 0
+  } else {
+    res$stats$r.squared[1] <- ms$r.squared
+    res$stats$r.squaredadj[1] <- ms$adj.r.squared
+  }
   res$stats$AIC[1] <- stats::extractAIC(fit)[2]
   res$stats$VIF[1] <- fmsb::VIF(fit)[1]
   
@@ -75,19 +131,26 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   res$changestats$r.squared.change[1] <- res$stats$r.squared[1]
   res$changestats$DFn[1] <- res$stats$DFn[1]
   res$changestats$DFd[1] <- res$stats$DFd[1]
-  res$changestats$F.change[1] <- ms$fstatistic[1]
+  res$changestats$F.change[1] <- res$stats$F.value[1]
   res$changestats$p.value[1] <- res$stats$p.value[1]
-  res$changestats$fsquared[1] <- ms$f.squared
-  temporig <- psychometric::CI.Rsq(ms$r.squared, length(ms$residuals), length(trimws(unlist(strsplit(as.character(ms$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
-  if (temporig$LCL[1]<0) {
-    res$changestats$fsquared.ci.lower[1] <- 0
+  
+  if (is.null(ms$r.squared[1])) {
+    res$changestats$fsquared[1] <- 0
   } else {
-    res$changestats$fsquared.ci.lower[1] <- (temporig$LCL[1]/(1-temporig$LCL[1]))
+    res$changestats$fsquared[1] <- ms$f.squared
   }
-  if (temporig$UCL[1] > 1) {
-    res$changestats$fsquared.ci.upper[1] <- Inf
-  } else {
-    res$changestats$fsquared.ci.upper[1] <- (temporig$UCL[1]/(1-temporig$UCL[1]))
+  if (!is.null(ms$r.squared[1])) {
+    temporig <- psychometric::CI.Rsq(ms$r.squared, length(ms$residuals), length(trimws(unlist(strsplit(as.character(ms$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
+    if (temporig$LCL[1]<0) {
+      res$changestats$fsquared.ci.lower[1] <- 0
+    } else {
+      res$changestats$fsquared.ci.lower[1] <- (temporig$LCL[1]/(1-temporig$LCL[1]))
+    }
+    if (temporig$UCL[1] > 1) {
+      res$changestats$fsquared.ci.upper[1] <- Inf
+    } else {
+      res$changestats$fsquared.ci.upper[1] <- (temporig$UCL[1]/(1-temporig$UCL[1]))
+    }
   }
   
   for (cV in 1:nrow(mcoef)) {
@@ -95,11 +158,25 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     res$coefficients$Variable[Coeffcurrentline + cV] <- row.names(mcoef)[cV]
     res$coefficients$B[Coeffcurrentline + cV] <- mcoef[cV,1]
     res$coefficients$SE[Coeffcurrentline + cV] <- mcoef[cV,2]
-    res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
+    if (logisticfit) {
+      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta[cV]
+    } else {
+      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
+    }
     res$coefficients$t[Coeffcurrentline + cV] <- mcoef[cV,3]
     res$coefficients$p.value[Coeffcurrentline + cV] <- mcoef[cV,4]
-    res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
-    res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+    if (logisticfit) {
+      if (nrow(mcoef) == 1) {
+        res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[1]
+        res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[2]
+      } else {
+        res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
+        res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+      }
+    } else {
+      res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
+      res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+    }
   }
   Coeffcurrentline <- Coeffcurrentline + nrow(mcoef)
   
@@ -107,26 +184,60 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   mci <- stats::confint(altfit, level=confidenceinterval)
   msalt <- summary(altfit)
   mcoef <- msalt$coefficients
-  mbeta <- lm.beta::lm.beta(altfit)
+  if (logistic) {
+    mbeta <- exp(stats::coef(altfit))
+    #Tjur, T. (2009). Coefficients of determination in logistic regression models - A new proposal: The coefficient of discrimination. The American Statistician, 63(4), 366-372.
+    msalt$r.squared <- performance::r2_tjur(altfit)[[1]]
+    msalt$adj.r.squared <- msalt$r.squared
+    msalt$residuals <- msalt$deviance.resid
+  } else {
+    mbeta <- lm.beta::lm.beta(altfit)
+  }
   msalt$f.squared <- msalt$r.squared / (1-msalt$r.squared)
   temp <- unlist(strsplit(as.character(msalt$call), ","))
   res$stats$Model[2] <- temp[2]
-  res$stats$DFn[2] <- msalt$fstatistic[2]
-  res$stats$DFd[2] <- msalt$fstatistic[3]
-  res$stats$F.value[2] <- msalt$fstatistic[1]
-  res$stats$p.value[2] <- stats::pf(q=msalt$fstatistic[1], df1=msalt$fstatistic[2], df2=msalt$fstatistic[3], lower.tail=FALSE)
+  if (is.null(msalt$fstatistic[3])) {
+    if (logistic) {
+      tempmodel <- anova(update(altfit, ~1), altfit, test="Chisq")# update here produces null model for comparison
+      res$stats$DFn[2] <- abs(tempmodel$Df[2])
+      res$stats$DFd[2] <- abs(tempmodel$`Resid. Df`[2])
+      res$stats$F.value[2] <- abs(tempmodel$Deviance[2])
+      res$stats$p.value[2] <- abs(tempmodel$`Pr(>Chi)`[2])
+      if (is.na(abs(tempmodel$`Pr(>Chi)`[2]))) {
+        res$stats$p.value[2] <- 1
+      }
+    } else {
+      res$stats$DFn[2] <- 0
+      res$stats$DFd[2] <- 0
+      res$stats$F.value[2] <- 0
+      res$stats$p.value[2] <- 1
+    }
+  } else {
+    res$stats$DFn[2] <- msalt$fstatistic[2]
+    res$stats$DFd[2] <- msalt$fstatistic[3]
+    res$stats$F.value[2] <- msalt$fstatistic[1]
+    res$stats$p.value[2] <- stats::pf(q=msalt$fstatistic[1], df1=msalt$fstatistic[2], df2=msalt$fstatistic[3], lower.tail=FALSE)
+  }
   res$stats$r.squared[2] <- msalt$r.squared
   res$stats$r.squaredadj[2] <- msalt$adj.r.squared
   res$stats$AIC[2] <- stats::extractAIC(altfit)[2]
   res$stats$VIF[2] <- fmsb::VIF(altfit)[1]
   
   changeresult <- stats::anova(fit, altfit)
+  if (logistic) {
+    changeresult <- anova(fit, altfit, test="Chisq")
+  }
   res$changestats$Model[2] <- res$stats$Model[2]
   res$changestats$r.squared.change[2] <- res$stats$r.squared[2] - res$stats$r.squared[1]
   res$changestats$DFn[2] <- res$stats$DFn[2]
   res$changestats$DFd[2] <- res$stats$DFd[2]
-  res$changestats$F.change[2] <- changeresult$F[-1]
-  res$changestats$p.value[2] <- changeresult$`Pr(>F)`[-1]
+  if (logistic) {
+    res$changestats$F.change[2] <- abs(changeresult$Deviance[2])
+    res$changestats$p.value[2] <- abs(changeresult$`Pr(>Chi)`[2])
+  } else {
+    res$changestats$F.change[2] <- changeresult$F[-1]
+    res$changestats$p.value[2] <- changeresult$`Pr(>F)`[-1]
+  }
   res$changestats$fsquared[2] <- res$changestats$r.squared.change[2]/(1-res$stats$r.squared[1])
   temp <- psychometric::CI.Rsq(res$changestats$r.squared.change[2], length(msalt$residuals), length(trimws(unlist(strsplit(as.character(msalt$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
   if (temp$LCL[1]<0) {
@@ -145,14 +256,28 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     res$coefficients$Variable[Coeffcurrentline + cV] <- row.names(mcoef)[cV]
     res$coefficients$B[Coeffcurrentline + cV] <- mcoef[cV,1]
     res$coefficients$SE[Coeffcurrentline + cV] <- mcoef[cV,2]
-    res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
+    if (logistic) {
+      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta[cV]
+    } else {
+      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
+    }
     res$coefficients$t[Coeffcurrentline + cV] <- mcoef[cV,3]
     res$coefficients$p.value[Coeffcurrentline + cV] <- mcoef[cV,4]
-    res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
-    res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+    if (logistic) {
+      if (nrow(mcoef) == 1) {
+        res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[1]
+        res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[2]
+      } else {
+        res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
+        res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+      }
+    } else {
+      res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
+      res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+    }
+    
   }
   Coeffcurrentline <- Coeffcurrentline + nrow(mcoef)
-  
   
   # place data into text output
   res$changestats$textoutput <- NA
@@ -165,10 +290,18 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
         pullvalue <- substr(pullvalue, 1, nchar(pullvalue)-2)
       }
     }
-    if (cR == 1) {
-      temptext <- sprintf('F(%s,', pullvalue)
+    if (logistic) {
+      if (cR == 1) {
+        temptext <- sprintf('Chi-square(%s,', pullvalue)
+      } else {
+        temptext <- sprintf('Chi-square change(%s,', pullvalue)
+      }
     } else {
-      temptext <- sprintf('Fchange(%s,', pullvalue)
+      if (cR == 1) {
+        temptext <- sprintf('F(%s,', pullvalue)
+      } else {
+        temptext <- sprintf('Fchange(%s,', pullvalue)
+      }
     }
     pullvalue <- sprintf('%.1f', round(as.numeric(res$changestats$DFd[cR]), digits = 1))
     if (substr(pullvalue, nchar(pullvalue), nchar(pullvalue)) == "0") {
@@ -269,7 +402,11 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     }
     
     outputdataframe <- outputdataframe[,c('Model','DFn','F.value','p.value','r.squared','r.squaredadj','AIC', 'VIF')]
-    names(outputdataframe) <- c('Model','df','F','p','r.squared','r.squaredadj','AIC', 'VIF')
+    if (logistic) {
+      names(outputdataframe) <- c('Model','df','Chisq','p','r.squared','r.squaredadj','AIC', 'VIF')
+    } else {
+      names(outputdataframe) <- c('Model','df','F','p','r.squared','r.squaredadj','AIC', 'VIF')
+    }
     sepgap <- data.frame(matrix(floor(spansize/ncol(outputdataframe)), nrow=1, ncol=ncol(outputdataframe)))
     sepgap[1,1] = sepgap[1,1] + 3
     sepgap[1,2] = sepgap[1,2] + 2
@@ -337,7 +474,11 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       rm(outPvalue)
     }
     outputdataframe <- outputdataframe[,c('Model','DFn','F.change','p.value','r.squared.change','fsquared')]
-    names(outputdataframe) <- c('Model','df','F.change','p','r.squared','fsquared')
+    if (logistic) {
+      names(outputdataframe) <- c('Model','df','Chisq','p','r.squared','fsquared')
+    } else {
+      names(outputdataframe) <- c('Model','df','F.change','p','r.squared','fsquared')
+    }
     sepgap <- data.frame(matrix(floor(spansize/ncol(outputdataframe)), nrow=1, ncol=ncol(outputdataframe)))
     sepgap[1,1] = sepgap[1,1] - 2
     sepgap[1,2] = sepgap[1,2] - 3
@@ -392,6 +533,9 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       rm(outstring)
       
       suboutputdataframe <- outputdataframe[which(outputdataframe$Model == modelcalls[cR]),c('Variable','B','SE','Beta','t','p')]
+      if (logistic) {
+        names(suboutputdataframe) <- c('Variable','B','SE','OR','z','p')
+      }
       sepgap <- data.frame(matrix(floor(spansize/ncol(suboutputdataframe)), nrow=1, ncol=ncol(suboutputdataframe)))
       Rmimic::table2console(suboutputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
       rm(suboutputdataframe)
@@ -410,24 +554,34 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     
     suboutputdataframe <- outputdataframe[which(outputdataframe$Model == modelcalls[1]),]
     outtextstring <- sprintf("Regression analysis indicated that")
-    for (cCoef in 2:nrow(suboutputdataframe)) {
-      outtextstring <- sprintf("%s %s", outtextstring, suboutputdataframe$Variable[cCoef]) # add variable label
-      outtextstring <- sprintf("%s (B = %1.2f", outtextstring, suboutputdataframe$B[cCoef]) # add B
-      outtextstring <- sprintf("%s [%2.0f%% CI: %1.2f to %1.2f],", outtextstring, confidenceinterval*100, suboutputdataframe$B.lower.conf.int[cCoef], suboutputdataframe$B.upper.conf.int[cCoef]) # add B
-      outtextstring <- sprintf("%s SE B = %1.2f,", outtextstring, suboutputdataframe$SE[cCoef]) # add SE B
-      outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
-      if ((nrow(suboutputdataframe)-cCoef) > 0) {
-        if ((nrow(suboutputdataframe)-cCoef) == 1) {
-          if (nrow(suboutputdataframe) > 3) {
-            outtextstring <- sprintf("%s, and", outtextstring)
-          } else {
-            outtextstring <- sprintf("%s and", outtextstring)
-          }
+    
+    if (!is.na(suboutputdataframe$Variable[2])) {
+      for (cCoef in 2:nrow(suboutputdataframe)) {
+        outtextstring <- sprintf("%s %s", outtextstring, suboutputdataframe$Variable[cCoef]) # add variable label
+        outtextstring <- sprintf("%s (B = %1.2f", outtextstring, suboutputdataframe$B[cCoef]) # add B
+        outtextstring <- sprintf("%s [%2.0f%% CI: %1.2f to %1.2f],", outtextstring, confidenceinterval*100, suboutputdataframe$B.lower.conf.int[cCoef], suboutputdataframe$B.upper.conf.int[cCoef]) # add B
+        outtextstring <- sprintf("%s SE B = %1.2f,", outtextstring, suboutputdataframe$SE[cCoef]) # add SE B
+        if (logistic) {
+          outtextstring <- sprintf("%s Odds Ratio = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add OR
         } else {
-          outtextstring <- sprintf("%s, ", outtextstring)
+          outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
+        }
+        if ((nrow(suboutputdataframe)-cCoef) > 0) {
+          if ((nrow(suboutputdataframe)-cCoef) == 1) {
+            if (nrow(suboutputdataframe) > 3) {
+              outtextstring <- sprintf("%s, and", outtextstring)
+            } else {
+              outtextstring <- sprintf("%s and", outtextstring)
+            }
+          } else {
+            outtextstring <- sprintf("%s, ", outtextstring)
+          }
         }
       }
-    }
+    } else {
+      outtextstring <- sprintf("%s the inclusion of a constant", outtextstring)
+    }    
+      
     temppval <- fuzzyP(as.numeric(res$stats$p.value[1]))
     outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
     if (temppval$interpret <= studywiseAlpha) {
@@ -443,19 +597,21 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     outtextstring <- sprintf("%s amount of variance in %s", outtextstring, trimws(strsplit(modelcalls[1], split = '~')[[1]][1]))
     outtextstring <- sprintf("%s (R^2adj = %.2f).", outtextstring, res$stats$r.squaredadj[1])
     
-    if (res$stats$VIF[1] > 2.5) {
-      outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[1])
+    if (!is.na(res$stats$VIF[1])) {
       if (res$stats$VIF[1] > 2.5) {
-        degree <- "slight"
+        outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[1])
+        if (res$stats$VIF[1] > 2.5) {
+          degree <- "slight"
+        }
+        if (res$stats$VIF[1] > 5) {
+          degree <- "moderate"
+        }
+        if (res$stats$VIF[1] > 10) {
+          degree <- "severe"
+        }
+        outtextstring <- sprintf("%s %s", outtextstring, degree)
+        outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
       }
-      if (res$stats$VIF[1] > 5) {
-        degree <- "moderate"
-      }
-      if (res$stats$VIF[1] > 10) {
-        degree <- "severe"
-      }
-      outtextstring <- sprintf("%s %s", outtextstring, degree)
-      outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
     }
     outtextstring <- sprintf("%s\n", outtextstring)
     Rmimic::typewriter(outtextstring, tabs=1, spaces=0, characters=floor(spansize *.90))
@@ -470,7 +626,11 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outtextstring <- sprintf("%s (B = %1.2f", outtextstring, suboutputdataframe$B[cCoef]) # add B
       outtextstring <- sprintf("%s [%2.0f%% CI: %1.2f to %1.2f],", outtextstring, confidenceinterval*100, suboutputdataframe$B.lower.conf.int[cCoef], suboutputdataframe$B.upper.conf.int[cCoef]) # add B
       outtextstring <- sprintf("%s SE B = %1.2f,", outtextstring, suboutputdataframe$SE[cCoef]) # add SE B
-      outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
+      if (logistic) {
+        outtextstring <- sprintf("%s Odds Ratio = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add OR
+      } else {
+        outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
+      }
       if ((nrow(suboutputdataframe)-cCoef) > 0) {
         if ((nrow(suboutputdataframe)-cCoef) == 1) {
           if (nrow(suboutputdataframe) > 3) {
@@ -495,19 +655,21 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     outtextstring <- sprintf("%s change in variance in %s", outtextstring, trimws(strsplit(modelcalls[2], split = '~')[[1]][1]))
     outtextstring <- sprintf("%s (R^2change = %.2f, R^2adj = %.2f).", outtextstring, res$changestats$r.squared.change[2], res$stats$r.squaredadj[2])
     
-    if (res$stats$VIF[2] > 2.5) {
-      outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[1])
+    if (!is.na(res$stats$VIF[1])) {
       if (res$stats$VIF[2] > 2.5) {
-        degree <- "slight"
+        outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[2])
+        if (res$stats$VIF[2] > 2.5) {
+          degree <- "slight"
+        }
+        if (res$stats$VIF[2] > 5) {
+          degree <- "moderate"
+        }
+        if (res$stats$VIF[2] > 10) {
+          degree <- "severe"
+        }
+        outtextstring <- sprintf("%s %s", outtextstring, degree)
+        outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
       }
-      if (res$stats$VIF[2] > 5) {
-        degree <- "moderate"
-      }
-      if (res$stats$VIF[2] > 10) {
-        degree <- "severe"
-      }
-      outtextstring <- sprintf("%s %s", outtextstring, degree)
-      outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
     }
     
     outtextstring <- sprintf("%s\n", outtextstring)
