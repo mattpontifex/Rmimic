@@ -35,7 +35,7 @@ specified post-hoc corrections.
                             subjectid=NULL, between='group', within=NULL, sphericity='Greenhouse-Geisser', 
                             posthoc='False Discovery Rate Control', verbose=TRUE)  
 ```
-![screencap_RmimicAnova](/master/screencaps/screencap_RmimicAnova.png?raw=true)
+![screencap_RmimicAnova](/screencaps/screencap_RmimicAnova.png?raw=true)
 
 * **RmimicTtest**: Function that computes SPSS style t-tests with effect size and confidence intervals. 
 Optional parameters are also provided to compute non-parametric t-tests with appropriate non-parametric
