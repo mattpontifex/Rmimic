@@ -49,7 +49,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicTtest.png?raw=true" width="600" alt="screencap RmimicTtest"></p>
 
-* **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model.
+* **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. This function is also able to take stats::glm binomial family model fits for logistic regression.
 ```r
     basefit <- lm(mpg ~ am + wt, data = mtcars)
     fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
