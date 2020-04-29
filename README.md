@@ -55,7 +55,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
     fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
     regresult <- RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
 ```
-<p align="center"><img src="/screencaps/screencap_RmimicLMcontrast.png?raw=true" width="600" alt="screencap RmimicLMcontrast"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicLMcontrast1.png?raw=true" width="600" alt="screencap RmimicLMcontrast1"><img src="/screencaps/screencap_RmimicLMcontrast2.png?raw=true" width="600" alt="screencap RmimicLMcontrast2"></p>
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
