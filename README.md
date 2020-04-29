@@ -35,7 +35,7 @@ specified post-hoc corrections.
                             subjectid=NULL, between='group', within=NULL, sphericity='Greenhouse-Geisser', 
                             posthoc='False Discovery Rate Control', verbose=TRUE)  
 ```
-<p align="center"><img src="/screencaps/screencap_RmimicAnova.png?raw=true" height="600" alt="screencap RmimicAnova"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicAnova.png?raw=true" width="600" alt="screencap RmimicAnova"></p>
 
 * **RmimicTtest**: Function that computes SPSS style t-tests with effect size and confidence intervals. 
 Optional parameters are also provided to compute non-parametric t-tests with appropriate non-parametric
@@ -47,6 +47,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
                             subjectid=NULL, between='group', within=NULL,  
                             nonparametric=FALSE, posthoc='Holm-Bonferroni', verbose=TRUE)   
 ```
+<p align="center"><img src="/screencaps/screencap_RmimicTtest.png?raw=true" width="600" alt="screencap RmimicTtest"></p>
 
 * **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model.
 ```r
