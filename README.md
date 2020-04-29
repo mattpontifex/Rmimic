@@ -55,12 +55,14 @@ and will perform t-tests for each comparison with post-hoc comparison correction
     fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
     regresult <- RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
 ```
+<p align="center"><img src="/screencaps/screencap_RmimicLMcontrast.png?raw=true" width="600" alt="screencap RmimicLMcontrast"></p>
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
     tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
     desc <- descriptives(tempdata, groupvariable=c("Group"), verbose=TRUE) 
 ``` 
+<p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
 ## Main Function List
 * **clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are
