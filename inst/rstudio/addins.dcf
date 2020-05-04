@@ -1,0 +1,4 @@
+Name: Descriptive Statistics
+Description: Compute Descriptive Statistics.
+Binding: subsetAddin
+Interactive: true

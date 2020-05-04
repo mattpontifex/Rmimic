@@ -20,7 +20,7 @@
 #' @examples
 #' 
 #' #Note, use lmerTest::lmer instead of lme4::lmer for inclusion of p values
-#' result <- lmer2text(fit, df="Kenward-Roger", numparticipants=30, numfactors=4)
+#' #result <- lmer2text(fit, df="Kenward-Roger", numparticipants=30, numfactors=4)
 #' 
 #' @importFrom stats residuals anova
 #' @importFrom MuMIn r.squaredGLMM

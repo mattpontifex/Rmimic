@@ -15,7 +15,7 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, April 27, 2020
 #'
-#' @importFrom stats confint extractAIC pf anova coef predict residuals
+#' @importFrom stats confint extractAIC pf anova coef predict residuals update
 #' @importFrom lm.beta lm.beta
 #' @importFrom fmsb VIF
 #' @importFrom psychometric CI.Rsq
@@ -97,7 +97,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   
   if (is.null(ms$fstatistic[3])) {
     if (logisticfit) {
-      tempmodel <- anova(update(fit, ~1), fit, test="Chisq")# update here produces null model for comparison
+      tempmodel <- anova(stats::update(fit, ~1), fit, test="Chisq")# update here produces null model for comparison
       res$stats$DFn[1] <- abs(tempmodel$Df[2])
       res$stats$DFd[1] <- abs(tempmodel$`Resid. Df`[2])
       res$stats$F.value[1] <- abs(tempmodel$Deviance[2])

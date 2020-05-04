@@ -29,7 +29,7 @@ RmimicLMcontrast(
 \item{coefficients}{A summary table of regression coefficients.}
 }
 \description{
-Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model.
+Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. For logistic regression, pseudo r2 values are reported using Tjurs 2009 approach.
 }
 \examples{
 
@@ -40,5 +40,5 @@ Compute SPSS style results for regression analysis with effect size and confiden
 
 }
 \author{
-Matthew B. Pontifex, \email{pontifex@msu.edu}, January 31, 2020
+Matthew B. Pontifex, \email{pontifex@msu.edu}, April 27, 2020
 }
