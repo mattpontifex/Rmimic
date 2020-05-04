@@ -4,7 +4,7 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 3, 2020
 #'
-#' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel
+#' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
 #' @importFrom shiny selectInput uiOutput renderUI wellPanel observeEvent stopApp runGadget
 #' 
 #'
@@ -23,8 +23,8 @@ pop_descriptives <- function() {
   names(environelementsidx) <- environelements
   
   ui <- miniUI::miniPage(
-    miniUI::gadgetTitleBar("Rmimic: Compute Descriptives", left = miniTitleBarCancelButton(),
-                   right = miniTitleBarButton("done", "Compute", primary = TRUE)),
+    miniUI::gadgetTitleBar("Rmimic: Compute Descriptives", left = miniUI::miniTitleBarCancelButton(),
+                   right = miniUI::miniTitleBarButton("done", "Compute", primary = TRUE)),
     miniUI::miniContentPanel(
       shiny::selectInput("select_dataframe", label = "Select your working data frame:", 
               choices = environelementsidx, 
