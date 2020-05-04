@@ -5,7 +5,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 3, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny selectInput uiOutput renderUI wellPanel observeEvent stopApp runGadget
+#' @importFrom shiny selectInput uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
 #' 
 #'
 #' @export
@@ -95,5 +95,5 @@ pop_descriptives <- function() {
     })
   }
   
-  shiny::runGadget(ui, server, viewer = dialogViewer(""))
+  shiny::runGadget(ui, server, viewer = shiny::dialogViewer(""))
 }
