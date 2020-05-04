@@ -1,8 +1,8 @@
-#' pop_descriptives
+#' pop_correlation
 #'
-#' @description Popup window to compute SPSS style descriptives.
+#' @description Popup window to compute SPSS style correlations
 #'
-#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 3, 2020
+#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 4, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
 #' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
@@ -11,7 +11,7 @@
 #'
 #' @export
 
-pop_descriptives <- function() {
+pop_correlation <- function() {
   
   # Get the document context.
   #context <- rstudioapi::getActiveDocumentContext()
@@ -31,7 +31,7 @@ pop_descriptives <- function() {
   info_dfs <- unlist(info_dfs)
   
   ui <- miniUI::miniPage(
-    miniUI::gadgetTitleBar("Rmimic: Compute Descriptives", left = miniUI::miniTitleBarCancelButton(), right=NULL),
+    miniUI::gadgetTitleBar("Rmimic: Compute Correlations", left = miniUI::miniTitleBarCancelButton(), right=NULL),
     
     miniUI::miniContentPanel(
       padding = c(30, 20, 20, 20),
@@ -87,6 +87,10 @@ pop_descriptives <- function() {
           }
           workingdatavariablestypes <- c(workingdatavariablestypes, sprintf('    type: %s', testvectout))
         }
+        
+        methodoptions <- c("Pearson", "Spearman", "Kendall")
+        methodoptionsnotes <- c("product moment correlation coefficient", "rho correlation coefficients", "tau correlation coefficients")
+        
         shiny::wellPanel(
         shiny::tagList(
           shinyWidgets::pickerInput(
@@ -99,15 +103,28 @@ pop_descriptives <- function() {
             selected = NULL
           ),
           
+          
           shinyWidgets::pickerInput(
-            inputId = "select_groupvariables",
-            label = "Seperate by:",
+            inputId = "select_partials",
+            label = "Partial by:",
             choices = workingdatavariables, width = "100%",
             options = list(), 
             multiple = TRUE,
             choicesOpt = list(subtext = workingdatavariablestypes),
             selected = NULL
-          )
+          ),
+          
+          
+          shinyWidgets::pickerInput(
+            inputId = "select_method",
+            label = "Select correlation coefficient:",
+            choices = methodoptions, width = "80%",
+            options = list(), 
+            multiple = FALSE,
+            choicesOpt = list(subtext = methodoptionsnotes),
+            selected = 1
+          ),
+          
         )
           
         )
@@ -119,15 +136,20 @@ pop_descriptives <- function() {
       # Check that selections are made
       if (!is.null(input$select_dataframe)) {
         if (!is.null(input$select_variables)) {
-          tmpcall <- 'desc <- descriptives('
+          tmpcall <- 'sR <- correlation('
           # Extract current data from environment
           workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
           tmpcall <- sprintf('%svariables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
-          if (!is.null(input$select_groupvariables)) {
-            tmpcall <- sprintf('%s, groupvariable=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_groupvariables), collapse=", "))
+          if (!is.null(input$select_partials)) {
+            tmpcall <- sprintf('%s, partial=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_partials[1]), collapse=", "))
           }
           tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
-          tmpcall <- sprintf('%s, verbosedescriptives=TRUE, verbosefrequencies=TRUE)', tmpcall)
+          if (!is.null(input$select_method)) {
+            tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'",tolower(input$select_method)))
+          } else {
+            tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'pearson'"))
+          }
+          tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, listwise=TRUE, verbose=TRUE)', tmpcall)
           
           # execute call
           eval(parse(text=tmpcall))

@@ -69,10 +69,14 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
 
   if (method[1] == FALSE) {
     method <- "pearson"
+  } else if (toupper(method[1]) == toupper("pearson")) {
+    method <- "pearson"
   } else if (toupper(method[1]) == toupper("spearman")) {
     method <- "spearman"
   } else if (toupper(method[1]) == toupper("kendall")) {
     method <- "kendall"
+  } else {
+    method <- "pearson"
   }
   
   # prep database

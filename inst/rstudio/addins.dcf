@@ -2,3 +2,8 @@ Name: Descriptive Statistics
 Description: Compute SPSS style descriptive statistics.
 Binding: pop_descriptives
 Interactive: true
+
+Name: Correlations
+Description: Compute SPSS style correlations.
+Binding: pop_correlation
+Interactive: true
