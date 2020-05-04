@@ -60,7 +60,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
     tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
-    desc <- descriptives(tempdata, groupvariable=c("Group"), verbose=TRUE) 
+    desc <- descriptives(variables=c('X','Y'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
 ``` 
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
