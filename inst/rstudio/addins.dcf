@@ -1,4 +1,4 @@
 Name: Descriptive Statistics
-Description: Compute Descriptive Statistics.
-Binding: subsetAddin
+Description: Compute SPSS style descriptive statistics.
+Binding: pop_descriptives
 Interactive: true

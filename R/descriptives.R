@@ -2,8 +2,9 @@
 #'
 #' @description Compute SPSS style descriptives.
 #'
-#' @param comparisondataframe Data frame with each column containing a variable (includes both data and grouping variables if group descriptives are specified)
+#' @param variables Variable name or list of variables to compute descriptives for.
 #' @param groupvariable Variable name or list of variables to use for grouping.
+#' @param data Data frame containing the variables of interest.
 #' @param verbose Parameter to print all output to console. Default is TRUE.
 #' @param verbosedescriptives Parameter to print descriptives output to console. Default is TRUE.
 #' @param verbosefrequencies Parameter to print frequency output to console. Default is TRUE.
@@ -11,7 +12,7 @@
 #' @return
 #' \item{datamatrix}{Data table of descriptive statistics.}
 #' 
-#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 3, 2019
+#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 3, 2020
 #'
 #' @importFrom stats shapiro.test complete.cases median sd
 #' @importFrom Rmisc CI
@@ -19,22 +20,34 @@
 #' @examples
 #' 
 #'     # Compute descriptive statistics
-#'     desc <- descriptives(mtcars, groupvariable=FALSE, 
+#'     desc <- descriptives(data=mtcars, groupvariable=FALSE, 
 #'     verbose=FALSE, verbosedescriptives=FALSE,
 #'     verbosefrequencies=FALSE)
 #'
 #'     # Compute descriptive statistics by group
-#'     desc <- descriptives(mtcars, groupvariable=c("cyl"), 
+#'     desc <- descriptives(data=mtcars, groupvariable=c("cyl"), 
 #'     verbose=TRUE, verbosedescriptives=TRUE, 
 #'     verbosefrequencies=FALSE)
 #'
 #' @export
 
-descriptives <- function(comparisondataframe, groupvariable=FALSE, verbose=TRUE, verbosedescriptives=TRUE, verbosefrequencies=TRUE) {
+descriptives <- function(variables=FALSE, groupvariable=FALSE, data=FALSE, verbose=TRUE, verbosedescriptives=TRUE, verbosefrequencies=TRUE) {
 
   if (verbose == FALSE) {
     verbosedescriptives <- FALSE
     verbosefrequencies <- FALSE
+  }
+  
+  if (variables[1] == FALSE) {
+    variables <- names(data)
+    comparisondataframe <- data
+  } else {
+    compvariables <- variables
+    if (groupvariable[1] != FALSE) {
+      compvariables <- c(compvariables, groupvariable)
+    }
+    comparisondataframe <- data.frame(data[,compvariables])
+    names(comparisondataframe) <- compvariables
   }
   
   # Determine grouping and nongrouping variables

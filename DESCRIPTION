@@ -23,6 +23,8 @@ Imports:
     lmerTest,
     pbkrtest,
     MuMIn,
+    miniUI,
+    shiny,
     emmeans,
     utils,
     performance,

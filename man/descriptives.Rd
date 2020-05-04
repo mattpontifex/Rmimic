@@ -5,17 +5,20 @@
 \title{descriptives}
 \usage{
 descriptives(
-  comparisondataframe,
+  variables = FALSE,
   groupvariable = FALSE,
+  data = FALSE,
   verbose = TRUE,
   verbosedescriptives = TRUE,
   verbosefrequencies = TRUE
 )
 }
 \arguments{
-\item{comparisondataframe}{Data frame with each column containing a variable (includes both data and grouping variables if group descriptives are specified)}
+\item{variables}{Variable name or list of variables to compute descriptives for.}
 
 \item{groupvariable}{Variable name or list of variables to use for grouping.}
+
+\item{data}{Data frame containing the variables of interest.}
 
 \item{verbose}{Parameter to print all output to console. Default is TRUE.}
 
@@ -32,16 +35,16 @@ Compute SPSS style descriptives.
 \examples{
 
     # Compute descriptive statistics
-    desc <- descriptives(mtcars, groupvariable=FALSE, 
+    desc <- descriptives(data=mtcars, groupvariable=FALSE, 
     verbose=FALSE, verbosedescriptives=FALSE,
     verbosefrequencies=FALSE)
 
     # Compute descriptive statistics by group
-    desc <- descriptives(mtcars, groupvariable=c("cyl"), 
+    desc <- descriptives(data=mtcars, groupvariable=c("cyl"), 
     verbose=TRUE, verbosedescriptives=TRUE, 
     verbosefrequencies=FALSE)
 
 }
 \author{
-Matthew B. Pontifex, \email{pontifex@msu.edu}, October 3, 2019
+Matthew B. Pontifex, \email{pontifex@msu.edu}, May 3, 2020
 }
