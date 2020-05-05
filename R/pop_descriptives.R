@@ -7,6 +7,7 @@
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
 #' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
 #' @importFrom shinyWidgets pickerInput actionBttn
+#' @importFrom pkgcond suppress_conditions
 #' 
 #'
 #' @export
@@ -143,5 +144,5 @@ pop_descriptives <- function() {
     })
   }
   
-  shiny::runGadget(ui, server, viewer = shiny::dialogViewer(""))
+  pkgcond::suppress_conditions(shiny::runGadget(ui, server, viewer = shiny::dialogViewer("")))
 }

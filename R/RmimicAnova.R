@@ -158,7 +158,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   res <- list()
   
   # Compute demographics
-  res$demographics <- Rmimic::descriptives(variables=c(dependentvariable[1], between, within), groupvariable = c(between, within), data=completedata, verbose=FALSE)
+  res$demographics <- Rmimic::descriptives(variables=c(dependentvariable[1]), groupvariable = c(between, within), data=completedata, verbose=FALSE)
   
   # Output model
   demoout <- FALSE
@@ -200,6 +200,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         outputdataframe[,cC] <- sprintf('%0.1f', round(outputdataframe[,cC], digits=1))
       }
       colnames(outputdataframe)[1] <- 'empty'
+      
       Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
       rm(outputdataframe)
     }
@@ -676,7 +677,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     if (shortposthoclimit < 3) {
       shortposthoclimit <- 3
     }
-    posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0, posthoclimit=shortposthoclimit, planned=planned, suppressposthoc=suppressposthoc)
+    Rmimic::posthoc2text(res, studywiseAlpha=studywiseAlpha, spansize=spansize, currentlevelout=0, posthoclimit=shortposthoclimit, planned=planned, suppressposthoc=suppressposthoc)
     cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
   }
   
