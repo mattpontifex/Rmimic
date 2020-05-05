@@ -534,6 +534,49 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       bigspancharacter <- " - "
     }
     
+    temptext <- "T-test Analysis"
+    temptextspan <- floor(nchar(temptext)/2)
+    pagespan <- floor(spansize/2)
+    cat(sprintf("\n"))
+    Rmimic::typewriter(temptext, tabs=0, spaces=(pagespan-temptextspan), characters=floor(spansize*.9))
+    
+    outstring <- ""
+    if (betweenvariableL > 0) {
+      #independent samples ttest
+      outstring <- sprintf('%sBetween subject analysis were conducted using', outstring)
+      if (nonparametric == FALSE) {
+        outstring <- sprintf('%s an independent samples t-test', outstring)
+      } else {
+        outstring <- sprintf('%s the non-parametric Mann-Whitney U-test', outstring)
+      }
+      if ((!is.null(posthoc)) & (posthoc != FALSE)) {
+        outstring <- sprintf('%s using the %s approach for post-hoc comparison corrections', outstring, posthoc)
+      }
+      outstring <- sprintf('%s.', outstring)
+    }
+    if (withinvariableL > 0) {
+      outstring <- sprintf('%sWithin subject analysis were conducted using', outstring)
+      if (nonparametric == FALSE) {
+        outstring <- sprintf('%s a paired samples t-test', outstring)
+      } else {
+        outstring <- sprintf('%s the non-parametric Wilcoxon signed rank test', outstring)
+      }
+      if ((!is.null(posthoc)) & (posthoc != FALSE)) {
+        outstring <- sprintf('%s using the %s approach for post-hoc comparison corrections', outstring, posthoc)
+      }
+      outstring <- sprintf('%s.', outstring)
+    }
+      
+    outstring <- sprintf('%s Analysis were conducted using the', outstring)
+    outstring <- sprintf('%s stats (R Core Team, %s)', outstring, strsplit(as.character(utils::packageDate("stats")),"-")[[1]][1])
+    outstring <- sprintf('%s, MBESS (Kelley, %s)', outstring, strsplit(as.character(utils::packageDate("MBESS")),"-")[[1]][1])
+    outstring <- sprintf('%s, and Rmimic (Pontifex, %s) packages', outstring, strsplit(as.character(utils::packageDate("Rmimic")),"-")[[1]][1])
+    rvers <- unlist(strsplit(R.version.string, " "))
+    rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
+    outstring <- sprintf('%s in %s.', outstring, rvers)
+    Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
+    rm(outstring)
+    
     # find out what needs to be printed
     grouplabels <- unique(as.character(finalmasterdescriptives$CollapsedName))
     nongrouplabels <- unique(as.character(finalmasterdescriptives$Variable))
