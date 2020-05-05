@@ -98,7 +98,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,between[cB]]))))
-      outlist <- determineallpossiblecombinations(spfactors)
+      outlist <- Rmimic::determineallpossiblecombinations(spfactors)
       spfactorscomparisons <- c()
       for (cC in 1:length(outlist)) {
         if (lengths(regmatches(outlist[cC], gregexpr(":", outlist[cC]))) == 1) {
@@ -149,7 +149,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           tempframe <- data.frame(DV = c(comparison1, comparison2), Group = c(rep_len("1",length(comparison1)), rep_len("2",length(comparison2))))
           
           # obtain descriptives
-          desc <- Rmimic::descriptives(tempframe, groupvariable='Group', verbose=FALSE)
+          desc <- Rmimic::descriptives(variables='DV', groupvariable='Group', data=tempframe, verbose=FALSE)
           tempframe <- tempframe[stats::complete.cases(tempframe),]
           comparison1 <- comparison1[stats::complete.cases(comparison1)]
           comparison2 <- comparison2[stats::complete.cases(comparison2)]
@@ -252,7 +252,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,within[cB]]))))
-      outlist <- determineallpossiblecombinations(spfactors)
+      outlist <- Rmimic::determineallpossiblecombinations(spfactors)
       spfactorscomparisons <- c()
       for (cC in 1:length(outlist)) {
         if (lengths(regmatches(outlist[cC], gregexpr(":", outlist[cC]))) == 1) {
@@ -311,7 +311,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           tempframe <- data.frame(DV = c(comparison1, comparison2), Group = c(rep_len("1",length(comparison1)), rep_len("2",length(comparison2))))
           
           # obtain descriptives
-          desc <- Rmimic::descriptives(tempframe, groupvariable='Group', verbose=FALSE)
+          desc <- Rmimic::descriptives(variables='DV', groupvariable='Group', data=tempframe, verbose=FALSE)
           
           # determine type of paired test to do
           if (nonparametric == FALSE) {

@@ -7,3 +7,8 @@ Name: Correlations
 Description: Compute SPSS style correlations.
 Binding: pop_correlation
 Interactive: true
+
+Name: T-tests
+Description: Compute SPSS style t-test with effect size and confidence intervals.
+Binding: pop_ttest
+Interactive: true

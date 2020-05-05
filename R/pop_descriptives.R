@@ -119,7 +119,7 @@ pop_descriptives <- function() {
       # Check that selections are made
       if (!is.null(input$select_dataframe)) {
         if (!is.null(input$select_variables)) {
-          tmpcall <- 'desc <- descriptives('
+          tmpcall <- 'desc <- Rmimic::descriptives('
           # Extract current data from environment
           workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
           tmpcall <- sprintf('%svariables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))

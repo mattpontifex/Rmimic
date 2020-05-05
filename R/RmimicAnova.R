@@ -158,7 +158,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   res <- list()
   
   # Compute demographics
-  res$demographics <- Rmimic::descriptives(completedata[,c(dependentvariable[1], between, within)], groupvariable = c(between, within), verbose=FALSE)
+  res$demographics <- Rmimic::descriptives(variables=c(dependentvariable[1], between, within), groupvariable = c(between, within), data=completedata, verbose=FALSE)
   
   # Output model
   demoout <- FALSE

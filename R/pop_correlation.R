@@ -136,7 +136,7 @@ pop_correlation <- function() {
       # Check that selections are made
       if (!is.null(input$select_dataframe)) {
         if (!is.null(input$select_variables)) {
-          tmpcall <- 'sR <- correlation('
+          tmpcall <- 'sR <- Rmimic::correlation('
           # Extract current data from environment
           workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
           tmpcall <- sprintf('%svariables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
