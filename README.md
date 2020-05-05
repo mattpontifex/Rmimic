@@ -7,6 +7,9 @@ results to the console window in a style that roughly mimics the output of popul
 packages. Test results are also available as environmental variables and console outputs can be suppressed
 using verbose calls to the function.
 
+Several functions are also available through the R Studio Addins dropdown menu. You may have to restart R Studio after installing the package for the functions to show up. Functions accessed through the dropdown menu will pop up a graphical user interface for selecting variables and parameters, when the results of the function printed to the console window along with the syntax.
+<p align="center"><img src="/screencaps/screencap_PopGUI.png?raw=true" width="300" alt="screencap PopGUI"></p>
+
 Installation
 ------------
 To use this package, from R run the following commands:
