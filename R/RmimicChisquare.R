@@ -59,8 +59,16 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
   }
   cDF <- cDF[which(complete.cases(cDF)),]
   
+  # make sure things are factors
+  if (!is.factor(cDF[,1])) {
+    cDF[,1] <- factor(cDF[,1])
+  }
+  if (!is.factor(cDF[,1])) {
+    cDF[,2] <- factor(cDF[,2])
+  }
+  
   # kick to subprocess
-  res <- subprocessRmimicChisquare(variables=variables, data=cDF)
+  res <- Rmimic::subprocessRmimicChisquare(variables=variables, data=cDF)
   
   boolposthoc <- TRUE
   results <- list()
@@ -186,7 +194,7 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
     if (outPvalue$interpret <= studywiseAlpha) {
       outtext <- sprintf("The likelihood of %s was observed to relate to %s", variables[2], variables[1])
     } else {
-      outtext <- sprintf("There was no difference in the expected frequency of %s as function of %s", variables[2], variables[1])
+      outtext <- sprintf("There was no difference in the expected frequency of %s as a function of %s", variables[2], variables[1])
     }
     outtext <- sprintf("%s, %s.", outtext, res$stats$textoutput[1])
     Rmimic::typewriter(outtext, tabs=0, spaces=2, characters=floor(spansize*.9))
