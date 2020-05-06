@@ -345,6 +345,30 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   }
   
   if (verbose == TRUE) {
+    
+    temptext <- "Regression Analysis"
+    temptextspan <- floor(nchar(temptext)/2)
+    pagespan <- floor(spansize/2)
+    cat(sprintf("\n"))
+    Rmimic::typewriter(temptext, tabs=0, spaces=(pagespan-temptextspan), characters=floor(spansize*.9))
+    
+    outstring <- "Analysis were conducted using the"
+    outstring <- sprintf('%s stats (R Core Team, %s)', outstring, strsplit(as.character(utils::packageDate("stats")),"-")[[1]][1])
+    outstring <- sprintf('%s, fmsb (Nakazawa, %s)', outstring, strsplit(as.character(utils::packageDate("fmsb")),"-")[[1]][1])
+    outstring <- sprintf('%s, psychometric (Fletcher, %s)', outstring, strsplit(as.character(utils::packageDate("psychometric")),"-")[[1]][1])
+    
+    if (logistic) {
+      outstring <- sprintf('%s, performance (Lüdecke, Makowski, Waggoner, & Patil, %s)', outstring, strsplit(as.character(utils::packageDate("performance")),"-")[[1]][1])
+    } else {
+      outstring <- sprintf('%s, lm.beta (Behrendt, %s)', outstring, strsplit(as.character(utils::packageDate("lm.beta")),"-")[[1]][1])
+    }
+    outstring <- sprintf('%s, and Rmimic (Pontifex, %s) packages', outstring, strsplit(as.character(utils::packageDate("Rmimic")),"-")[[1]][1])
+    rvers <- unlist(strsplit(R.version.string, " "))
+    rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
+    outstring <- sprintf('%s in %s.', outstring, rvers)
+    Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
+    rm(outstring)
+    
     # show model
     outstring <- "Regression Model Fit"
     cat(sprintf("\n"))
@@ -675,6 +699,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     outtextstring <- sprintf("%s\n", outtextstring)
     Rmimic::typewriter(outtextstring, tabs=1, spaces=0, characters=floor(spansize *.90))
     
+    cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
   }
   return(res)
 }
