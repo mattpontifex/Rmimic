@@ -40,7 +40,11 @@ subprocessRmimicChisquare <- function(variables=FALSE, data=FALSE) {
   }
   cDF <- cDF[which(complete.cases(cDF)),]
   
-  results <- utils::capture.output(pkgcond::suppress_conditions(gmodels::CrossTable(cDF[,1], cDF[,2], fisher=TRUE, chisq=TRUE, expected=TRUE, sresid=TRUE, format="SPSS"), split = FALSE))
+  boolfish <- FALSE
+  if (nrow(cDF) < 1000) {
+    boolfish <- TRUE
+  }
+  results <- utils::capture.output(pkgcond::suppress_conditions(gmodels::CrossTable(cDF[,1], cDF[,2], fisher=boolfish, chisq=TRUE, expected=TRUE, sresid=TRUE, format="SPSS"), split = FALSE))
   
   stopindx <- which(pmatch(results, 'Statistics for All Table Factors') == 1)
   tabularoutput <- results[2:(stopindx-2)]

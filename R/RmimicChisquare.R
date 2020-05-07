@@ -55,8 +55,39 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
     variables <- names(data)
     cDF <- data
   } else {
-    cDF <- data.frame(data[,variables])
-    names(cDF) <- variables
+    if (is.table(data)) {
+      # blow it up
+      temp <- as.data.frame(data)
+      if (length(which(tolower(names(temp)) == (tolower('freq')))) > 0) {
+        freqindx <- which(tolower(names(temp)) == (tolower('freq')))
+        tempdata <- data.frame(matrix(NA,nrow=0,ncol=length(names(temp))))
+        names(tempdata) <- names(temp)
+        for (cR in 1:nrow(temp)) {
+          if (as.integer(temp[cR,freqindx]) > 0) {
+            # assuming that there is a count
+            subtempdata <- data.frame(matrix(NA,nrow=as.integer(temp[cR,freqindx]),ncol=length(names(temp))))
+            names(subtempdata) <- names(temp)
+            for (cC in 1:ncol(temp)) {
+              subtempdata[,cC] <- temp[cR,cC]
+            }
+            tempdata <- rbind(tempdata, subtempdata)
+            rm(subtempdata)
+          }
+        }
+        data <- tempdata
+        rm(tempdata)
+        
+        cDF <- data.frame(data[,variables])
+        names(cDF) <- variables
+      } else {
+        Rmimic::typewriter('Alert: Rmimic::RmimicChisquare requires either a data frame or a tabular input.', tabs=tablevel+1, spaces=2, characters=floor(spansize*.9))
+        stop("Rmimic::RmimicChisquare incorrect data input")
+      }
+    } else {
+      
+      cDF <- data.frame(data[,variables])
+      names(cDF) <- variables
+    }
   }
   cDF <- cDF[which(complete.cases(cDF)),]
   
