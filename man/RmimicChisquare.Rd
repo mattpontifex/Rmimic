@@ -35,6 +35,15 @@ RmimicChisquare(
 \description{
 Compute SPSS style results for Chi-square analysis with odds ratios and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
 }
+\examples{
+
+  chisquareresult <- RmimicChisquare(PlantGrowth, 
+          variables=c('Sex', 'Survived'), 
+          data=Titanic, 
+          confidenceinterval=0.95, studywiseAlpha=0.05, 
+          planned=FALSE, verbose=TRUE)
+
+}
 \author{
 Matthew B. Pontifex, \email{pontifex@msu.edu}, May 7, 2020
 }

@@ -20,6 +20,14 @@
 #' @importFrom epitools oddsratio.fisher oddsratio.wald
 #' @importFrom pkgcond suppress_conditions
 #'
+#' @examples
+#' 
+#'   chisquareresult <- RmimicChisquare(PlantGrowth, 
+#'           variables=c('Sex', 'Survived'), 
+#'           data=Titanic, 
+#'           confidenceinterval=0.95, studywiseAlpha=0.05, 
+#'           planned=FALSE, verbose=TRUE)
+#'
 #' @export
 
 RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE) {  
