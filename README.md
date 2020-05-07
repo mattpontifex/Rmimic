@@ -30,15 +30,25 @@ Super Function List
 These functions mimic the overarching outputs of popular statistics software packages that lump together
 several related or inherently sequential tests.
 
+
 * **RmimicAnova**: Function that computes a SPSS style univariate ANOVA with effect size and confidence
 intervals using the ezANOVA function. Main effects and interactions are automatically decomposed using the
 specified post-hoc corrections. 
 ```r
-    anovaresult <- RmimicAnova(data = PlantGrowth, dependentvariable='weight',
+    anovaresult <- Rmimic::RmimicAnova(data = PlantGrowth, dependentvariable='weight',
                             subjectid=NULL, between='group', within=NULL, sphericity='Greenhouse-Geisser', 
                             posthoc='False Discovery Rate Control', verbose=TRUE)  
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicAnova.png?raw=true" width="600" alt="screencap RmimicAnova"></p>
+
+
+* **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. This function is also able to take stats::glm binomial family model fits for logistic regression.
+```r
+    basefit <- lm(mpg ~ am + wt, data = mtcars)
+    fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
+    regresult <- Rmimic::RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
+```
+<p align="center"><img src="/screencaps/screencap_RmimicLMcontrast1.png?raw=true" width="600" alt="screencap RmimicLMcontrast1"><img src="/screencaps/screencap_RmimicLMcontrast2.png?raw=true" width="600" alt="screencap RmimicLMcontrast2"></p>
 
 * **RmimicTtest**: Function that computes SPSS style t-tests with effect size and confidence intervals. 
 Optional parameters are also provided to compute non-parametric t-tests with appropriate non-parametric
@@ -46,24 +56,34 @@ effect size estimates. For parametric test the function automatically determines
 using levene's test and outputs the correct statistcs. The function can handle factors with more than 2 levels
 and will perform t-tests for each comparison with post-hoc comparison corrections.
 ```r
-    ttestresult <- RmimicTtest(PlantGrowth, dependentvariable='weight',  
+    ttestresult <- Rmimic::RmimicTtest(PlantGrowth, dependentvariable='weight',  
                             subjectid=NULL, between='group', within=NULL,  
                             nonparametric=FALSE, posthoc='Holm-Bonferroni', verbose=TRUE)   
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicTtest.png?raw=true" width="600" alt="screencap RmimicTtest"></p>
 
-* **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. This function is also able to take stats::glm binomial family model fits for logistic regression.
+* **RmimicChisquare**: Function that computes SPSS style results for Chi-square analysis with odds ratios
+and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
+The function can handle outcomes with more than 2 levels and will perform comparisons for each pair of outcomes.
 ```r
-    basefit <- lm(mpg ~ am + wt, data = mtcars)
-    fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
-    regresult <- RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
+    chisquareresult <- Rmimic::RmimicChisquare(variables=c('Class', 'Survived'), data=Titanic, 
+                            confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE)  
 ```
-<p align="center"><img src="/screencaps/screencap_RmimicLMcontrast1.png?raw=true" width="600" alt="screencap RmimicLMcontrast1"><img src="/screencaps/screencap_RmimicLMcontrast2.png?raw=true" width="600" alt="screencap RmimicLMcontrast2"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicChisquare.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
+
+* **correlation**: Function that computes SPSS style correlation or partial correlation, with optional
+parameters for the approach (pearson (default), spearman, or kendall).
+```r
+    chisquareresult <- Rmimic::correlation(variables=c('Class', 'Survived'), partial=FALSE, 
+                            data=FALSE, method='pearson', listwise=TRUE, studywiseAlpha=0.05, 
+                            confidenceinterval=0.95, verbose=TRUE)  
+```
+<p align="center"><img src="/screencaps/screencap_correlation.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
     tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
-    desc <- descriptives(variables=c('X','Y'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
+    desc <- Rmimic::descriptives(variables=c('X','Y'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
 ``` 
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
@@ -72,7 +92,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 above or below some threshold and of some minimum cluster size (i.e., a cluster of 30 points all below 0.05).
 ```r
     tempdata <- c(0.2, 0.3, 0.05, 0.04, 0.06, 0.08, 0.009, 0.05, 0.02, 0.03, 0.08, 0.1, 0.4)  
-    clusterthreshold1d(tempdata, crit = 0.05, clustersize = 3, direction = 'LessThan')
+    Rmimic::clusterthreshold1d(tempdata, crit = 0.05, clustersize = 3, direction = 'LessThan')
     # returns: c(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0)
 ```
 
@@ -84,21 +104,21 @@ for.
     mockdatabase <- data.frame("ID" = rep_len(1:20,60), 
                             "Time" = c(rep_len("Time1",20),rep_len("Time2",20),rep_len("Time3",20)),
                             "X" = runif(60))
-    mockdatabase <- computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
+    mockdatabase <- Rmimic::computechange(mockdatabase, dependentvariable='X', subjectid='ID', within='Time')
 ```
 
 * **identifyoutliers**: Function to identify outliers based upon the interquartile range (as SPSS does for
 boxplots) and replace those values with NA.
 ```r
     tempdata <- runif(100,1,10); tempdata[6] <- 1000; tempdata[10] <- 1000  
-    tempdata <- identifyoutliers(tempdata, iqrlimit = 3, verbose=TRUE)  
+    tempdata <- Rmimic::identifyoutliers(tempdata, iqrlimit = 3, verbose=TRUE)  
 ```
 
 * **multipleimputation**: Function that uses the mice package to replace missing data points.
 ```r
     tempdata <- data.frame("X" = runif(100), "Y" = runif(100))  
     tempdata[6,'X'] <- NA; tempdata[10,'Y'] <- NA;   
-    tempdata <- multipleimputation(tempdata, imputations=10)  
+    tempdata <- Rmimic::multipleimputation(tempdata, imputations=10)  
 ```
 
 * **ezANOVA2text**: Function to output ezANOVA results in APA style format with effect sizes and confidence
@@ -106,7 +126,7 @@ intervals.
 ```r
     result <- ez::ezANOVA(data=elashoff,dv=Alertness,wid=PartID,
                             between=Group,within=.(Drug,Dose),type=3,detailed=TRUE,return_aov=TRUE)
-    result <- ezANOVA2text(result, numparticipants=16, feffect="Generalized Eta Squared", 
+    result <- Rmimic::ezANOVA2text(result, numparticipants=16, feffect="Generalized Eta Squared", 
                             sphericity="Greenhouse-Geisser", confidenceinterval=0.95, studywiseAlpha=0.05)
 ```
 
@@ -114,7 +134,7 @@ intervals.
 intervals. The function will also work with lme4:lmer models, however these models do not report probability values.
 ```r
     fit <- lmerTest::lmer(Alertness ~ Group*Drug*Dose + (1 | PartID), data=elashoff)
-    result <- lmer2text(fit, df="Kenward-Roger", numparticipants=16, numfactors=4)
+    result <- Rmimic::lmer2text(fit, df="Kenward-Roger", numparticipants=16, numfactors=4)
 ```
 
 * **ttest2text**: Function that takes a t-test result from the stats package and outputs the t-test result for
@@ -124,7 +144,7 @@ paired t-tests for both parametric and nonparametric data.
     comparison1 <- c(2, 3, 4, 6, 8, 9, 10, 11, 13, 15); comparison2 <- c( 5, 7, 9, 10, 13, 15, 16, 17, 18, 20)  
     ttestresult <- stats::t.test(x= comparison1, y=comparison2, paired=FALSE, var.equal=TRUE)  
     ttestresult$effectsize <- ttestresult$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2)))  
-    tempout <- ttest2text(ttestresult, verbose=TRUE)  
+    tempout <- Rmimic::ttest2text(ttestresult, verbose=TRUE)  
     #returns: t(18) = 2.3, p = 0.031, ds = -1.04.
 ```
 
