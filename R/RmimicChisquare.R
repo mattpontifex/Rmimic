@@ -1,6 +1,6 @@
 #' RmimicChisquare
 #'
-#' @description Compute SPSS style results for Chi-square analysis with effect size and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
+#' @description Compute SPSS style results for Chi-square analysis with odds ratios and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
 #'
 #' @param data Data frame containing the variables of interest.
 #' @param variables Variable name or list of variables to compute descriptives for.
@@ -15,9 +15,10 @@
 #' \item{table}{Simple frequency table.}
 #' \item{posthocttest}{A summary table for posthoc tests.}
 #'
-#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 6, 2020
+#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 7, 2020
 #'
 #' @importFrom epitools oddsratio.fisher oddsratio.wald
+#' @importFrom pkgcond suppress_conditions
 #'
 #' @export
 
@@ -34,7 +35,6 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
   #studywiseAlpha=0.05
   #verbose=TRUE
   #planned=TRUE
-
   
   # Prepare output
   res <- list()
@@ -49,6 +49,7 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
     spancharacter <- "-"
     bigspancharacter <- " - "
   }
+  pitchfake <- FALSE
 
   if (variables[1] == FALSE) {
     variables <- names(data)
@@ -70,18 +71,27 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
   # kick to subprocess
   res <- Rmimic::subprocessRmimicChisquare(variables=variables, data=cDF)
   
-  boolposthoc <- TRUE
-  results <- list()
-  results$data <- FALSE
   if (nrow(cDF) < 1000) {
-    tryCatch(results <- epitools::oddsratio.fisher(x=cDF[,1], y=cDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval), error=function(e){boolposthoc <- FALSE})
+    # try exact test first, but if there is an error default to Wald
+    boolposthoc <- tryCatch({
+      results <- pkgcond::suppress_conditions(epitools::oddsratio.fisher(x=cDF[,1], y=cDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+      boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+    )
+    if (boolposthoc == FALSE) {
+      boolposthoc <- tryCatch({
+        results <- pkgcond::suppress_conditions(epitools::oddsratio.wald(x=cDF[,1], y=cDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+        pitchfake <- TRUE
+        boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+      )
+    }
   } else {
-    tryCatch(results <- epitools::oddsratio.wald(x=cDF[,1], y=cDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval), error=function(e){boolposthoc <- FALSE})
+    # Use the Wald test
+    boolposthoc <- tryCatch({
+      results <- pkgcond::suppress_conditions(epitools::oddsratio.wald(x=cDF[,1], y=cDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+      boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+    )
   }
-  if (results$data[1] == FALSE) {
-    boolposthoc <- FALSE
-  }
-  
+ 
   if (boolposthoc == TRUE) {
     res$table <- results$data # place data table in output
   
@@ -104,8 +114,12 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
           posthoccDF2 <- cDF[which(cDF[,2] == outcomelevels[cOutcomeLevelsC]),]
           posthoccDF <- rbind(posthoccDF1,posthoccDF2)
           rm(posthoccDF1,posthoccDF2)
+          
+          # refactor outcome
+          posthoccDF[,2] <- factor(posthoccDF[,2], levels = c(outcomelevels[cOutcomeLevelsB], outcomelevels[cOutcomeLevelsC]))
+          
           # rerun on subset
-          tempout <- subprocessRmimicChisquare(variables=names(posthoccDF), data=posthoccDF)
+          tempout <- Rmimic::subprocessRmimicChisquare(variables=names(posthoccDF), data=posthoccDF)
           
           # each predictor gets a turn being the reference
           for (cPredictorLevelsB in 1:(predictorlevelsL)) {
@@ -114,39 +128,68 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
             colnames(dataframeout) <- c('Outcome','Reference','Predictor','OddsRatio', 'OR.lower.conf.int','OR.upper.conf.int', 'p.value', 'textoutput', 'overallmodel.report', 'overallmodel.p.value')
             
             subposthoccDF <- posthoccDF
+            # refactor predictor
             baselevel <- predictorlevels[cPredictorLevelsB]
             subposthoccDF[,1] <- factor(subposthoccDF[,1], levels = c(baselevel, predictorlevels[which(predictorlevels != baselevel)])) 
             
             if (nrow(subposthoccDF) < 1000) {
-              results <- epitools::oddsratio.fisher(x=subposthoccDF[,1], y=subposthoccDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval)
-            } else {
-              results <- epitools::oddsratio.wald(x=subposthoccDF[,1], y=subposthoccDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval)
-            }
-            
-            # cycle through output
-            for (cR in 2:(nrow(results$measure))) {
-              dataframeout$Outcome[cR-1] <- sprintf('%s vs %s', outcomelevels[cOutcomeLevelsB], outcomelevels[cOutcomeLevelsC])
-              dataframeout$Reference[cR-1] <- baselevel
-              dataframeout$Predictor[cR-1] <- rownames(results$measure)[cR]
-              dataframeout$OddsRatio[cR-1] <- results$measure[cR,1]
-              dataframeout$OR.lower.conf.int[cR-1] <- results$measure[cR,2]
-              dataframeout$OR.upper.conf.int[cR-1] <- results$measure[cR,3]
-              if (nrow(subposthoccDF) < 1000) {
-                dataframeout$p.value[cR-1] <- results$p.value[cR,2]
-              } else {
-                dataframeout$p.value[cR-1] <- results$p.value[cR,3]
+              # try exact test first, but if there is an error default to Wald
+              boolposthoc <- tryCatch({
+                results <- pkgcond::suppress_conditions(epitools::oddsratio.fisher(x=subposthoccDF[,1], y=subposthoccDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+                boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+              )
+              if (boolposthoc == FALSE) {
+                boolposthoc <- tryCatch({
+                  results <- pkgcond::suppress_conditions(epitools::oddsratio.wald(x=subposthoccDF[,1], y=subposthoccDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+                  pitchfake <- TRUE
+                  boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+                )
               }
-              outtextstring <- sprintf("Odds Ratio = %.2f", round(dataframeout$OddsRatio[cR-1], digits=2))
-              outtextstring <- sprintf("%s [%2.0f%% CI: %.2f to %.2f]", outtextstring, confidenceinterval*100, dataframeout$OR.lower.conf.int[cR-1], dataframeout$OR.upper.conf.int[cR-1])
-              outPvalue <- Rmimic::fuzzyP(as.numeric(dataframeout$p.value[cR-1]))
-              outtextstring <- sprintf('%s, p %s %s', outtextstring, outPvalue$modifier, outPvalue$report)
-              dataframeout$textoutput[cR-1] <- outtextstring
-              dataframeout$overallmodel.report[cR-1] <- tempout$stats$textoutput[1]
-              dataframeout$overallmodel.p.value[cR-1] <- tempout$stats$p.value[1]
+            } else {
+              # Use the Wald test
+              boolposthoc <- tryCatch({
+                results <- pkgcond::suppress_conditions(epitools::oddsratio.wald(x=subposthoccDF[,1], y=subposthoccDF[,2],correction = FALSE,verbose = FALSE,conf.level = confidenceinterval))
+                boolposthoc <- TRUE}, error = function(cond){boolposthoc <- FALSE}
+              )
             }
             
-            masterdataframeout <- rbind(masterdataframeout, dataframeout)
-          
+            if (boolposthoc == TRUE) {
+              # cycle through output
+              for (cR in 2:(nrow(results$measure))) {
+                dataframeout$Outcome[cR-1] <- sprintf('%s vs %s', outcomelevels[cOutcomeLevelsB], outcomelevels[cOutcomeLevelsC])
+                dataframeout$Reference[cR-1] <- baselevel
+                dataframeout$Predictor[cR-1] <- rownames(results$measure)[cR]
+                dataframeout$OddsRatio[cR-1] <- results$measure[cR,1]
+                dataframeout$OR.lower.conf.int[cR-1] <- results$measure[cR,2]
+                dataframeout$OR.upper.conf.int[cR-1] <- results$measure[cR,3]
+                if (nrow(subposthoccDF) < 1000) {
+                  dataframeout$p.value[cR-1] <- results$p.value[cR,2]
+                  if (is.na(results$p.value[cR,2])) {
+                    dataframeout$p.value[cR-1] <- results$p.value[cR,3]
+                    if (is.na(results$p.value[cR,3])) {
+                      dataframeout$p.value[cR-1] <- results$p.value[cR,1]
+                    }
+                  }
+                } else {
+                  dataframeout$p.value[cR-1] <- results$p.value[cR,3]
+                  if (is.na(results$p.value[cR,3])) {
+                    dataframeout$p.value[cR-1] <- results$p.value[cR,2]
+                    if (is.na(results$p.value[cR,2])) {
+                      dataframeout$p.value[cR-1] <- results$p.value[cR,1]
+                    }
+                  }
+                }
+                outtextstring <- sprintf("Odds Ratio = %.2f", round(dataframeout$OddsRatio[cR-1], digits=2))
+                outtextstring <- sprintf("%s [%2.0f%% CI: %.2f to %.2f]", outtextstring, confidenceinterval*100, dataframeout$OR.lower.conf.int[cR-1], dataframeout$OR.upper.conf.int[cR-1])
+                outPvalue <- Rmimic::fuzzyP(as.numeric(dataframeout$p.value[cR-1]))
+                outtextstring <- sprintf('%s, p %s %s', outtextstring, outPvalue$modifier, outPvalue$report)
+                dataframeout$textoutput[cR-1] <- outtextstring
+                dataframeout$overallmodel.report[cR-1] <- tempout$stats$textoutput[1]
+                dataframeout$overallmodel.p.value[cR-1] <- tempout$stats$p.value[1]
+              }
+              
+              masterdataframeout <- rbind(masterdataframeout, dataframeout)
+            } # end posthoc happened
           } # end loop cPredictorLevelsB
         } # prevent duplicates
       } # end loop cOutcomeLevelsC
@@ -171,7 +214,11 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
     rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
     outstring <- sprintf('%s in %s.', outstring, rvers)
     if (nrow(cDF) < 1000) {
-      outstring <- sprintf('%s Test statistics and odds ratios were computed using %s Exact test and conditional maximum likelihood estimation.', outstring, sprintf("%s's", 'Fisher'))
+      if (pitchfake == FALSE) {
+        outstring <- sprintf('%s Test statistics and odds ratios were computed using %s Exact test and conditional maximum likelihood estimation.', outstring, sprintf("%s's", 'Fisher'))
+      } else {
+        outstring <- sprintf('%s Test statistics and odds ratios were computed using %s Exact test and %s unconditional maximum likelihood estimation.', outstring, sprintf("%s's", 'Fisher'), sprintf("%s's", 'Wald'))
+      }
     }
     Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
     rm(outstring)
@@ -281,7 +328,7 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
     
   } # end verbose
   
-  #return(res)
+  return(res)
 }
   
   

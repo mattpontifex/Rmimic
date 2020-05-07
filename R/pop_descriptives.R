@@ -131,9 +131,16 @@ pop_descriptives <- function() {
           tmpcall <- sprintf('%s, verbosedescriptives=TRUE, verbosefrequencies=TRUE)', tmpcall)
           
           # execute call
-          eval(parse(text=tmpcall))
-          Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
-          Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
+          boolattempt <- FALSE
+          boolattempt <- tryCatch({
+            eval(parse(text=tmpcall))
+            boolattempt <- TRUE}
+          )
+          if (boolattempt == FALSE) {
+            Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+          }
+          Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+          Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
         }
       }
       

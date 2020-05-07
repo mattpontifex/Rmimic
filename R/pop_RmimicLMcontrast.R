@@ -242,16 +242,23 @@ pop_RmimicLMcontrast <- function() {
             listofcalls <- c(listofcalls, tmpcall)
             
             # execute call
+            boolattempt <- FALSE
             for (cR in 1:length(listofcalls)) {
               tmpcall <- listofcalls[cR]
-              eval(parse(text=tmpcall))
+              boolattempt <- tryCatch({
+                eval(parse(text=tmpcall))
+                boolattempt <- TRUE}
+              )
+            }
+            if (boolattempt == FALSE) {
+              Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
             }
             
             # output calls
-            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
+            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
             for (cR in 1:length(listofcalls)) {
               tmpcall <- listofcalls[cR]
-              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
+              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
             }
             
           } # something is being modeled

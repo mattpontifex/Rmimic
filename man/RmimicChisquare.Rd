@@ -33,8 +33,8 @@ RmimicChisquare(
 \item{posthocttest}{A summary table for posthoc tests.}
 }
 \description{
-Compute SPSS style results for Chi-square analysis with effect size and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
+Compute SPSS style results for Chi-square analysis with odds ratios and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
 }
 \author{
-Matthew B. Pontifex, \email{pontifex@msu.edu}, May 6, 2020
+Matthew B. Pontifex, \email{pontifex@msu.edu}, May 7, 2020
 }

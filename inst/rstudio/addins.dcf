@@ -13,6 +13,11 @@ Description: Compute SPSS style t-test with effect size and confidence intervals
 Binding: pop_ttest
 Interactive: true
 
+Name: Chi-Square
+Description: Compute SPSS style Chi-square analysis with odds ratios and confidence intervals.
+Binding: pop_RmimicChisquare
+Interactive: true
+
 Name: ANOVA
 Description: Compute SPSS style univariate ANOVA with effect size and confidence intervals.
 Binding: pop_RmimicANOVA
