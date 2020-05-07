@@ -46,7 +46,8 @@ specified post-hoc corrections.
 ```r
     basefit <- lm(mpg ~ am + wt, data = mtcars)
     fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
-    regresult <- Rmimic::RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
+    regresult <- Rmimic::RmimicLMcontrast(basefit, fit, 
+                            confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicLMcontrast1.png?raw=true" width="600" alt="screencap RmimicLMcontrast1"><img src="/screencaps/screencap_RmimicLMcontrast2.png?raw=true" width="600" alt="screencap RmimicLMcontrast2"></p>
 
@@ -66,7 +67,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
 The function can handle outcomes with more than 2 levels and will perform comparisons for each pair of outcomes.
 ```r
-    chisquareresult <- Rmimic::RmimicChisquare(variables=c('Class', 'Survived'), data=Titanic, 
+    chisquareresult <- Rmimic::RmimicChisquare(variables=c('Sex', 'Survived'), data=Titanic, 
                             confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE)  
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicChisquare.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
@@ -74,16 +75,17 @@ The function can handle outcomes with more than 2 levels and will perform compar
 * **correlation**: Function that computes SPSS style correlation or partial correlation, with optional
 parameters for the approach (pearson (default), spearman, or kendall).
 ```r
-    chisquareresult <- Rmimic::correlation(variables=c('Class', 'Survived'), partial=FALSE, 
-                            data=FALSE, method='pearson', listwise=TRUE, studywiseAlpha=0.05, 
+    tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))
+    corresult <- Rmimic::correlation(variables=c('X', 'Y'), partial=FALSE, 
+                            data=tempdata, method='pearson', listwise=TRUE, studywiseAlpha=0.05, 
                             confidenceinterval=0.95, verbose=TRUE)  
 ```
 <p align="center"><img src="/screencaps/screencap_correlation.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
-    tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))  
-    desc <- Rmimic::descriptives(variables=c('X','Y'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
+    tempdata <- data.frame("X" = runif(100), "Y" = runif(100), "Z" = runif(100))  
+    desc <- Rmimic::descriptives(variables=c('X','Y','Z'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
 ``` 
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
