@@ -9,6 +9,7 @@ using verbose calls to the function.
 
 Several functions are also available through the R Studio Addins dropdown menu. You may have to restart R Studio after installing the package for the functions to show up. Functions accessed through the dropdown menu will pop up a graphical user interface for selecting variables and parameters, when the results of the function printed to the console window along with the syntax.
 <p align="center"><img src="/screencaps/screencap_PopGUI.png?raw=true" width="300" alt="screencap PopGUI"></p>
+<p align="center"><img src="/screencaps/screencap_PopGUI2.png?raw=true" width="300" alt="screencap PopGUI2"></p>
 
 Installation
 ------------
@@ -70,22 +71,23 @@ The function can handle outcomes with more than 2 levels and will perform compar
     chisquareresult <- Rmimic::RmimicChisquare(variables=c('Sex', 'Survived'), data=Titanic, 
                             confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE)  
 ```
-<p align="center"><img src="/screencaps/screencap_RmimicChisquare.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicChisquare1.png?raw=true" width="600" alt="screencap RmimicChisquare1"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicChisquare2.png?raw=true" width="600" alt="screencap RmimicChisquare2"></p>
 
 * **correlation**: Function that computes SPSS style correlation or partial correlation, with optional
 parameters for the approach (pearson (default), spearman, or kendall).
 ```r
-    tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))
-    corresult <- Rmimic::correlation(variables=c('X', 'Y'), partial=FALSE, 
+    tempdata <- data.frame("X" = runif(100), "Y" = runif(100), "Z" = runif(100))  
+    corresult <- Rmimic::correlation(variables=c('X', 'Y', 'Z'), partial=FALSE, 
                             data=tempdata, method='pearson', listwise=TRUE, studywiseAlpha=0.05, 
                             confidenceinterval=0.95, verbose=TRUE)  
 ```
-<p align="center"><img src="/screencaps/screencap_correlation.png?raw=true" width="600" alt="screencap RmimicChisquare"></p>
+<p align="center"><img src="/screencaps/screencap_Correlation.png?raw=true" width="600" alt="screencap Correlation"></p>
 
 * **descriptives**: Function that computes SPSS style descriptive statistics and frequencies.
 ```r
-    tempdata <- data.frame("X" = runif(100), "Y" = runif(100), "Z" = runif(100))  
-    desc <- Rmimic::descriptives(variables=c('X','Y','Z'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
+    tempdata <- data.frame("Group" = sample(1:2,100, replace=TRUE), "X" = runif(100), "Y" = runif(100))
+    desc <- Rmimic::descriptives(variables=c('X','Y'), groupvariable=c("Group"), data=tempdata, verbose=TRUE) 
 ``` 
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
