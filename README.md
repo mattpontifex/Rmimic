@@ -1,13 +1,18 @@
 Rmimic
 ==============
 
-An R package with miscellaneous R functions that are useful to mimic functionalities of popular statistics
-software packages. This package deviates from the typical R ethos such that "super functions" will output
+An R package that mimics the functionalities of popular commercial statistics software packages in that it will compute
+multiple-related tests. However, rather than outputting all results blindly, the package uses the specified/
+automatically determined test correction/adjustments and outputs the results in APA format. Additionally, 
+when appropriate, functions will automatically break down the data to consider all potential comparisons
+(A vs B, A vs C, B vs C). 
+
+This package deviates from the typical R ethos such that "super functions" will output
 results to the console window in a style that roughly mimics the output of popular statistics software
 packages. Test results are also available as environmental variables and console outputs can be suppressed
 using verbose calls to the function.
 
-Several functions are also available through the R Studio Addins dropdown menu. You may have to restart R Studio after installing the package for the functions to show up. Functions accessed through the dropdown menu will pop up a graphical user interface for selecting variables and parameters, when the results of the function printed to the console window along with the syntax.
+Several functions are also available through the R Studio Addins dropdown menu to provide a graphic user interface similar to popular commercial statistics packages. You may have to restart R Studio after installing the package for the functions to show up. Functions accessed through the dropdown menu will pop up a graphical user interface for selecting variables and parameters, when the results of the function printed to the console window along with the syntax.
 <p align="center"><img src="/screencaps/screencap_PopGUI.png?raw=true" width="300" alt="screencap PopGUI"><img src="/screencaps/screencap_PopGUI2.png?raw=true" width="300" alt="screencap PopGUI2"></p>
 
 Installation
@@ -27,7 +32,7 @@ After completing that step, you can repeat the installation instructions above.
 
 Super Function List
 ------------
-These functions mimic the overarching outputs of popular statistics software packages that lump together
+These functions mimic the overarching outputs of popular commercial statistics software packages that lump together
 several related or inherently sequential tests.
 
 
@@ -64,7 +69,7 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 <p align="center"><img src="/screencaps/screencap_RmimicTtest.png?raw=true" width="600" alt="screencap RmimicTtest"></p>
 
 * **RmimicChisquare**: Function that computes SPSS style results for Chi-square analysis with odds ratios
-and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
+and confidence intervals. For samples less than 1000, Fishers exact test statistic is used if possible.
 The function can handle outcomes with more than 2 levels and will perform comparisons for each pair of outcomes.
 ```r
     chisquareresult <- Rmimic::RmimicChisquare(variables=c('Sex', 'Survived'), data=Titanic, 
@@ -73,7 +78,7 @@ The function can handle outcomes with more than 2 levels and will perform compar
 <p align="center"><img src="/screencaps/screencap_RmimicChisquare1.png?raw=true" width="600" alt="screencap RmimicChisquare1"></p>
 <p align="center"><img src="/screencaps/screencap_RmimicChisquare2.png?raw=true" width="600" alt="screencap RmimicChisquare2"></p>
 
-* **correlation**: Function that computes SPSS style correlation or partial correlation, with optional
+* **correlation**: Function that computes SPSS style correlations or partial correlations, with optional
 parameters for the approach (pearson (default), spearman, or kendall).
 ```r
     tempdata <- data.frame("X" = runif(100), "Y" = runif(100), "Z" = runif(100))  
