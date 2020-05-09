@@ -5,6 +5,8 @@
 \title{RmimicChisquare}
 \usage{
 RmimicChisquare(
+  x = FALSE,
+  y = FALSE,
   variables = FALSE,
   data = FALSE,
   confidenceinterval = 0.95,
@@ -14,7 +16,11 @@ RmimicChisquare(
 )
 }
 \arguments{
-\item{variables}{Variable name or list of variables to compute descriptives for.}
+\item{x}{Variable name for the predictor. If x is specified, it overrides the variables input.}
+
+\item{y}{Variable name for the outcome. If y is specified, it overrides the variables input.}
+
+\item{variables}{Variable name or list of variables to compute descriptives for. Data should be in the format column 1 is X (predictor), column 2 is Y (outcome).}
 
 \item{data}{Data frame containing the variables of interest.}
 
@@ -37,9 +43,15 @@ Compute SPSS style results for Chi-square analysis with odds ratios and confiden
 }
 \examples{
 
-  chisquareresult <- RmimicChisquare(PlantGrowth, 
-          variables=c('Sex', 'Survived'), 
-          data=Titanic, 
+  # was sex related to the chance of survival on the Titanic
+  chisquareresult <- RmimicChisquare( 
+          x='Sex', y='Survived', data=Titanic, 
+          confidenceinterval=0.95, studywiseAlpha=0.05, 
+          planned=FALSE, verbose=TRUE)
+         
+  # is sex related to the likelihood of having a particular hair color 
+  chisquareresult <- RmimicChisquare( 
+          x='Sex', y='Hair',  data=HairEyeColor, 
           confidenceinterval=0.95, studywiseAlpha=0.05, 
           planned=FALSE, verbose=TRUE)
 

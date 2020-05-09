@@ -57,12 +57,14 @@ subprocessRmimicChisquare <- function(variables=FALSE, data=FALSE) {
   newlab <- stringr::str_pad(variables[1], width = tempvectend, side = "left")
   substr(tempvect, start = 1, stop = tempvectend+1) <- newlab[1:tempvectend]
   tabularoutput[swindx] <- tempvect
+  
   tempvectend <- nchar(tempvect)
   swindx <- which(grepl("cDF[, 2] ", tabularoutput, fixed=TRUE, ignore.case = FALSE, useBytes = TRUE) == TRUE)
   tempvect <- tabularoutput[swindx]
   tempvectstart <- gregexpr(pattern ='|',tempvect, fixed=TRUE, ignore.case = FALSE, useBytes = TRUE)[[1]][1]
   tempvectstart <- tempvectstart + 1
-  substr(tempvect, start = tempvectstart+1, stop = tempvectend) <- variables[2]
+  newlab <- stringr::str_pad(variables[2], width = tempvectend, side = "right")
+  substr(tempvect, start = tempvectstart+1, stop = tempvectend) <- newlab
   tabularoutput[swindx] <- tempvect
   
   res$tabularoutput <- tabularoutput

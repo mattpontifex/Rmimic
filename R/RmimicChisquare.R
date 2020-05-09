@@ -3,7 +3,9 @@
 #' @description Compute SPSS style results for Chi-square analysis with odds ratios and confidence intervals. For samples less than 1000, Fishers exact test statistic is used.
 #'
 #' @param data Data frame containing the variables of interest.
-#' @param variables Variable name or list of variables to compute descriptives for.
+#' @param x Variable name for the predictor. If x is specified, it overrides the variables input.
+#' @param y Variable name for the outcome. If y is specified, it overrides the variables input.
+#' @param variables Variable name or list of variables to compute descriptives for. Data should be in the format column 1 is X (predictor), column 2 is Y (outcome).
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param planned Boolean operator for if the posthoc tests should be outputted regardless of the test statistic. Default is FALSE.
@@ -22,15 +24,21 @@
 #'
 #' @examples
 #' 
-#'   chisquareresult <- RmimicChisquare(PlantGrowth, 
-#'           variables=c('Sex', 'Survived'), 
-#'           data=Titanic, 
+#'   # was sex related to the chance of survival on the Titanic
+#'   chisquareresult <- RmimicChisquare( 
+#'           x='Sex', y='Survived', data=Titanic, 
+#'           confidenceinterval=0.95, studywiseAlpha=0.05, 
+#'           planned=FALSE, verbose=TRUE)
+#'          
+#'   # is sex related to the likelihood of having a particular hair color 
+#'   chisquareresult <- RmimicChisquare( 
+#'           x='Sex', y='Hair',  data=HairEyeColor, 
 #'           confidenceinterval=0.95, studywiseAlpha=0.05, 
 #'           planned=FALSE, verbose=TRUE)
 #'
 #' @export
 
-RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE) {  
+RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE) {  
   
   # debug
   #variables <- c('MotherBMI', 'ChildBMI')
@@ -59,43 +67,68 @@ RmimicChisquare <- function(variables=FALSE, data=FALSE, confidenceinterval=0.95
   }
   pitchfake <- FALSE
 
+  if (is.table(data)) {
+    # blow it up
+    temp <- as.data.frame(data)
+    if (length(which(tolower(names(temp)) == (tolower('freq')))) > 0) {
+      freqindx <- which(tolower(names(temp)) == (tolower('freq')))
+      tempdata <- data.frame(matrix(NA,nrow=0,ncol=length(names(temp))))
+      names(tempdata) <- names(temp)
+      for (cR in 1:nrow(temp)) {
+        if (as.integer(temp[cR,freqindx]) > 0) {
+          # assuming that there is a count
+          subtempdata <- data.frame(matrix(NA,nrow=as.integer(temp[cR,freqindx]),ncol=length(names(temp))))
+          names(subtempdata) <- names(temp)
+          for (cC in 1:ncol(temp)) {
+            subtempdata[,cC] <- temp[cR,cC]
+          }
+          tempdata <- rbind(tempdata, subtempdata)
+          rm(subtempdata)
+        }
+      }
+      data <- tempdata
+      rm(tempdata)
+    } else {
+      Rmimic::typewriter('Alert: Rmimic::RmimicChisquare requires either a data frame or a tabular input.', tabs=0, spaces=2, characters=floor(spansize*.9))
+      stop("Rmimic::RmimicChisquare incorrect data input")
+    }
+  } # end table check
+  
+  
+  if ((x[1] != FALSE) | (y[1] != FALSE)) {
+    if (variables[1] == FALSE) {
+      # user specified the x or y call but not the variable call - ideal use
+      if ((x[1] != FALSE) & (y[1] != FALSE)) {
+        # user specified both x and y
+        variables <- c(x[1], y[1])
+      } else {
+        # uh oh a variable was not entered
+        tempvar <- ''
+        if (x[1] == FALSE) {
+          tempvar <- 'No predictor was specified for the x variable.'
+        }
+        if (y[1] == FALSE) {
+          tempvar <- 'No outcome was specified for the y variable.'
+        }
+        tempvar <- sprintf('Alert: Rmimic::RmimicChisquare %s.', tempvar)
+        Rmimic::typewriter(tempvar, tabs=0, spaces=2, characters=floor(spansize*.9))
+        stop("Rmimic::RmimicChisquare incorrect data input")
+      }
+    } else {
+      # user specified the x or y call and the variable call
+      if ((x[1] != FALSE) & (y[1] != FALSE)) {
+        # both x and y were specified
+        variables <- c(x[1], y[1])
+      }
+    }
+  }
+  
   if (variables[1] == FALSE) {
     variables <- names(data)
     cDF <- data
   } else {
-    if (is.table(data)) {
-      # blow it up
-      temp <- as.data.frame(data)
-      if (length(which(tolower(names(temp)) == (tolower('freq')))) > 0) {
-        freqindx <- which(tolower(names(temp)) == (tolower('freq')))
-        tempdata <- data.frame(matrix(NA,nrow=0,ncol=length(names(temp))))
-        names(tempdata) <- names(temp)
-        for (cR in 1:nrow(temp)) {
-          if (as.integer(temp[cR,freqindx]) > 0) {
-            # assuming that there is a count
-            subtempdata <- data.frame(matrix(NA,nrow=as.integer(temp[cR,freqindx]),ncol=length(names(temp))))
-            names(subtempdata) <- names(temp)
-            for (cC in 1:ncol(temp)) {
-              subtempdata[,cC] <- temp[cR,cC]
-            }
-            tempdata <- rbind(tempdata, subtempdata)
-            rm(subtempdata)
-          }
-        }
-        data <- tempdata
-        rm(tempdata)
-        
-        cDF <- data.frame(data[,variables])
-        names(cDF) <- variables
-      } else {
-        Rmimic::typewriter('Alert: Rmimic::RmimicChisquare requires either a data frame or a tabular input.', tabs=tablevel+1, spaces=2, characters=floor(spansize*.9))
-        stop("Rmimic::RmimicChisquare incorrect data input")
-      }
-    } else {
-      
-      cDF <- data.frame(data[,variables])
-      names(cDF) <- variables
-    }
+    cDF <- data.frame(data[,variables])
+    names(cDF) <- variables
   }
   cDF <- cDF[which(complete.cases(cDF)),]
   
