@@ -14,6 +14,71 @@ mockdatabase <- data.frame("PartID" = rep_len(1:60,360),
 #mockdatabase$Alertness[which(mockdatabase$Group == "GroupA")] <- mockdatabase$Alertness[which(mockdatabase$Group == "GroupA")] * 1.5
 mockdatabase$Alertness[which(mockdatabase$Condition == "ConditionX" & mockdatabase$Time == "Time3")] <- mockdatabase$Alertness[which(mockdatabase$Condition == "ConditionX" & mockdatabase$Time == "Time3")] * 1.5
 
+numberofgroups <- 2
+numberofparticipantsineachgroup <- 60
+numerofconditionsforeachparticipant <- 2
+numeroftimeswithineachcondition <- 3
+mockdatabase <- data.frame(matrix(NA, nrow=0,ncol=6))
+names(mockdatabase) <- c("PartID", "Sex", "Group", "Condition", "Time", "Alertness")
+
+cGroup <- sort(sample(1:(numberofparticipantsineachgroup*2), numberofparticipantsineachgroup, replace=F))
+for (cParticipant in 1:(numberofparticipantsineachgroup*2)) {
+  partceiling <- round(stats::runif(1, 30, 50),digits=2)
+  partfloor <- round(stats::runif(1, 9, 29),digits=2)
+  partsex <- sample(0:1,1)
+  
+  for (cCondition in 1:numerofconditionsforeachparticipant) {
+    
+    for (cTimes in 1:numeroftimeswithineachcondition) {
+      
+      # create a 3 way interaction
+      groupcheck <- which(cGroup == cParticipant)
+      if ((length(which(cGroup == cParticipant)) > 0) & (cTimes > 2) & (cCondition > 1)) {
+        partcondition <- round(stats::runif(1, -1+(cCondition*1), 2+(cCondition*1)),digits=3)
+        partmodifier <- round(stats::runif(1, 0-(cTimes*2), 5-(cTimes*2)),digits=3) * partcondition
+      } else {
+        partmodifier <- round(stats::runif(1, 0-(cTimes*1.5), 5-(cTimes*1.5)),digits=3)
+      }
+      
+      tempmockdatabase <- data.frame(matrix(NA, nrow=1,ncol=6))
+      names(tempmockdatabase) <- c("PartID", "Sex", "Group", "Condition", "Time", "Alertness")
+      tempmockdatabase[,"PartID"] <- sprintf('PID%03d',cParticipant)
+      tempmockdatabase[,"Sex"] <- partsex
+      groupcheck <- which(cGroup == cParticipant)
+      if (length(which(cGroup == cParticipant)) > 0) {
+        tempmockdatabase[,"Group"] <- sprintf('Group%d',1)
+      } else {
+        tempmockdatabase[,"Group"] <- sprintf('Group%d',2)
+      }
+      tempmockdatabase[,"Condition"] <- sprintf('Condition%d',cCondition)
+      tempmockdatabase[,"Time"] <- sprintf('Time%d',cTimes)
+      tempmockdatabase[,"Alertness"] <- round(stats::runif(1, partfloor, partceiling),digits=2) + partmodifier
+      mockdatabase <- rbind(mockdatabase, tempmockdatabase)
+      rm(tempmockdatabase)
+    }
+  }
+}
+
+rm(numberofgroups, numberofparticipantsineachgroup, numerofconditionsforeachparticipant, numeroftimeswithineachcondition, cGroup, cParticipant, cCondition, cTimes,partceiling, partfloor, partsex,partcondition,parttimes)
+
+df <- Rmimic::descriptives(variables=c('Alertness'),groupvariable=c("Group","Condition", "Time"), data=mockdatabase, verbose=FALSE)
+
+ggplot(df, aes(x=Time, y=Mean, group=Condition, color=Condition)) +
+  geom_line(size=1) +
+  geom_errorbar(aes(ymin=Mean-SE, ymax=Mean+SE), width=0.25, size=0.5) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_blank(),
+        strip.background = element_blank(),
+        panel.background=element_blank(),
+        axis.title.x = element_text(family = "sans", colour = "black", size = 10),
+        axis.title.y = element_text(family = "sans", colour = "black", size = 10),
+        axis.text = element_text(family = "sans", colour = "black", size = 10),
+        axis.line = element_line(size = 1, linetype = "solid"), legend.position="bottom") +
+  facet_wrap(~as.factor(Group), nrow=1)
+
+
+
 result <- ez::ezANOVA(data=mockdatabase,
                       dv=Alertness,wid=PartID,
                       between=Group,within=.(Condition, Time),
