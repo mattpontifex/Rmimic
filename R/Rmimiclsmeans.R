@@ -1,14 +1,14 @@
-#' RmimicTtest
+#' Rmimiclsmeans
 #'
-#' @description Compute SPSS style t-test with effect size and confidence intervals. Optional parameters are also provided to compute non-parametric t-tests with appropriate non-parametric effect size estimates. For parametric test the function automatically determines if the variances are equal using levene's test and outputs the correct statistcs.
+#' @description Subprocess to RmimicMLAnova function to extract t-test with effect size and confidence intervals.
 #'
+#' @param fit fit from a lmer model.
 #' @param data Data frame in long format containing the dependent variable in one column and subject id, between, and within subject variables in other columns.
 #' @param dependentvariable Variable name or list of variables to use as dependent variables.
 #' @param subjectid Variable name corresponding to the subject id column in the data. Required for paired tests of within subjects variables, encouraged otherwise.
 #' @param between Variable name or list of variables to use to compute independent samples t tests.
 #' @param within Variable name or list of variables to use to compute paired samples t tests.
-#' @param nonparametric Parameter to determine if non parametric tests should be run. Default is FALSE.
-#' @param collapse Paramater to determine if multiple observations should be collapsed to a single observation for each participant. Default is TRUE.
+#' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.
 #' @param posthoc Parameter to determine what post-hoc comparison approach to use. Options are Bonferroni, Sidak, or Holm-Bonferroni.
 #' @param criticaldiff Parameter to specify the critical difference used in Tukey and Scheffe post-hoc comparison approaches.
 #' @param confidenceinterval Parameter to control the confidence interval. Default is 0.95.
@@ -19,28 +19,30 @@
 #' \item{descriptives}{Data table of descriptive statistics.}
 #' \item{stats}{Data table of t test statistics.}
 #' 
-#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 13, 2019
+#' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 10, 2020
 #'
-#' @importFrom stats t.test complete.cases qnorm wilcox.test
-#' @importFrom lawstat levene.test
+#' @importFrom stats complete.cases
 #' @importFrom MBESS conf.limits.nct
 #' @importFrom utils packageDate
 #' @importFrom pkgcond suppress_conditions
+#' @importFrom emmeans emmeans
+#' @importFrom doBy summaryBy
 #' 
-#' @examples
-#' 
-#'   ttestresult <- RmimicTtest(PlantGrowth, 
-#'           dependentvariable='weight', 
-#'           subjectid=NULL, 
-#'           between='group', 
-#'           within=NULL, 
-#'           nonparametric=FALSE,
-#'           posthoc="Holm-Bonferroni")
-#'
 #'
 #' @export 
 
-RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, nonparametric=FALSE, collapse=TRUE, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
+Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, df=NULL, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
+  
+  #debug
+  #fit <- fit
+  #data <- completedata
+  #dependentvariable=dependentvariable[1]
+  #subjectid=subjectid[1] 
+  #between=subbetween 
+  #within=subwithin
+  #collapse=FALSE
+  #posthoc=FALSE
+  
   
   if (!is.null(posthoc)) {
     if (toupper(posthoc) == toupper("Bonferroni")) {
@@ -62,6 +64,16 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     }
   } 
   
+  if (!is.null(df)) {
+    if (toupper(df) == toupper("Kenward-Roger")) {
+      df = "Kenward-Roger"
+    } else if (toupper(df) == toupper("Shattertwaite")) {
+      df = "Shattertwaite"
+    }
+  } else {
+    df = "Kenward-Roger"
+  }
+  
   # Assess what got fed into the function
   dependentvariableL <- length(dependentvariable)
   betweenvariableL <- length(between)
@@ -79,7 +91,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       subjectid <- "subjectid"
     } else {
       # a within subjects parameter has been specified
-      stop("Error in RmimicTtest: A paired samples ttest has been requested, but no subjectid parameter was provided to ensure pairwise comparisons. Please provide a column of subject ids.")
+      stop("Error in Rmimiclsmeans: A paired samples ttest has been requested, but no subjectid parameter was provided to ensure pairwise comparisons. Please provide a column of subject ids.")
     }
   }
   
@@ -118,33 +130,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           # Obtain databases for each group
           group1data <- workingdatabase[which(workingdatabase[,between[cB]] == tempvect[1]),]
           group2data <- workingdatabase[which(workingdatabase[,between[cB]] == tempvect[2]),]
-            
-          # Collapse to a single data point for each participant (if requested)
-          if (collapse != FALSE) {
-            newgroup1data <- data.frame(matrix(NA,nrow=1,ncol=ncol(group1data)))
-            colnames(newgroup1data) <- colnames(group1data)
-            ids <- unlist(as.character(group1data[,subjectid[1]]))
-            for (cids in 1:length(ids)) {
-              # subset only data for that participant
-              subworkingdatabase <- group1data[which(group1data[,subjectid[1]] == ids[cids]),]
-              newgroup1data[cids,] <- subworkingdatabase[1,]
-              newgroup1data[cids,dependentvariable[cDV]] <- mean(subworkingdatabase[,dependentvariable[cDV]], na.rm= TRUE)
-            }
-            group1data <- newgroup1data
-            
-            newgroup2data <- data.frame(matrix(NA,nrow=1,ncol=ncol(group2data)))
-            colnames(newgroup2data) <- colnames(group2data)
-            ids <- unlist(as.character(group2data[,subjectid[1]]))
-            for (cids in 1:length(ids)) {
-              # subset only data for that participant
-              subworkingdatabase <- group2data[which(group2data[,subjectid[1]] == ids[cids]),]
-              newgroup2data[cids,] <- subworkingdatabase[1,]
-              newgroup2data[cids,dependentvariable[cDV]] <- mean(subworkingdatabase[,dependentvariable[cDV]], na.rm= TRUE)
-            }
-            group2data <- newgroup2data
-            rm(newgroup1data, newgroup2data, cids, subworkingdatabase)
-          }
-        
+          
           # populate data
           comparison1 <- group1data[,dependentvariable[cDV]]
           comparison2 <- group2data[,dependentvariable[cDV]]
@@ -155,85 +141,72 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           tempframe <- tempframe[stats::complete.cases(tempframe),]
           comparison1 <- comparison1[stats::complete.cases(comparison1)]
           comparison2 <- comparison2[stats::complete.cases(comparison2)]
+          # correct the standard error for the actual unique cases
+          desc$SE[1] <- as.numeric(desc$SD[1]) / length(unique(unlist(as.character(group1data[,subjectid[1]]))))
+          desc$SE[2] <- as.numeric(desc$SD[2]) / length(unique(unlist(as.character(group2data[,subjectid[1]]))))
+          desc$N[1] <- length(unique(unlist(as.character(group1data[,subjectid[1]]))))
+          desc$N[2] <- length(unique(unlist(as.character(group2data[,subjectid[1]]))))
           
-          # determine type of independent test to do
-          if (nonparametric == FALSE) {
-            # independent samples parametric test
+          # extract data from model fit
+          # emmeans like to pop out messages for main effects - Works for lmer and lm
+          if (toupper(df[1]) == toupper("Shattertwaite")) {
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='satterthwaite')))", between[cB])))
+          } else {
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='kenward-roger')))", between[cB])))
+          }
+          posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
+          
+          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[1], tempvect[2]))
+          if (length(testinx) == 0) {
+            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[2], tempvect[1]))
+          }
+          if (length(testinx) > 0) {
+              
             
-            # test variance
-            varianceEqual <- TRUE
-            variancetest <- pkgcond::suppress_conditions(lawstat::levene.test(tempframe[,'DV'], tempframe[,'Group'], location="median"))
-            if (variancetest$p.value <= studywiseAlpha) {
-              varianceEqual <- FALSE
-            }
-            ttestresult <- stats::t.test(x=comparison1, y=comparison2, alternative='two.sided', paired=FALSE, var.equal=varianceEqual, conf.level=confidenceinterval)
+            ttestresult <- list()
+            ttestresult$statistic <- as.numeric(posthoctemptestmeansmatrix[testinx,5])
             ttestresult$statistic <- abs(ttestresult$statistic)
-            ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2))))
+            ttestresult$parameter[[1]] <- posthoctemptestmeansmatrix[testinx,4]
+            ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
+            ttestresult$method <- " Two Sample t-test"
+            ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/desc$N[1]) + (1/desc$N[2])))
             temptstat <- ttestresult$statistic
             if (temptstat > 37.6) {
               temptstat <- temptstat
             }
             ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
-            ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
-            ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
+            ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
+            ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
             ttestresult$stud.conf.int <- confidenceinterval
             tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Independent samples t-test'
             rm(varianceEqual, variancetest, ncp, ttestresult)
             
-          } else {
-            # mann-whitney t-test (independent samples)
+            # populate output
+            dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
+            dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s-%s', between[cB], tempvect[1], tempvect[2])
+            dataframeout[dataframeoutL,names(tempout$statistics)] <- tempout$statistics
+            dataframeout[dataframeoutL,'textoutput'] <- tempout$text
+            dataframeout[dataframeoutL,'Group1.label'] <- tempvect[1]
+            dataframeout[dataframeoutL,c('Group1.n', 'Group1.missing', 'Group1.mean', 'Group1.median', 'Group1.sd', 'Group1.se', 'Group1.min', 'Group1.max', 'Group1.distribution')] <- desc[1,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
+            dataframeout[dataframeoutL,'Group2.label'] <- tempvect[2]
+            dataframeout[dataframeoutL,c('Group2.n', 'Group2.missing', 'Group2.mean', 'Group2.median', 'Group2.sd', 'Group2.se', 'Group2.min', 'Group2.max', 'Group2.distribution')] <- desc[2,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
+            dataframeout[dataframeoutL,'TestChunk'] <- chunkingL
             
-            # The U statistic changes depending on the order the variables are entered,
-            # Convention says take the smallest U value as the P value remains the same either way.
-            ttest1 <- stats::wilcox.test(x=comparison1, y=comparison2, paired=FALSE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=confidenceinterval)
-            ttest2 <- stats::wilcox.test(x=comparison2, y=comparison1, paired=FALSE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=confidenceinterval)
-            if (ttest1$statistic < ttest2$statistic) {
-              ttestresult <- ttest1
-              ttestRev <- ttest2
+            desc$Variable <- dependentvariable[cDV]
+            desc$Group <- between[cB]
+            desc$CollapsedName[1] <- sprintf('%s: %s', between[cB], tempvect[1])
+            desc$CollapsedName[2] <- sprintf('%s: %s', between[cB], tempvect[2])
+            if (!is.null(masterdescriptives)) {
+              masterdescriptives <- rbind(masterdescriptives, desc)
             } else {
-              ttestresult <- ttest2
-              ttestRev <- ttest1
+              masterdescriptives <- desc
             }
-            ttestresult$z.value <- abs(stats::qnorm(ttestresult$p.value/ 2))
-            ttestresult$effectsize <- abs(stats::qnorm(ttestresult$p.value/ 2))/sqrt(length(comparison1)+length(comparison2))
-            meandiff <- mean(comparison2)-mean(comparison1)
-            if (!(ttestresult$conf.int[1] <= meandiff) & (ttestresult$conf.int[2] >= meandiff)) {
-              ttestresult$conf.int[1] <- ttestRev$conf.int[1]
-              ttestresult$conf.int[2] <- ttestRev$conf.int[2]
-            }
-            tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
-            dataframeout[dataframeoutL,'Test'] <- 'Independent samples Mann-Whitney test'
-            rm(ttest1, ttest2, ttestRev, meandiff, ttestresult)
+            dataframeoutL <- dataframeoutL + 1
+            rm(tempout, tempframe, desc, comparison1, comparison2)
           }
-          
-          # populate output
-          dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
-          dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s-%s', between[cB], tempvect[1], tempvect[2])
-          dataframeout[dataframeoutL,names(tempout$statistics)] <- tempout$statistics
-          dataframeout[dataframeoutL,'textoutput'] <- tempout$text
-          dataframeout[dataframeoutL,'Group1.label'] <- tempvect[1]
-          dataframeout[dataframeoutL,c('Group1.n', 'Group1.missing', 'Group1.mean', 'Group1.median', 'Group1.sd', 'Group1.se', 'Group1.min', 'Group1.max', 'Group1.distribution')] <- desc[1,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
-          dataframeout[dataframeoutL,'Group2.label'] <- tempvect[2]
-          dataframeout[dataframeoutL,c('Group2.n', 'Group2.missing', 'Group2.mean', 'Group2.median', 'Group2.sd', 'Group2.se', 'Group2.min', 'Group2.max', 'Group2.distribution')] <- desc[2,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
-          dataframeout[dataframeoutL,'TestChunk'] <- chunkingL
-          
-          desc$Variable <- dependentvariable[cDV]
-          desc$Group <- between[cB]
-          desc$CollapsedName[1] <- sprintf('%s: %s', between[cB], tempvect[1])
-          desc$CollapsedName[2] <- sprintf('%s: %s', between[cB], tempvect[2])
-          if (!is.null(masterdescriptives)) {
-            masterdescriptives <- rbind(masterdescriptives, desc)
-          } else {
-            masterdescriptives <- desc
-          }
-          
-          dataframeoutL <- dataframeoutL + 1
-          rm(tempout, tempframe, desc, comparison1, comparison2)
-          
-          
         } # end cComparison
         chunkingL <- chunkingL + 1
       } # end cDV
@@ -264,133 +237,108 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
       # for each dependent variable
       for (cDV in 1:dependentvariableL) {
-      
+        
         # for each comparison
         for (cComparison in 1:length(spfactorscomparisons)) {
           tempvect <- unlist(strsplit(spfactorscomparisons[cComparison], ':'))
           # Obtain databases for each group
           group1data <- workingdatabase[which(workingdatabase[,within[cB]] == tempvect[1]),]
           group2data <- workingdatabase[which(workingdatabase[,within[cB]] == tempvect[2]),]
-          
-          # Make sure each participants data has a match - paired samples
-          subgroup1data <- group1data[,c(subjectid[1], dependentvariable[cDV])]
-          subgroup1data <- subgroup1data[stats::complete.cases(subgroup1data),]
-          subgroup2data <- group2data[,c(subjectid[1], dependentvariable[cDV])]
-          subgroup2data <- subgroup2data[stats::complete.cases(subgroup2data),]
-          
-          if (collapse != FALSE) {
-            # Collapse to a single data point for each participant (if requested)
-            
-            newsubgroup1data <- data.frame(matrix(NA,nrow=1,ncol=ncol(subgroup1data)))
-            colnames(newsubgroup1data) <- colnames(subgroup1data)
-            ids <- unlist(as.character(subgroup1data[,subjectid[1]]))
-            for (cids in 1:length(ids)) {
-              # subset only data for that participant
-              subworkingdatabase <- subgroup1data[which(subgroup1data[,subjectid[1]] == ids[cids]),]
-              newsubgroup1data[cids,] <- subworkingdatabase[1,]
-              newsubgroup1data[cids,dependentvariable[cDV]] <- mean(subworkingdatabase[,dependentvariable[cDV]], na.rm= TRUE)
-            }
-            subgroup1data <- newsubgroup1data
-            
-            newsubgroup2data <- data.frame(matrix(NA,nrow=1,ncol=ncol(subgroup2data)))
-            colnames(newsubgroup2data) <- colnames(subgroup2data)
-            ids <- unlist(as.character(subgroup2data[,subjectid[1]]))
-            for (cids in 1:length(ids)) {
-              # subset only data for that participant
-              subworkingdatabase <- subgroup2data[which(subgroup2data[,subjectid[1]] == ids[cids]),]
-              newsubgroup2data[cids,] <- subworkingdatabase[1,]
-              newsubgroup2data[cids,dependentvariable[cDV]] <- mean(subworkingdatabase[,dependentvariable[cDV]], na.rm= TRUE)
-            }
-            subgroup2data <- newsubgroup2data
-            rm(newsubgroup1data, newsubgroup2data, cids, subworkingdatabase)
-          }
-          tempcompdatabase <- merge(subgroup1data, subgroup2data, by=subjectid[1], all = FALSE)
-          
-          # populate data
-          comparison1 <- tempcompdatabase[,2]
-          comparison2 <- tempcompdatabase[,3]
-          rm(tempcompdatabase, subgroup1data, subgroup2data)
+          subworkingdatabase <- rbind(group1data, group2data)
+          comparison1 <- group1data[,dependentvariable[cDV]]
+          comparison2 <- group2data[,dependentvariable[cDV]]
           tempframe <- data.frame(DV = c(comparison1, comparison2), Group = c(rep_len("1",length(comparison1)), rep_len("2",length(comparison2))))
           
           # obtain descriptives
           desc <- Rmimic::descriptives(variables='DV', groupvariable='Group', data=tempframe, verbose=FALSE)
+          # correct the standard error for the actual unique cases
+          desc$SE[1] <- as.numeric(desc$SD[1]) / length(unique(unlist(as.character(group1data[,subjectid[1]]))))
+          desc$SE[2] <- as.numeric(desc$SD[2]) / length(unique(unlist(as.character(group2data[,subjectid[1]]))))
+          desc$N[1] <- length(unique(unlist(as.character(group1data[,subjectid[1]]))))
+          desc$N[2] <- length(unique(unlist(as.character(group2data[,subjectid[1]]))))
           
-          # determine type of paired test to do
-          if (nonparametric == FALSE) {
-            # paired samples parametric test
-            
-            # test variance
-            varianceEqual <- TRUE
-            variancetest <- lawstat::levene.test(tempframe[,'DV'], tempframe[,'Group'], location="median")
-            if (variancetest$p.value <= studywiseAlpha) {
-              varianceEqual <- FALSE
+          # obtain correlation estimate
+          tempcal <- sprintf("subworkingdatabase <- doBy::summaryBy(%s ~", dependentvariable[1])
+          faclist <- c(subjectid[1], within[cB])
+          for (ccollapse in 1:length(faclist)) {
+            if (ccollapse == 1) {
+              tempcal <- sprintf('%s %s', tempcal, faclist[ccollapse])
+            } else {
+              tempcal <- sprintf('%s + %s', tempcal, faclist[ccollapse])
             }
-            ttestresult <- stats::t.test(x=comparison1, y=comparison2, alternative='two.sided', paired=TRUE, var.equal=varianceEqual, conf.level=confidenceinterval)
+          }
+          tempcal <- sprintf("%s, FUN=c(mean), data=subworkingdatabase, keep.names=TRUE)", tempcal)
+          suppressWarnings(eval(parse(text=tempcal)))
+          rm(tempcal, ccollapse)
+          subgroup1data <- subworkingdatabase[which(subworkingdatabase[,within[cB]] == tempvect[1]),]
+          subgroup1data <- subgroup1data[stats::complete.cases(subgroup1data),]
+          subgroup2data <- subworkingdatabase[which(subworkingdatabase[,within[cB]] == tempvect[2]),]
+          subgroup2data <- subgroup2data[stats::complete.cases(subgroup2data),]
+          tempcompdatabase <- merge(subgroup1data, subgroup2data, by=subjectid[1], all = FALSE)
+          
+          # paired samples
+          ttestresult <- list()
+          comparison1 <- tempcompdatabase[,3]
+          comparison2 <- tempcompdatabase[,5]
+          correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
+          ttestresult$correlation <- correlationtest$estimate[[1]]
+          ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
+          
+          # extract data from model fit
+          # emmeans like to pop out messages for main effects - Works for lmer and lm
+          if (toupper(df[1]) == toupper("Shattertwaite")) {
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='satterthwaite')))", within[cB])))
+          } else {
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='kenward-roger')))", within[cB])))
+          }
+          posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
+          
+          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[1], tempvect[2]))
+          if (length(testinx) == 0) {
+            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[2], tempvect[1]))
+          }
+          if (length(testinx) > 0) {
+            
+            ttestresult$statistic <- as.numeric(posthoctemptestmeansmatrix[testinx,5])
             ttestresult$statistic <- abs(ttestresult$statistic)
-            correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
-            ttestresult$correlation <- correlationtest$estimate[[1]]
-            ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
+            ttestresult$parameter[[1]] <- posthoctemptestmeansmatrix[testinx,4]
+            ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
+            ttestresult$method <- "Paired t-test"
+            
             ttestresult$effectsize <- ttestresult$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = ttestresult$statistic, df = ttestresult$parameter, conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval
-            tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
+            tempout <- ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Paired samples t-test'
             rm(varianceEqual, variancetest, correlationtest, ncp, ttestresult)
             
-          } else {
-            #Wilcoxon signed rank test (paired samples)
+            # populate output
+            dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
+            dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s-%s', within[cB], tempvect[1], tempvect[2])
+            dataframeout[dataframeoutL,names(tempout$statistics)] <- tempout$statistics
+            dataframeout[dataframeoutL,'textoutput'] <- tempout$text
+            dataframeout[dataframeoutL,'Group1.label'] <- tempvect[1]
+            dataframeout[dataframeoutL,c('Group1.n', 'Group1.missing', 'Group1.mean', 'Group1.median', 'Group1.sd', 'Group1.se', 'Group1.min', 'Group1.max', 'Group1.distribution')] <- desc[1,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
+            dataframeout[dataframeoutL,'Group2.label'] <- tempvect[2]
+            dataframeout[dataframeoutL,c('Group2.n', 'Group2.missing', 'Group2.mean', 'Group2.median', 'Group2.sd', 'Group2.se', 'Group2.min', 'Group2.max', 'Group2.distribution')] <- desc[2,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
+            dataframeout[dataframeoutL,'TestChunk'] <- chunkingL
             
-            # The V statistic changes depending on the order the variables are entered,
-            # Convention says take the smallest V value as the P value remains the same either way.
-            ttest1 <- stats::wilcox.test(x=comparison1, y=comparison2, paired=TRUE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=confidenceinterval)
-            ttest2 <- stats::wilcox.test(x=comparison2, y=comparison1, paired=TRUE, correct=FALSE, exact=FALSE, conf.int=TRUE, conf.level=confidenceinterval)
-            if (ttest1$statistic < ttest2$statistic) {
-              ttestresult <- ttest1
-              ttestRev <- ttest2
+            desc$Variable <- dependentvariable[cDV]
+            desc$Group <- within[cB]
+            desc$CollapsedName[1] <- sprintf('%s: %s', within[cB], tempvect[1])
+            desc$CollapsedName[2] <- sprintf('%s: %s', within[cB], tempvect[2])
+            if (!is.null(masterdescriptives)) {
+              masterdescriptives <- base::rbind(masterdescriptives, desc)
             } else {
-              ttestresult <- ttest2
-              ttestRev <- ttest1
+              masterdescriptives <- desc
             }
-            ttestresult$z.value <- abs(stats::qnorm(ttestresult$p.value/ 2))
-            ttestresult$effectsize <- abs(stats::qnorm(ttestresult$p.value/ 2))/sqrt(length(comparison2))
-            meandiff <- mean(comparison2)-mean(comparison1)
-            if (!(ttestresult$conf.int[1] <= meandiff) & (ttestresult$conf.int[2] >= meandiff)) {
-              ttestresult$conf.int[1] <- ttestRev$conf.int[1]
-              ttestresult$conf.int[2] <- ttestRev$conf.int[2]
-            }
-            tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
-            dataframeout[dataframeoutL,'Test'] <- 'Paired samples Wilcoxon signed rank test'
-            rm(ttest1, ttest2, ttestRev, meandiff, ttestresult)
-            
+            dataframeoutL <- dataframeoutL + 1
+            rm(tempout, tempframe, desc, comparison1, comparison2)
           }
-          
-          # populate output
-          dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
-          dataframeout[dataframeoutL,'Comparison'] <- sprintf('%s: %s-%s', within[cB], tempvect[1], tempvect[2])
-          dataframeout[dataframeoutL,names(tempout$statistics)] <- tempout$statistics
-          dataframeout[dataframeoutL,'textoutput'] <- tempout$text
-          dataframeout[dataframeoutL,'Group1.label'] <- tempvect[1]
-          dataframeout[dataframeoutL,c('Group1.n', 'Group1.missing', 'Group1.mean', 'Group1.median', 'Group1.sd', 'Group1.se', 'Group1.min', 'Group1.max', 'Group1.distribution')] <- desc[1,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
-          dataframeout[dataframeoutL,'Group2.label'] <- tempvect[2]
-          dataframeout[dataframeoutL,c('Group2.n', 'Group2.missing', 'Group2.mean', 'Group2.median', 'Group2.sd', 'Group2.se', 'Group2.min', 'Group2.max', 'Group2.distribution')] <- desc[2,c('N', 'Missing', 'Mean', "Median", 'SD', 'SE', 'Min', 'Max', 'Distribution')]
-          dataframeout[dataframeoutL,'TestChunk'] <- chunkingL
-          
-          desc$Variable <- dependentvariable[cDV]
-          desc$Group <- within[cB]
-          desc$CollapsedName[1] <- sprintf('%s: %s', within[cB], tempvect[1])
-          desc$CollapsedName[2] <- sprintf('%s: %s', within[cB], tempvect[2])
-          if (!is.null(masterdescriptives)) {
-            masterdescriptives <- base::rbind(masterdescriptives, desc)
-          } else {
-            masterdescriptives <- desc
-          }
-          
-          dataframeoutL <- dataframeoutL + 1
-          rm(tempout, tempframe, desc, comparison1, comparison2)
           
         } # end cComparison
         chunkingL <- chunkingL + 1
@@ -430,7 +378,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       temptextout3 <- sprintf("; %s", dataframeout$textoutput[cI])
     }
     
-    outPvalue <- fuzzyP(dataframeout$p.value[cI])
+    outPvalue <- Rmimic::fuzzyP(dataframeout$p.value[cI])
     if (outPvalue$interpret <= studywiseAlpha) {
       temptextout0 <- "The difference between"
       temptextout2 <- "was statistically significant"
@@ -536,7 +484,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       bigspancharacter <- " - "
     }
     
-    temptext <- "T-test Analysis"
+    temptext <- "LMER T-test Analysis"
     temptextspan <- floor(nchar(temptext)/2)
     pagespan <- floor(spansize/2)
     cat(sprintf("\n"))
@@ -546,11 +494,8 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     if (betweenvariableL > 0) {
       #independent samples ttest
       outstring <- sprintf('%sBetween subject analysis were conducted using', outstring)
-      if (nonparametric == FALSE) {
-        outstring <- sprintf('%s an independent samples t-test', outstring)
-      } else {
-        outstring <- sprintf('%s the non-parametric Mann-Whitney U-test', outstring)
-      }
+      outstring <- sprintf('%s an independent samples t-test', outstring)
+
       if ((!is.null(posthoc)) & (posthoc != FALSE)) {
         outstring <- sprintf('%s using the %s approach for post-hoc comparison corrections', outstring, posthoc)
       }
@@ -558,19 +503,16 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     }
     if (withinvariableL > 0) {
       outstring <- sprintf('%sWithin subject analysis were conducted using', outstring)
-      if (nonparametric == FALSE) {
-        outstring <- sprintf('%s a paired samples t-test', outstring)
-      } else {
-        outstring <- sprintf('%s the non-parametric Wilcoxon signed rank test', outstring)
-      }
+      outstring <- sprintf('%s a paired samples t-test', outstring)
+      
       if ((!is.null(posthoc)) & (posthoc != FALSE)) {
         outstring <- sprintf('%s using the %s approach for post-hoc comparison corrections', outstring, posthoc)
       }
       outstring <- sprintf('%s.', outstring)
     }
-      
+    
     outstring <- sprintf('%s Analysis were conducted using the', outstring)
-    outstring <- sprintf('%s stats (R Core Team, %s)', outstring, strsplit(as.character(utils::packageDate("stats")),"-")[[1]][1])
+    outstring <- sprintf('%s emmeans (Lenth, %s)', outstring, strsplit(as.character(utils::packageDate("emmeans")),"-")[[1]][1])
     outstring <- sprintf('%s, MBESS (Kelley, %s)', outstring, strsplit(as.character(utils::packageDate("MBESS")),"-")[[1]][1])
     outstring <- sprintf('%s, and Rmimic (Pontifex, %s) packages', outstring, strsplit(as.character(utils::packageDate("Rmimic")),"-")[[1]][1])
     rvers <- unlist(strsplit(R.version.string, " "))
@@ -822,5 +764,4 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   return(res)
   
 }
-                             
-                           
+

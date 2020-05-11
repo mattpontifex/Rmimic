@@ -8,6 +8,7 @@
 #' @param numparticipants Number of unique participants in model.
 #' @param numfactors Number of fixed and random factors in model.
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
+#' @param data Data.frame input for parent function use.
 #' 
 #' @return A list with:
 #' \item{fit}{lmerTest object}
@@ -29,7 +30,7 @@
 #'
 #' @export
 
-lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors=NULL, confidenceinterval=0.95) {
+lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors=NULL, confidenceinterval=0.95, data=NULL) {
 
   spancharacter <- "-"
   operatingsystem <- Sys.info()['sysname']
@@ -41,6 +42,13 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
 
   result <- list()
   result$fit <- fit
+  
+  # when called from parent function the dataframe cannot be found
+  if (!is.null(data)) {
+    framename <- as.character(fit@call[[3]])
+    eval(parse(text=sprintf('%s <- data', framename)))
+  }
+  
   result$ANOVA <- ''
   result$RandomEffectsANOVA <- ''
   result$Rsquared <- ''
@@ -65,9 +73,9 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
   if (toupper(model) == toupper("ANOVA")) {
     as <- NULL
     if (toupper(df) == toupper("Shattertwaite")) {
-      as <- data.frame(stats::anova(fit, type = 3))
+      as <- data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3)))
     } else {
-      as <- data.frame(stats::anova(fit, type = 3, ddf = "Kenward-Roger"))
+      as <- data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3, ddf = "Kenward-Roger")))
     }
     
     dataframeout <- data.frame(matrix(NA,nrow=nrow(as),ncol=12))
@@ -238,9 +246,14 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
       temptext <- sprintf('%s%s,', temptext, pullvalue)
       
       # logLik stat
-      pullvalue <- sprintf(' = %.1f', round(as.numeric(result$RandomEffectsANOVA$LogLikelihood[cR]), digits = 1))
-      if (pullvalue == " = 0.0") {
+      tloglik <- round(as.numeric(result$RandomEffectsANOVA$LogLikelihood[cR]), digits = 1)
+      if (tloglik < 0.1) {
         pullvalue = " < 0.1"
+      } else {
+        pullvalue <- sprintf(' = %.1f', tloglik)
+        if (pullvalue == " = 0.0") {
+          pullvalue = " < 0.1"
+        }
       }
       temptext <- sprintf('%s log-likelihood%s, p', temptext, pullvalue)
       

@@ -10,7 +10,8 @@ lmer2text(
   df = NULL,
   numparticipants = NULL,
   numfactors = NULL,
-  confidenceinterval = 0.95
+  confidenceinterval = 0.95,
+  data = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ lmer2text(
 \item{numfactors}{Number of fixed and random factors in model.}
 
 \item{confidenceinterval}{Decimal representation of confidence interval. Default 0.95.}
+
+\item{data}{Data.frame input for parent function use.}
 }
 \value{
 A list with:

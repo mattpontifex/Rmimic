@@ -20,6 +20,7 @@
 #' @importFrom fmsb VIF
 #' @importFrom psychometric CI.Rsq
 #' @importFrom performance r2_tjur
+#' @importFrom utils packageDate
 #' 
 #'
 #' @examples

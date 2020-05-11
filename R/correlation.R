@@ -30,6 +30,7 @@
 #' @importFrom stats cor.test
 #' @importFrom ppcor pcor.test
 #' @importFrom psych r.con
+#' @importFrom utils packageDate
 #'
 #' @examples
 #'     # Compute correlation.

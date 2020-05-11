@@ -21,6 +21,7 @@
 #'
 #' @importFrom epitools oddsratio.fisher oddsratio.wald
 #' @importFrom pkgcond suppress_conditions
+#' @importFrom utils packageDate
 #'
 #' @examples
 #' 

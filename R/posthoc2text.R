@@ -35,7 +35,11 @@ posthoc2text <- function(result, studywiseAlpha=0.05, spansize=95, currentlevelo
     
     temp <- unlist(strsplit(as.character(effectname),"[:]"))
     outtext <- sprintf('There was')
-    outPvalue <- Rmimic::fuzzyP(as.numeric(result$stats$p[cR]))
+    indx <- which(colnames(result$stats) == "p")
+    if (length(indx) == 0) {
+      indx <- which(colnames(result$stats) == "p.value")
+    }
+    outPvalue <- Rmimic::fuzzyP(as.numeric(result$stats[cR,indx]))
     if (outPvalue$interpret <= studywiseAlpha) {
       if (length(temp) > 1) {
         outtext <- sprintf("%s an interaction of %s", outtext, paste(temp, collapse=sprintf(" \u00D7 ")))

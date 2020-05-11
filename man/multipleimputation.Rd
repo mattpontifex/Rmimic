@@ -5,7 +5,8 @@
 \title{multipleimputation}
 \usage{
 multipleimputation(
-  database,
+  data = FALSE,
+  variables = FALSE,
   method = "pmm",
   imputations = 50,
   maxiterations = 0,
@@ -14,7 +15,9 @@ multipleimputation(
 )
 }
 \arguments{
-\item{database}{Database of variables.}
+\item{data}{Data frame containing the variables of interest.}
+
+\item{variables}{Variable name or list of variables to compute descriptives for.}
 
 \item{method}{A string specifying the imputation method. Default is predictive mean matching but see mice help file.}
 
@@ -36,7 +39,7 @@ Use multiple imputation (using the mice package) to replace missing data points.
 
     # Run multiple imputation to replace missing cases
     # in built in dataset airquality
-    data <- multipleimputation(airquality, imputations=10)
+    data <- multipleimputation(data=airquality, imputations=10)
 
 }
 \author{
