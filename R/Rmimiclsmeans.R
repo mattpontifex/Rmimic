@@ -14,6 +14,8 @@
 #' @param confidenceinterval Parameter to control the confidence interval. Default is 0.95.
 #' @param studywiseAlpha Parameter to control the study wise alpha for use in the post hoc compairsons. Default is 0.05.
 #' @param verbose Parameter to print all output to console. Default is TRUE.
+#' @param nest Variable name corresponding to the parent nesting of interaction terms.
+#' @param hold Variable name corresponding to the constant in the parent nesting of interaction terms.
 #'
 #' @return
 #' \item{descriptives}{Data table of descriptive statistics.}
@@ -21,7 +23,7 @@
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 10, 2020
 #'
-#' @importFrom stats complete.cases
+#' @importFrom stats complete.cases cor.test
 #' @importFrom MBESS conf.limits.nct
 #' @importFrom utils packageDate
 #' @importFrom pkgcond suppress_conditions
@@ -31,7 +33,7 @@
 #'
 #' @export 
 
-Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, df=NULL, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE) {
+Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, df=NULL, posthoc=NULL, criticaldiff=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, nest=NULL, hold=NULL) {
   
   #debug
   #fit <- fit
@@ -72,6 +74,16 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     }
   } else {
     df = "Kenward-Roger"
+  }
+  if (is.null(nest)) {
+    nest <- ''
+  } else {
+    nest <- sprintf('%s:', nest)
+  }
+  if (is.null(hold)) {
+    hold <- ''
+  } else {
+    hold <- sprintf('%s,', hold)
   }
   
   # Assess what got fed into the function
@@ -150,23 +162,22 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           # extract data from model fit
           # emmeans like to pop out messages for main effects - Works for lmer and lm
           if (toupper(df[1]) == toupper("Shattertwaite")) {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='satterthwaite')))", between[cB])))
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='satterthwaite')))", nest, between[cB])))
           } else {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='kenward-roger')))", between[cB])))
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='kenward-roger')))", nest, between[cB])))
           }
           posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
           
-          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[1], tempvect[2]))
+          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[1], hold,tempvect[2]))
           if (length(testinx) == 0) {
-            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[2], tempvect[1]))
+            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[2], hold,tempvect[1]))
           }
           if (length(testinx) > 0) {
-              
             
             ttestresult <- list()
             ttestresult$statistic <- as.numeric(posthoctemptestmeansmatrix[testinx,5])
             ttestresult$statistic <- abs(ttestresult$statistic)
-            ttestresult$parameter[[1]] <- posthoctemptestmeansmatrix[testinx,4]
+            ttestresult$parameter[[1]] <- floor(posthoctemptestmeansmatrix[testinx,4])
             ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
             ttestresult$method <- " Two Sample t-test"
             ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/desc$N[1]) + (1/desc$N[2])))
@@ -287,21 +298,21 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           # extract data from model fit
           # emmeans like to pop out messages for main effects - Works for lmer and lm
           if (toupper(df[1]) == toupper("Shattertwaite")) {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='satterthwaite')))", within[cB])))
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='satterthwaite')))", nest, within[cB])))
           } else {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s), adjust = 'none', mode='kenward-roger')))", within[cB])))
+            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='kenward-roger')))", nest, within[cB])))
           }
           posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
           
-          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[1], tempvect[2]))
+          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[1], hold,tempvect[2]))
           if (length(testinx) == 0) {
-            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s - %s', tempvect[2], tempvect[1]))
+            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[2], hold,tempvect[1]))
           }
           if (length(testinx) > 0) {
             
             ttestresult$statistic <- as.numeric(posthoctemptestmeansmatrix[testinx,5])
             ttestresult$statistic <- abs(ttestresult$statistic)
-            ttestresult$parameter[[1]] <- posthoctemptestmeansmatrix[testinx,4]
+            ttestresult$parameter[[1]] <- floor(posthoctemptestmeansmatrix[testinx,4])
             ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
             ttestresult$method <- "Paired t-test"
             

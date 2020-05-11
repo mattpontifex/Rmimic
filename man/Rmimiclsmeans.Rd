@@ -16,7 +16,9 @@ Rmimiclsmeans(
   criticaldiff = NULL,
   confidenceinterval = 0.95,
   studywiseAlpha = 0.05,
-  verbose = TRUE
+  verbose = TRUE,
+  nest = NULL,
+  hold = NULL
 )
 }
 \arguments{
@@ -43,6 +45,10 @@ Rmimiclsmeans(
 \item{studywiseAlpha}{Parameter to control the study wise alpha for use in the post hoc compairsons. Default is 0.05.}
 
 \item{verbose}{Parameter to print all output to console. Default is TRUE.}
+
+\item{nest}{Variable name corresponding to the parent nesting of interaction terms.}
+
+\item{hold}{Variable name corresponding to the constant in the parent nesting of interaction terms.}
 }
 \value{
 \item{descriptives}{Data table of descriptive statistics.}
