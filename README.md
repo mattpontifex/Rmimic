@@ -95,6 +95,22 @@ parameters for the approach (pearson (default), spearman, or kendall).
 ``` 
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
+
+* **RmimicMLAnova**: Function that computes a SPSS style univariate ANOVA with effect size and confidence intervals using a multi-level model from the lme4 function. Main effects and interactions are automatically decomposed using the
+specified post-hoc corrections. 
+```r
+    workingdatabase <- Rmimic::alertness
+    workingdatabase <- workingdatabase[which(workingdatabase$Condition == 'Condition2'),]
+    anovaresult <- Rmimic::RmimicMLAnova(data = workingdatabase,dependentvariable = "Alertness",
+                              subjectid = "PartID", between = "Group", within = c("Time"), randomintercept = c("PartID"))
+```
+<p align="center"><img src="/screencaps/screencap_RmimicMLAnova1.png?raw=true" width="600" alt="screencap RmimicMLAnova1"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicMLAnova2.png?raw=true" width="600" alt="screencap RmimicMLAnova2"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicMLAnova3.png?raw=true" width="600" alt="screencap RmimicMLAnova3"></p>
+<p align="center"><img src="/screencaps/screencap_RmimicMLAnova4.png?raw=true" width="600" alt="screencap RmimicMLAnova4"></p>
+
+
+
 ## Main Function List
 * **clusterthreshold1d**: Function that calculates contiguous clusters of locations in a 1D array that are
 above or below some threshold and of some minimum cluster size (i.e., a cluster of 30 points all below 0.05).
