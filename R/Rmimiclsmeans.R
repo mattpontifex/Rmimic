@@ -192,7 +192,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Independent samples t-test'
-            rm(varianceEqual, variancetest, ncp, ttestresult)
+            rm(ncp, ttestresult)
             
             # populate output
             dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
@@ -324,7 +324,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             tempout <- ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Paired samples t-test'
-            rm(varianceEqual, variancetest, correlationtest, ncp, ttestresult)
+            rm(correlationtest, ncp, ttestresult)
             
             # populate output
             dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
