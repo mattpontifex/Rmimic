@@ -102,7 +102,8 @@ specified post-hoc corrections.
     workingdatabase <- Rmimic::alertness
     workingdatabase <- workingdatabase[which(workingdatabase$Condition == 'Condition2'),]
     anovaresult <- Rmimic::RmimicMLAnova(data = workingdatabase,dependentvariable = "Alertness",
-                              subjectid = "PartID", between = "Group", within = c("Time"), randomintercept = c("PartID"))
+                              subjectid = "PartID", between = "Group", within = c("Time"), 
+                              randomintercept = c("PartID"))
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicMLAnova1.png?raw=true" width="600" alt="screencap RmimicMLAnova1"></p>
 <p align="center"><img src="/screencaps/screencap_RmimicMLAnova2.png?raw=true" width="600" alt="screencap RmimicMLAnova2"></p>
@@ -157,7 +158,7 @@ intervals.
 * **lmer2text**: Function to output lmerTest::lmer results in APA style format with effect sizes and confidence
 intervals. The function will also work with lme4:lmer models, however these models do not report probability values.
 ```r
-    fit <- lmerTest::lmer(Alertness ~ Group*Drug*Dose + (1 | PartID), data=elashoff)
+    fit <- lmerTest::lmer(Alertness ~ Group*Drug*Dose + (1 | PartID), data=Rmimic::elashoff)
     result <- Rmimic::lmer2text(fit, df="Kenward-Roger", numparticipants=16, numfactors=4)
 ```
 
