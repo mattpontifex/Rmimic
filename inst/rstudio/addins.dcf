@@ -3,6 +3,11 @@ Description: Compute SPSS style descriptive statistics.
 Binding: pop_descriptives
 Interactive: true
 
+Name: Impute Missing Data
+Description: Use multiple imputation to replace missing data points.
+Binding: pop_imputation
+Interactive: true
+
 Name: Correlations
 Description: Compute SPSS style correlations.
 Binding: pop_correlation
@@ -21,6 +26,11 @@ Interactive: true
 Name: ANOVA
 Description: Compute SPSS style univariate ANOVA with effect size and confidence intervals.
 Binding: pop_RmimicANOVA
+Interactive: true
+
+Name: Multi-Level Model ANOVA
+Description: Compute SPSS style univariate multi-level model with effect size and confidence intervals.
+Binding: pop_RmimicMLAnova
 Interactive: true
 
 Name: Regression
