@@ -1,10 +1,10 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic
-Version: 0.1.4.91
+Version: 1.0.0.1
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
-Description: An R package that is useful to mimic functionalities of popular statistics software packages.
+Description: An R package that mimic outputs of popular commercial statistics software packages.
 Depends:
     R (>= 3.5.0),
     mice

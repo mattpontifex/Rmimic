@@ -48,7 +48,15 @@
 #' @export
 
 RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, covariates=NULL, randomintercept=NULL, randomslope=NULL, df = NULL, posthoc="False Discovery Rate Control", FDRC=0.05, planned=NULL, suppressposthoc=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, verbosedescriptives=TRUE, posthoclimit=6) {
-    
+  
+  #(1|participant) - specifies random intercept, each participant has a line but all lines have the same slope (i.e., the effect is the same for each participant, they just start at different places)
+  #(mode|participant) - specifies a random slope for mode for each participant
+  
+  # NEXT STEPS
+  #http://rpsychologist.com/r-guide-longitudinal-lme-lmer
+  #https://web.stanford.edu/class/psych253/section/section_8/lmer_examples.html
+  #https://www.zoology.ubc.ca/~schluter/R/fit-model/
+  
   # debug
   debug <- FALSE
   if (debug == TRUE) {
@@ -165,6 +173,24 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
   indivparticipant <- sort(unique(as.character(completedata[,subjectid[1]]))) # recompute
   
   completedata[,subjectid[1]] <- factor(completedata[,subjectid[1]]) # make sure subject is a factor
+
+  # make sure at least two levels of all fixed terms
+  erroroutlist <- c()
+  for (cB in 1:length(fixedterms)) {
+    tempvect <- sort(unique(unlist(as.character(completedata[,fixedterms[cB]]))))
+    if (length(tempvect) < 2) {
+      erroroutlist <- c(erroroutlist, fixedterms[cB])
+    }
+  }
+  if (length(erroroutlist) > 0) {
+    if (length(erroroutlist) > 1) {
+      outtext <- sprintf('Alert: Rmimic::RMimicMLAnova the variables %s only contain one level.', paste(erroroutlist, sep=", "))
+    } else {
+      outtext <- sprintf('Alert: Rmimic::RMimicMLAnova the variable %s only contains a single level.', erroroutlist)
+    }
+    Rmimic::typewriter(outtext, tabs=0, spaces=2, characters=floor(spansize*.9))
+    stop("Rmimic::RMimicMLAnova each factor must have at least two levels")
+  }
   
   # Check which random factors can be applied
   booloverfitwarning <- FALSE
