@@ -331,7 +331,11 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             ttestresult$correlation <- correlationtest$estimate[[1]]
             ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
             ttestresult$effectsize <- ttestresult$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = ttestresult$statistic, df = ttestresult$parameter, conf.level = confidenceinterval))
+            temptstat <- ttestresult$statistic
+            if (temptstat > 37.6) {
+              temptstat <- temptstat
+            }
+            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval
