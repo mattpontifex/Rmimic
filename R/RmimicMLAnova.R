@@ -965,7 +965,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
             }
           }
         }
-        rm(ncomp, temp, rank, outPvalue, temppval, criticalphrase)
+        rm(ncomp, temp, rank, outPvalue, temppval)
       }
     }
   }
