@@ -168,7 +168,7 @@ pop_RmimicLMcontrast <- function() {
           # user has chosen a DV
           if ((!is.null(input$select_M1variables)) | (!is.null(input$select_M2variables))) {
             
-            
+            print("line171")
             M1variables <- input$select_M1variables
             if (length(which(M1variables == '< constant >')) > 0) {
               M1variables[which(M1variables == '< constant >')] <- '1'
@@ -211,12 +211,12 @@ pop_RmimicLMcontrast <- function() {
               tmpformsimple <- sprintf('%s ~ 1', input$select_DV)
               tmpcallsimple <- sprintf('%s%s, %s',tmppref,tmpformsimple,tempsuff)
               listofcalls <- c(listofcalls, tmpcallsimple)
-              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms', tmpform)
+              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms)', tmpform)
               listofcalls <- c(listofcalls, tmpcallalt)
             } else if (input$select_M1style == "Backward Stepwise") {
               tmpcall <- sprintf('%s%s, %s',tmppref,tmpform,tempsuff)
               listofcalls <- c(listofcalls, tmpcall)
-              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms')
+              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms)')
               listofcalls <- c(listofcalls, tmpcallalt)
             }
             
@@ -229,12 +229,12 @@ pop_RmimicLMcontrast <- function() {
               tmpformsimple <- sprintf('%s ~ 1', input$select_DV)
               tmpcallsimple <- sprintf('%s%s, %s',tmppref2,tmpformsimple,tempsuff)
               listofcalls <- c(listofcalls, tmpcallsimple)
-              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms', tmpform)
+              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms)', tmpform)
               listofcalls <- c(listofcalls, tmpcallalt)
             } else if (input$select_M2style == "Backward Stepwise") {
               tmpcall <- sprintf('%s%s, %s',tmppref2,tmpform,tempsuff)
               listofcalls <- c(listofcalls, tmpcall)
-              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms')
+              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms)')
               listofcalls <- c(listofcalls, tmpcallalt)
             }
             
