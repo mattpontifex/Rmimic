@@ -659,7 +659,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             }
           }
         }
-        rm(ncomp, temp, rank, outPvalue, temppval, criticalphrase)
+        rm(ncomp, temp, rank, outPvalue, temppval)
       }
     }
   }
