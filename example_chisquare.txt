@@ -1,0 +1,37 @@
+
+library('gmodels')
+library('epitools')
+
+# Take the built in Titanic frequency table and make it a data.frame
+temp <- as.data.frame(Titanic)
+freqindx <- which(tolower(names(temp)) == (tolower('freq')))
+tempdata <- data.frame(matrix(NA,nrow=0,ncol=length(names(temp))))
+names(tempdata) <- names(temp)
+for (cR in 1:nrow(temp)) {
+  if (as.integer(temp[cR,freqindx]) > 0) {
+    # assuming that there is a count
+    subtempdata <- data.frame(matrix(NA,nrow=as.integer(temp[cR,freqindx]),ncol=length(names(temp))))
+    names(subtempdata) <- names(temp)
+    for (cC in 1:ncol(temp)) {
+      subtempdata[,cC] <- temp[cR,cC]
+    }
+    tempdata <- rbind(tempdata, subtempdata)
+    rm(subtempdata)
+  }
+}
+workingdata <- tempdata
+rm(temp, tempdata, cR, cC, freqindx)
+
+gmodels::CrossTable(workingdata$Sex, workingdata$Survived, fisher=TRUE, chisq=TRUE, expected=TRUE, sresid=TRUE, format="SPSS")
+
+#http://www.biostathandbook.com/small.html
+#Indicates that given modern computational processes, for samples under 1,000 we should always use an exact test
+
+# direction matters for both X and Y
+# compares the odds of the predictor (x) relative to the baseline predictor (first factor in list)
+# the odds are for moving from the baseline outcome (first factor in y) to the last factor in list (binary decision)
+# x can have many factors; y must only be a binary set of levels
+epitools::oddsratio.fisher(x=workingdata$Sex, y=workingdata$Survived,correction = FALSE,verbose = FALSE,conf.level = 0.95)
+
+
+
