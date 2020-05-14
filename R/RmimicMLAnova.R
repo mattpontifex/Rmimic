@@ -694,13 +694,13 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
         if (factorsinvolvedL == 1) {
           
           # main effect
-          ttestresult <- Rmimic::Rmimiclsmeans(fit, completedata, 
+          ttestresult <- pkgcond::suppress_conditions(Rmimic::Rmimiclsmeans(fit, completedata, 
                                   dependentvariable=dependentvariable[1], 
                                   subjectid=subjectid[1], 
                                   between=subbetween, 
                                   within=subwithin,
                                   df=df, posthoc=subposthoc,
-                                  confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE)
+                                  confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE))
           
           # modify output to indicate subtest
           for (cE in 1:nrow(ttestresult$stats)) {
@@ -780,7 +780,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                 # only a t-test is required
                 #print(sprintf('Nest = %s; Hold = %s', currentfactorinvolved, currentfactorlevelsinvolved[cD]))
                 
-                ttestresult <- Rmimic::Rmimiclsmeans(fit, subworkingdatabase, 
+                ttestresult <- pkgcond::suppress_conditions(Rmimic::Rmimiclsmeans(fit, subworkingdatabase, 
                                              dependentvariable=dependentvariable[1], 
                                              subjectid=subjectid[1], 
                                              between=subbetween, 
@@ -788,7 +788,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                                              df=df, posthoc=subposthoc,
                                              nest=currentfactorinvolved,
                                              hold=currentfactorlevelsinvolved[cD],
-                                             confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE)
+                                             confidenceinterval=confidenceinterval,studywiseAlpha=studywiseAlpha,verbose=FALSE))
                 
                 # modify output to indicate subtest
                 for (cE in 1:nrow(ttestresult$stats)) {
@@ -877,7 +877,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                   
                   #print(sprintf('Line844 - repeat full model but use RmimicAnova'))
                   # have to run an ANOVA then
-                  subresult <- Rmimic::RmimicAnova(subworkingdatabase,
+                  subresult <- pkgcond::suppress_conditions(Rmimic::RmimicAnova(subworkingdatabase,
                                    dependentvariable=dependentvariable[1], 
                                    subjectid=subjectid[1], 
                                    between=subbetween, 
@@ -885,12 +885,12 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                                    posthoc=subposthoc,
                                    planned=posthocplanned,
                                    confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha,
-                                   verbose=FALSE)
+                                   verbose=FALSE))
                   
                 } else {
                   
                   #print(sprintf('Line844 - repeat full model but use RmimicMLAnova'))
-                  subresult <- Rmimic::RmimicMLAnova(subworkingdatabase,
+                  subresult <- pkgcond::suppress_conditions(Rmimic::RmimicMLAnova(subworkingdatabase,
                                    dependentvariable=dependentvariable[1], 
                                    subjectid=subjectid[1], 
                                    between=subbetween, 
@@ -900,7 +900,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                                    df = df, posthoc=subposthoc, 
                                    planned=posthocplanned, 
                                    confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, 
-                                   verbose=FALSE)
+                                   verbose=FALSE))
                   
                 }
                 # send to output as seperate entry
