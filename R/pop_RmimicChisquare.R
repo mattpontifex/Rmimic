@@ -5,7 +5,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 7, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
+#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer HTML
 #' @importFrom shinyWidgets pickerInput actionBttn
 #' @importFrom pkgcond suppress_conditions
 #' 
@@ -89,7 +89,7 @@ pop_RmimicChisquare <- function() {
           workingdatavariablestypes <- c(workingdatavariablestypes, sprintf('    type: %s', testvectout))
         }
         
-        model1contrasttext <- HTML("Only show significant breakdowns?<br><small>
+        model1contrasttext <- shiny::HTML("Only show significant breakdowns?<br><small>
                                    Results of the overall model will still be shown.</small>")
         
         shiny::wellPanel(

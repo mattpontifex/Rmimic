@@ -5,7 +5,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 10, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
+#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer HTML
 #' @importFrom shinyWidgets pickerInput actionBttn
 #' @importFrom pkgcond suppress_conditions
 #' 
@@ -21,7 +21,7 @@ pop_imputation <- function() {
   environelements <- ls(envir=.GlobalEnv) # global elements
   environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
   environelements <- environelements[environelementsidx] 
-  computetext <- HTML("Compute<br><small>
+  computetext <- shiny::HTML("Compute<br><small>
                                    Note: This may take a few moments.</small>")
   
   info_dfs <- lapply(
@@ -100,9 +100,9 @@ pop_imputation <- function() {
                            "Random sample from observed values",
                            "Unconditional mean imputation",
                            "Logistic regression")
-        imputationtext <- HTML("Select the method for imputation:<br><small>
+        imputationtext <- shiny::HTML("Select the method for imputation:<br><small>
                                    See mice help file for a complete list of methods.</small>")
-        imputationnumtext <- HTML("How many imputations should be performed?<br><small>
+        imputationnumtext <- shiny::HTML("How many imputations should be performed?<br><small>
                                    The larger the number of imputations, the longer this will take.</small>")
         
         
@@ -191,7 +191,7 @@ pop_imputation <- function() {
         # execute call
         boolattempt <- FALSE
         boolattempt <- tryCatch({
-          eval(parse(text=tmpcall))
+          eval(parse(text=tmpcall), envir = .GlobalEnv)
           boolattempt <- TRUE}
         )
         if (boolattempt == FALSE) {

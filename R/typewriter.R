@@ -14,6 +14,10 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, August 31, 2017
 #'
 #'
+#' @importFrom stringr str_detect
+#'
+#'
+#'
 #' @examples
 #'     # Example text block
 #'     textblock <- "Lorem ipsum dolor sit amet, consectetur adipiscing elit,
@@ -129,12 +133,22 @@ typewriter <- function(textstring = NULL, tabs = NULL, spaces = NULL, characters
       while (substringIndex <= length(tempsubstrings)) {
         outputvect <- matrix(NA, nrow = 1, ncol = 1)
         spanstring <- paste(unlist(tempsubstrings[startindex:substringIndex]),collapse=" ")
+        flag <- stringr::str_detect(spanstring, '\n') # contains carrage return
+        if (flag == TRUE) {
+          spanstring <- unlist(strsplit(as.character(spanstring), "\n"))
+          if (spanstring[1] == "") {
+            spanstring <- spanstring[2]
+          } else {
+            spanstring <- spanstring[1]
+          }
+        }
         if (rowindex == 1) {
           spanstring <- sprintf("%s%s", firstlinespacing, spanstring)
         } else {
           spanstring <- sprintf("%s%s", nextlinespacing, spanstring)
         }
-        if ((nchar(spanstring) > characters) | (nchar(spanstring) > wid) | (substringIndex==length(tempsubstrings))) {
+        
+        if ((nchar(spanstring) > characters) | (nchar(spanstring) > wid) | (substringIndex==length(tempsubstrings)) | (flag == TRUE)) {
          # if the character span exceeds the requested length or
          # if the character span exceeds the width of the screen or
          # if the end of the row has been reached

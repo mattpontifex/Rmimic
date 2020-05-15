@@ -40,13 +40,13 @@ descriptives <- function(variables=FALSE, groupvariable=FALSE, data=FALSE, verbo
   
   if (variables[1] == FALSE) {
     variables <- names(data)
-    comparisondataframe <- data
+    comparisondataframe <- as.data.frame(data)
   } else {
     compvariables <- variables
     if (groupvariable[1] != FALSE) {
       compvariables <- c(compvariables, groupvariable)
     }
-    comparisondataframe <- data.frame(data[,compvariables])
+    comparisondataframe <- data.frame(as.data.frame(data[,compvariables]))
     names(comparisondataframe) <- compvariables
   }
   

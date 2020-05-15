@@ -5,7 +5,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 11, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer icon textInput
+#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer icon textInput HTML
 #' @importFrom shinyWidgets pickerInput actionBttn
 #' @importFrom pkgcond suppress_conditions
 #' 
@@ -95,10 +95,10 @@ pop_RmimicMLAnova <- function() {
           }
           workingdatavariablestypes <- c(workingdatavariablestypes, sprintf('    type: %s', testvectout))
         }
-        plannedcontrasttext <- HTML("Use this field to indicate any planned contrasts.<br><small>Contrasts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
+        plannedcontrasttext <- shiny::HTML("Use this field to indicate any planned contrasts.<br><small>Contrasts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
         
-        randomintercepttext <- HTML("Use this field to indicate any random intercepts.<br><small>(the effect is the same for each variable, it just starts at different places)<br>Intercepts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
-        randomslopetext <- HTML("Use this field to indicate any random slopes to account for in the model.<br><small>(the effect has a different slope for each variable)<br>Slopes should be provided in quotes seperated by a comma in the form (mode | participant).</small>")
+        randomintercepttext <- shiny::HTML("Use this field to indicate any random intercepts.<br><small>(the effect is the same for each variable, it just starts at different places)<br>Intercepts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
+        randomslopetext <- shiny::HTML("Use this field to indicate any random slopes to account for in the model.<br><small>(the effect has a different slope for each variable)<br>Slopes should be provided in quotes seperated by a comma in the form (mode | participant).</small>")
         
         
         # determine what is presented based upon format

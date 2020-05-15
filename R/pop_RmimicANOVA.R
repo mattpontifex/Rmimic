@@ -5,7 +5,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 5, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer icon textInput
+#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer icon textInput HTML
 #' @importFrom shinyWidgets pickerInput actionBttn
 #' @importFrom pkgcond suppress_conditions
 #' 
@@ -95,7 +95,7 @@ pop_RmimicANOVA <- function() {
           }
           workingdatavariablestypes <- c(workingdatavariablestypes, sprintf('    type: %s', testvectout))
         }
-        plannedcontrasttext <- HTML("Use this field to indicate any planned contrasts.<br><small>Contrasts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
+        plannedcontrasttext <- shiny::HTML("Use this field to indicate any planned contrasts.<br><small>Contrasts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
         
         # determine what is presented based upon format
         if (input$select_inputstyle == "Yes - Wide Format") {

@@ -5,9 +5,10 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 5, 2020
 #'
 #' @importFrom miniUI miniPage gadgetTitleBar miniContentPanel miniTitleBarCancelButton miniTitleBarButton
-#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer
+#' @importFrom shiny uiOutput renderUI wellPanel observeEvent stopApp runGadget dialogViewer HTML
 #' @importFrom shinyWidgets pickerInput actionBttn
 #' @importFrom pkgcond suppress_conditions
+#' @importFrom stats glm lm binomial
 #' 
 #'
 #' @export
@@ -91,8 +92,9 @@ pop_RmimicLMcontrast <- function() {
         workingdatavariables <- c('< constant >', workingdatavariables)
         workingdatavariablestypes <- c('    type: constant', workingdatavariablestypes)
         
-        model1contrasttext <- HTML("Model 1: Select the explanatory variables (independent variables) for the base model:<br><small>
+        model1contrasttext <- shiny::HTML("Model 1: Select the explanatory variables (independent variables) for the base model:<br><small>
                                    This can be a constant or control variables.</small>")
+        model2contrasttext <- shiny::HTML("Model 2: Select the explanatory variables (independent variables) that should be added to the base model:")
         
         shiny::wellPanel(
           shiny::tagList(
@@ -101,9 +103,9 @@ pop_RmimicLMcontrast <- function() {
               inputId = "select_DV",
               label = "Select the variable you are trying to predict (dependent variable):",
               choices = workingdatavariables, width = "100%",
-              multiple = TRUE,
+              multiple = FALSE,
               choicesOpt = list(subtext = workingdatavariablestypes),
-              selected = NULL
+              selected = 0
             ),
             
             shinyWidgets::radioGroupButtons(
@@ -128,7 +130,7 @@ pop_RmimicLMcontrast <- function() {
             shinyWidgets::radioGroupButtons(
               inputId = "select_M1style",
               label = "How should Model 1 be run?",
-              choices = c("All Variables Entered","Forward Stepwise","Backward Stepwise"),
+              choices = c("All Variables Entered","Forward Stepwise","Bidirectional Stepwise"),
               checkIcon = list(yes = shiny::icon("ok", lib = "glyphicon")),
               size = "normal",
               width = "100%",
@@ -137,7 +139,7 @@ pop_RmimicLMcontrast <- function() {
             
             shinyWidgets::pickerInput(
               inputId = "select_M2variables",
-              label = "Model 2: Select the explanatory variables (independent variables) for the model of interest:",
+              label = model2contrasttext,
               choices = workingdatavariables, width = "100%",
               options = list(`actions-box` = TRUE),
               multiple = TRUE,
@@ -148,7 +150,7 @@ pop_RmimicLMcontrast <- function() {
             shinyWidgets::radioGroupButtons(
               inputId = "select_M2style",
               label = "How should Model 2 be run?",
-              choices = c("All Variables Entered","Forward Stepwise","Backward Stepwise"),
+              choices = c("All Variables Entered","Forward Stepwise","Bidirectional Stepwise"),
               checkIcon = list(yes = shiny::icon("ok", lib = "glyphicon")),
               size = "normal",
               width = "100%",
@@ -168,7 +170,7 @@ pop_RmimicLMcontrast <- function() {
           # user has chosen a DV
           if ((!is.null(input$select_M1variables)) | (!is.null(input$select_M2variables))) {
             
-            print("line171")
+            # basic housekeeping
             M1variables <- input$select_M1variables
             if (length(which(M1variables == '< constant >')) > 0) {
               M1variables[which(M1variables == '< constant >')] <- '1'
@@ -176,15 +178,6 @@ pop_RmimicLMcontrast <- function() {
             M2variables <- input$select_M2variables
             if (length(which(M2variables == '< constant >')) > 0) {
               M2variables[which(M2variables == '< constant >')] <- '1'
-            }
-            if (length(M1variables) == 0) {
-              # if no model 1 was entered, put constant in
-              M1variables <- '1'
-            }
-            if (length(M2variables) == 0) {
-              # if no model 2 was entered, put constant in model 1 and shift
-              M2variables <- M1variables
-              M1variables <- '1'
             }
             
             listofcalls <- c()
@@ -197,48 +190,96 @@ pop_RmimicLMcontrast <- function() {
             } else {
               tmppref <- 'basefit <- stats::glm('
               tmppref2 <- 'fit <- stats::glm('
-              tempsuff <- 'family=binomial(link = "logit"), '
+              tempsuff <- 'family=stats::binomial(link = "logit"), '
             }
             tempsuff <- sprintf('%sdata=%s)', tempsuff, input$select_dataframe)
             
-            # Model 1
-            tmpform <- sprintf('%s ~ %s', input$select_DV[1], paste(M1variables, collapse=" + "))
+            # Figure out what the user wants
+            if ((length(M1variables) > 0) & (length(M2variables) > 0)) {
+              # user entered both set of variables
+              
+              tmpformsimple <- sprintf('%s ~ 1', input$select_DV[1])
+              
+              # Model 1
+              # populate model
+              tmpform <- sprintf('%s ~ %s', input$select_DV[1], paste(M1variables, collapse=" + ")) 
+              
+              # select model approach
+              modeloptions <- input$select_M1style
+              if ((input$select_M1style == "Forward Stepwise") | (input$select_M1style == "Bidirectional Stepwise")) {
+                if ((length(which(M1variables == '1')) > 0) & (length(M1variables) == 1)) {
+                  # only a constant was selected so cannot do stepwise
+                  modeloptions <- "All Variables Entered"
+                }
+              }
+              
+              # select model approach
+              if (modeloptions == "All Variables Entered") {
+                tmpcall <- sprintf('%s%s, %s',tmppref,tmpform,tempsuff) 
+                listofcalls <- c(listofcalls, tmpcall)
+              } else {
+                # start with constant
+                tmpcall <- sprintf('%s%s, %s',tmppref,tmpformsimple,tempsuff) 
+                listofcalls <- c(listofcalls, tmpcall)
+                if (modeloptions == "Forward Stepwise") {
+                  tmpcall <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="forward", scope=list(lower=%s, \n upper=%s), trace=TRUE)$terms)', tmpformsimple, tmpform)
+                } else {
+                  tmpcall <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="both", scope=list(lower=%s, \n upper=%s), trace=TRUE)$terms)', tmpformsimple, tmpform)
+                } 
+                listofcalls <- c(listofcalls, tmpcall)
+              }
+              
+              # Model 2 - additive with model 1
+              M2variables <- unique(c(M1variables, M2variables))
+              M2variables <- M2variables[which(M2variables != '1')]
+              
+              # populate model
+              tmpform <- sprintf('%s ~ %s', input$select_DV[1], paste(M2variables, collapse=" + ")) 
+              
+              # select model approach
+              if (input$select_M2style == "All Variables Entered") {
+                tmpcall <- sprintf('%s%s, %s',tmppref2,tmpform,tempsuff) 
+                listofcalls <- c(listofcalls, tmpcall)
+              } else {
+                if (input$select_M2style == "Forward Stepwise") {
+                  tmpcall <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="forward", scope=list(upper=%s), trace=TRUE)$terms)', tmpform)
+                } else {
+                  tmpcall <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="both", scope=list(lower=%s, \n upper=%s), trace=TRUE)$terms)', tmpformsimple, tmpform)
+                } 
+                listofcalls <- c(listofcalls, tmpcall)
+              }
             
-            if (input$select_M1style == "All Variables Entered") {
-              tmpcall <- sprintf('%s%s, %s',tmppref,tmpform,tempsuff)
+            } else {
+              # user only entered one set of variables
+              
+              # create constant model
+              tmpformsimple <- sprintf('%s ~ 1', input$select_DV[1])
+              tmpcall <- sprintf('%s%s, %s',tmppref,tmpformsimple,tempsuff) 
               listofcalls <- c(listofcalls, tmpcall)
-            } else if (input$select_M1style == "Forward Stepwise") {
-              tmpformsimple <- sprintf('%s ~ 1', input$select_DV)
-              tmpcallsimple <- sprintf('%s%s, %s',tmppref,tmpformsimple,tempsuff)
-              listofcalls <- c(listofcalls, tmpcallsimple)
-              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms)', tmpform)
-              listofcalls <- c(listofcalls, tmpcallalt)
-            } else if (input$select_M1style == "Backward Stepwise") {
-              tmpcall <- sprintf('%s%s, %s',tmppref,tmpform,tempsuff)
+              
+              # create second model
+              if (length(M1variables) > 0) {
+                workingvariables <- M1variables
+                modeloptions <- input$select_M1style
+              } else {
+                workingvariables <- M2variables
+                modeloptions <- input$select_M2style
+              }
+              tmpform <- sprintf('%s ~ %s', input$select_DV[1], paste(workingvariables, collapse=" + ")) 
+              
+              if (modeloptions == "All Variables Entered") {
+                tmpcall <- sprintf('fit <- stats::update(basefit,formula=%s)', tmpform) # update with new call
+              } else {
+                if (modeloptions == "Forward Stepwise") {
+                  tmpcall <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="forward", scope=list(lower=%s, \n upper=%s), trace=TRUE)$terms)', tmpformsimple, tmpform)
+                } else {
+                  tmpcall <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, \n direction="both", scope=list(lower=%s, \n upper=%s), trace=TRUE)$terms)', tmpformsimple, tmpform)
+                } 
+              }
               listofcalls <- c(listofcalls, tmpcall)
-              tmpcallalt <- sprintf('basefit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms)')
-              listofcalls <- c(listofcalls, tmpcallalt)
             }
             
-            # Model 2
-            tmpform <- sprintf('%s ~ %s', input$select_DV[1], paste(M2variables, collapse=" + "))
-            if (input$select_M2style == "All Variables Entered") {
-              tmpcall <- sprintf('%s%s, %s',tmppref2,tmpform,tempsuff)
-              listofcalls <- c(listofcalls, tmpcall)
-            } else if (input$select_M2style == "Forward Stepwise") {
-              tmpformsimple <- sprintf('%s ~ 1', input$select_DV)
-              tmpcallsimple <- sprintf('%s%s, %s',tmppref2,tmpformsimple,tempsuff)
-              listofcalls <- c(listofcalls, tmpcallsimple)
-              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="forward", scope=%s, trace=TRUE)$terms)', tmpform)
-              listofcalls <- c(listofcalls, tmpcallalt)
-            } else if (input$select_M2style == "Backward Stepwise") {
-              tmpcall <- sprintf('%s%s, %s',tmppref2,tmpform,tempsuff)
-              listofcalls <- c(listofcalls, tmpcall)
-              tmpcallalt <- sprintf('fit <- stats::update(basefit,formula=MASS::stepAIC(basefit, direction="backward", trace=TRUE)$terms)')
-              listofcalls <- c(listofcalls, tmpcallalt)
-            }
-            
-            tmpcall <- 'regresult <- Rmimic::RmimicLMcontrast(basefit, fit, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)'
+            tmpcall <- 'regresult <- Rmimic::RmimicLMcontrast(basefit, fit, studywiseAlpha=0.05, confidenceinterval=0.95)'
             listofcalls <- c(listofcalls, tmpcall)
             
             # execute call
@@ -255,10 +296,10 @@ pop_RmimicLMcontrast <- function() {
             }
             
             # output calls
-            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
             for (cR in 1:length(listofcalls)) {
               tmpcall <- listofcalls[cR]
-              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
+              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
             }
             
           } # something is being modeled
@@ -274,3 +315,4 @@ pop_RmimicLMcontrast <- function() {
   
   pkgcond::suppress_conditions(shiny::runGadget(ui, server, viewer = shiny::dialogViewer("")))
 }
+
