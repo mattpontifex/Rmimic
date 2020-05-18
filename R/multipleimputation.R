@@ -3,7 +3,7 @@
 #' @description Use multiple imputation (using the mice package) to replace missing data points. For each missing observation, multiple imputation is performed n times to create a combined multivariable modeling estimate. The database is returned with the missing data replaced with the modeling estimate.
 #'
 #' @param data Data frame containing the variables of interest.
-#' @param variables Variable name or list of variables to compute descriptives for.
+#' @param variables Variable name or list of variables to impute.
 #' @param method A string specifying the imputation method. Default is predictive mean matching but see mice help file.
 #' @param imputations The number of imputations to perform. Default is 50.
 #' @param maxiterations The maximum number of iterations to perform. Default is 10 x the number of iterations.

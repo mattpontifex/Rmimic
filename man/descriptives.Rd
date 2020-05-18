@@ -5,20 +5,20 @@
 \title{descriptives}
 \usage{
 descriptives(
+  data = FALSE,
   variables = FALSE,
   groupvariable = FALSE,
-  data = FALSE,
   verbose = TRUE,
   verbosedescriptives = TRUE,
   verbosefrequencies = TRUE
 )
 }
 \arguments{
+\item{data}{Data frame containing the variables of interest.}
+
 \item{variables}{Variable name or list of variables to compute descriptives for.}
 
 \item{groupvariable}{Variable name or list of variables to use for grouping.}
-
-\item{data}{Data frame containing the variables of interest.}
 
 \item{verbose}{Parameter to print all output to console. Default is TRUE.}
 

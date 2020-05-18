@@ -31,7 +31,7 @@
 #'
 #' @export
 
-descriptives <- function(variables=FALSE, groupvariable=FALSE, data=FALSE, verbose=TRUE, verbosedescriptives=TRUE, verbosefrequencies=TRUE) {
+descriptives <- function(data=FALSE, variables=FALSE, groupvariable=FALSE, verbose=TRUE, verbosedescriptives=TRUE, verbosefrequencies=TRUE) {
 
   if (verbose == FALSE) {
     verbosedescriptives <- FALSE

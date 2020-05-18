@@ -7,6 +7,7 @@
 #' @param direction Parameter to restrict identification of outliers to a particular tail. Default is two tailed. Parameters are: loweronly or upperonly.
 #' @param minuniquesamples Minimum number of samples for outlier detection. Default is 10.
 #' @param verbose Parameter to print the identified outliers.
+#' @param name Parameter to print a name associated with the identified outliers.
 #'
 #' @return
 #' \item{datavector}{Vector with outliers replaced with NA.}
@@ -27,11 +28,16 @@
 #'
 #' @export
 
-identifyoutliers <- function(datavector, iqrlimit=3, direction="NA", minuniquesamples=10, verbose=TRUE) {
+identifyoutliers <- function(datavector, iqrlimit=3, direction="NA", minuniquesamples=10, verbose=TRUE, name=FALSE) {
   
   #library(utils)
   #tryCatch(library(stats), error=function(e){utils::install.packages("stats"); library(stats)}) # quantile
   
+  if (name[1] == FALSE) {
+    name = ""
+  } else {
+    name = sprintf('%s: ', name)
+  }
   
   # check if input is atomic
   if (is.atomic(datavector)) {
@@ -65,12 +71,12 @@ identifyoutliers <- function(datavector, iqrlimit=3, direction="NA", minuniquesa
         cat(sprintf("identifyoutliers(): %.2f x IQR:\n", iqrlimit[1]))
         if (length(upperout)>0) {
           for (cR in 1:length(upperout)) {
-            cat(sprintf("Case %d was an Upper Bound Outlier.\n", upperout[cR]))
+            cat(sprintf("%sCase %d was an Upper Bound Outlier.\n", name, upperout[cR]))
           }
         }
         if (length(lowerout)>0) {
           for (cR in 1:length(lowerout)) {
-            cat(sprintf("Case %d was an Lower Bound Outlier.\n", lowerout[cR]))
+            cat(sprintf("%sCase %d was an Lower Bound Outlier.\n", name, lowerout[cR]))
           }
         }
       }

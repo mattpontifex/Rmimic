@@ -17,7 +17,7 @@ multipleimputation(
 \arguments{
 \item{data}{Data frame containing the variables of interest.}
 
-\item{variables}{Variable name or list of variables to compute descriptives for.}
+\item{variables}{Variable name or list of variables to impute.}
 
 \item{method}{A string specifying the imputation method. Default is predictive mean matching but see mice help file.}
 

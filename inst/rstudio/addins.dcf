@@ -3,6 +3,11 @@ Description: Compute SPSS style descriptive statistics.
 Binding: pop_descriptives
 Interactive: true
 
+Name: Identify Outliers
+Description: Identify outliers as x times the interquartile range.
+Binding: pop_identifyoutliers
+Interactive: true
+
 Name: Impute Missing Data
 Description: Use multiple imputation to replace missing data points.
 Binding: pop_imputation

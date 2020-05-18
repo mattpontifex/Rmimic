@@ -9,7 +9,8 @@ identifyoutliers(
   iqrlimit = 3,
   direction = "NA",
   minuniquesamples = 10,
-  verbose = TRUE
+  verbose = TRUE,
+  name = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ identifyoutliers(
 \item{minuniquesamples}{Minimum number of samples for outlier detection. Default is 10.}
 
 \item{verbose}{Parameter to print the identified outliers.}
+
+\item{name}{Parameter to print a name associated with the identified outliers.}
 }
 \value{
 \item{datavector}{Vector with outliers replaced with NA.}
