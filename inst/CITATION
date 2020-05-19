@@ -6,7 +6,7 @@ note <- paste("R package version", temp$Version)
 textVersion = sprintf("Pontifex, M. B. (%s). %s (Version %s) [Computer software]. %s", year, temp$Title, version, temp$URL)
 
 citHeader("The following citation is suggested:\n", sprintf("%s", textVersion))
-citEntry(entry="Manual"
+citEntry(entry="Manual",
   author=personList(as.person("Matthew B. Pontifex")),
   year = year,
   title = temp$Title,
