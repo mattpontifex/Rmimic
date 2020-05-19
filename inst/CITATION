@@ -1,19 +1,20 @@
 temp <- packageDescription('Rmimic')
 version <- paste(strsplit(temp$Version, ".", fixed=TRUE)[[1]][1:3], collapse=".")
 year <- strsplit(temp$Date, "-", fixed=TRUE)[[1]][1]
+note <- paste("R package version", temp$Version)
 
 textVersion = sprintf("Pontifex, M. B. (%s). %s (Version %s) [Computer software]. %s", year, temp$Title, version, temp$URL)
 
-citHeader(sprintf("The following citation is suggested:\n textVersion"))
+citHeader(sprintf("The following citation is suggested:\n %s", textVersion))
 citEntry(
   textVersion = textVersion
   )
 
 bibentry(bibtype = "Manual",
   title = temp$Title,
-  author = c(person("Matthew", "B.", "Pontifex")),
+  author = c(person("Matthew", "Pontifex", "B.")),
   year = year,
-  note = temp$Version,
+  note = note,
   url = temp$URL
 )
 
