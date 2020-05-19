@@ -225,21 +225,21 @@ pop_RmimicANOVA <- function() {
                 # user has chosen at least either a between subjects or within subjects variable
                 tmpcall <- 'result <- Rmimic::RmimicAnova('
                 tmpcall <- sprintf('%sdata = %s', tmpcall, input$select_dataframe)
-                tmpcall <- sprintf('%s, dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
+                tmpcall <- sprintf('%s, \n dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
                 if (!is.null(input$select_subID)) {
-                  tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
+                  tmpcall <- sprintf('%s, \n subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
                 } else {
-                  tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n subjectid=NULL', tmpcall)
                 }
                 if (!is.null(input$select_BSIV)) {
-                  tmpcall <- sprintf('%s, between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
+                  tmpcall <- sprintf('%s, \n between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, between=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n between=NULL', tmpcall)
                 }
                 if (!is.null(input$select_WSIV)) {
-                  tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
+                  tmpcall <- sprintf('%s, \n within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, within=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n within=NULL', tmpcall)
                 }
                 if (input$select_sphericitystyle == 'Greenhouse-Geisser') {
                   tmpcall <- sprintf('%s, \n sphericity=%s', tmpcall, sprintf("'%s'", 'Greenhouse-Geisser'))
@@ -247,21 +247,21 @@ pop_RmimicANOVA <- function() {
                   tmpcall <- sprintf('%s, \n sphericity=%s', tmpcall, sprintf("'%s'", 'Huynh-Feldt'))
                 }
                 if (input$select_teststyle == 'Parametric') {
-                  tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+                  tmpcall <- sprintf('%s, \n nonparametric=FALSE', tmpcall)
                 } else {
-                  tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+                  tmpcall <- sprintf('%s, \n nonparametric=TRUE', tmpcall)
                 }
                 if (input$select_posthocmethod == 'False Discovery Rate Control') {
-                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
+                  tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
                 } else {
-                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
+                  tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
                 }
                 if (input$text_planned != '') {
-                  tmpcall <- sprintf('%s, planned=c(%s)', tmpcall, input$text_planned)
+                  tmpcall <- sprintf('%s, \n planned=c(%s)', tmpcall, paste(sprintf("'%s'",input$text_planned), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, planned=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n planned=NULL', tmpcall)
                 }
-                tmpcall <- sprintf('%s, \n feffect=%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall, sprintf("'%s'", "Generalized Eta Squared"))
+                tmpcall <- sprintf('%s, \n feffect=%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall, sprintf("'%s'", "Generalized Eta Squared"))
                 
                 # execute call
                 codelevel <- 0 

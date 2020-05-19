@@ -243,54 +243,54 @@ pop_RmimicMLAnova <- function() {
                 
                 tmpcall <- 'result <- Rmimic::RmimicMLAnova('
                 tmpcall <- sprintf('%sdata = %s', tmpcall, input$select_dataframe)
-                tmpcall <- sprintf('%s, dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
+                tmpcall <- sprintf('%s, \n dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
                 if (!is.null(input$select_subID)) {
-                  tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
+                  tmpcall <- sprintf('%s, \n subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
                 } else {
-                  tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n subjectid=NULL', tmpcall)
                 }
                 if (!is.null(input$select_BSIV)) {
-                  tmpcall <- sprintf('%s, between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
+                  tmpcall <- sprintf('%s, \n between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, between=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n between=NULL', tmpcall)
                 }
                 if (!is.null(input$select_WSIV)) {
-                  tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
+                  tmpcall <- sprintf('%s, \n within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, within=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n within=NULL', tmpcall)
                 }
                                    
                 if (input$text_randomintercept != '') {
-                  tmpcall <- sprintf('%s, \n randomintercept=c(%s)', tmpcall, input$text_randomintercept)
+                  tmpcall <- sprintf('%s, \n randomintercept=c(%s)', tmpcall, paste(sprintf("'%s'",input$text_randomintercept), collapse=", "))
                 } else {
                   tmpcall <- sprintf('%s, \n randomintercept=NULL', tmpcall)
                 }
                 if (input$text_randomslope != '') {
-                  tmpcall <- sprintf('%s, \n randomslope=c(%s)', tmpcall, input$text_randomslope)
+                  tmpcall <- sprintf('%s, \n randomslope=c(%s)', tmpcall, paste(sprintf("'%s'",input$text_randomslope), collapse=", "))
                 } else {
                   tmpcall <- sprintf('%s, \n randomslope=NULL', tmpcall)
                 }
                 
                 if (!is.null(input$select_Covar)) {
-                  tmpcall <- sprintf('%s, covariates=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_Covar), collapse=", "))
+                  tmpcall <- sprintf('%s, \n covariates=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_Covar), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, covariates=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n covariates=NULL', tmpcall)
                 }
                 
                 if (input$select_dfstyle == 'Kenward-Roger') {
-                  tmpcall <- sprintf('%s, df=%s', tmpcall, sprintf("'%s'", 'Kenward-Roger'))
+                  tmpcall <- sprintf('%s, \n df=%s', tmpcall, sprintf("'%s'", 'Kenward-Roger'))
                 } else {
-                  tmpcall <- sprintf('%s, df=%s', tmpcall, sprintf("'%s'", 'Shattertwaite'))
+                  tmpcall <- sprintf('%s, \n df=%s', tmpcall, sprintf("'%s'", 'Shattertwaite'))
                 }
                 if (input$select_posthocmethod == 'False Discovery Rate Control') {
-                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
+                  tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
                 } else {
-                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
+                  tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
                 }
                 if (input$text_planned != '') {
-                  tmpcall <- sprintf('%s, planned=c(%s)', tmpcall, input$text_planned)
+                  tmpcall <- sprintf('%s, \n planned=c(%s)', tmpcall, paste(sprintf("'%s'",input$text_planned), collapse=", "))
                 } else {
-                  tmpcall <- sprintf('%s, planned=NULL', tmpcall)
+                  tmpcall <- sprintf('%s, \n planned=NULL', tmpcall)
                 }
                 
                 tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)

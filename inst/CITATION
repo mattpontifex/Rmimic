@@ -1,14 +1,10 @@
-citHeader("To cite Rmimic in publications use:")
-
-citEntry(
-  entry    = "Software",
-  title    = "Rmimic: An R package that mimic outputs of popular commercial statistics software packages.",
-  author   = "Matthew B. Pontifex",
-  journal  = ,
-  year     = "2020",
-  volume   = ,
-  number   = ,
-  pages    = ,
-  url      = "https://github.com/mattpontifex/Rmimic",
-  textVersion = paste("Pontifex, M. B. (2020). Rmimic: An R package that mimic outputs of popular commercial statistics software packages (Version 1.0) [Computer software]. https://github.com/mattpontifex/Rmimic")
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("Version %s", meta$Version)
+bibentry(bibtype = "Manual",
+  entry = "Software",
+  title = "{Rmimic}: An R package that mimic outputs of popular commercial statistics software packages.",
+  author = c(person("Matthew B.", "Pontifex")),
+  year = year,
+  note = note,
+  url = "https://github.com/mattpontifex/Rmimic"
 )

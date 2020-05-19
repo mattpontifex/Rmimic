@@ -32,7 +32,27 @@ pop_RmimicChisquare <- function() {
       }
     )
     info_dfs <- unlist(info_dfs)
+  
   }
+  
+  # Extract current tables from environment
+  environelementstables <- ls(envir=.GlobalEnv) # global elements
+  info_dfstables <- ""
+  if (length(environelementstables) > 0) {
+    environelementstablesidx <- which(sapply(environelementstables, function(x) is.table(get(x)))) # only tables
+    environelementstables <- environelementstables[environelementstablesidx] 
+    
+    info_dfstables <- lapply(
+      X = environelementstables,
+      FUN = function(x) {
+        tmp <- get(x, envir = .GlobalEnv)
+        sprintf("table %d factors of  %d variables", nrow(tmp), ncol(tmp))
+      }
+    )
+  }
+  environelements <- c(environelements, environelementstables)
+  info_dfs <- c(info_dfs, info_dfstables)
+  
   
   ui <- miniUI::miniPage(
     miniUI::gadgetTitleBar("Rmimic: Compute Chi-square", left = miniUI::miniTitleBarCancelButton(), right=NULL),
@@ -80,6 +100,9 @@ pop_RmimicChisquare <- function() {
         
         # Extract current data from environment
         workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        if (!is.data.frame(workingdata)) {
+          workingdata <- table2frame(workingdata)
+        }
         workingdatavariables <- names(workingdata)
         names(workingdatavariables) <- workingdatavariables
         workingdatavariablestypes <- c()
@@ -162,6 +185,9 @@ pop_RmimicChisquare <- function() {
       
       if (!is.null(input$select_dataframe)) {
         workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        if (!is.data.frame(workingdata)) {
+          workingdata <- table2frame(workingdata)
+        }
         
         if (!is.null(input$select_DV)) {
           name <- levels(workingdata[,input$select_DV[1]])
@@ -180,6 +206,9 @@ pop_RmimicChisquare <- function() {
       
       if (!is.null(input$select_dataframe)) {
         workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        if (!is.data.frame(workingdata)) {
+          workingdata <- table2frame(workingdata)
+        }
         
         if (!is.null(input$select_IV)) {
           name <- levels(workingdata[,input$select_IV[1]])
@@ -204,7 +233,14 @@ pop_RmimicChisquare <- function() {
         if (!is.null(input$select_dataframe)) {
           
           if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
+            
             # user has chosen a DV
+            booltable <- FALSE
+            workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+            if (!is.data.frame(workingdata)) {
+              workingdata <- table2frame(workingdata)
+              booltable <- TRUE
+            }
             
             listofcalls <- c()
             
@@ -248,11 +284,11 @@ pop_RmimicChisquare <- function() {
             tmpcall <- sprintf('%svariables=c(%s, %s)', tmpcall, sprintf("'%s'",input$select_IV[1]), sprintf("'%s'",input$select_DV[1]))
             tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
             if (input$select_modelstyle == "Yes - Restrict output") {
-              tmpcall <- sprintf('%s, planned=FALSE', tmpcall)
+              tmpcall <- sprintf('%s, \n planned=FALSE', tmpcall)
             } else {
-              tmpcall <- sprintf('%s, planned=TRUE', tmpcall)
+              tmpcall <- sprintf('%s, \n planned=TRUE', tmpcall)
             }
-            tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+            tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
             listofcalls <- c(listofcalls, tmpcall)
            
             # execute call
