@@ -15,11 +15,5 @@ citEntry(entry="Manual",
   textVersion = textVersion
   )
 
-bibentry(bibtype = "Manual",
-  title = temp$Title,
-  author = c(person("Matthew", "Pontifex", "B.")),
-  year = year,
-  note = note,
-  url = temp$URL
 )
 
