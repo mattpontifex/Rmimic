@@ -161,6 +161,8 @@ pop_RmimicChisquare <- function() {
     shiny::observeEvent(input$select_DV, {
       
       if (!is.null(input$select_dataframe)) {
+        workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        
         if (!is.null(input$select_DV)) {
           name <- levels(workingdata[,input$select_DV[1]])
           if (is.null(name[1])) {
@@ -177,6 +179,8 @@ pop_RmimicChisquare <- function() {
     shiny::observeEvent(input$select_IV, {
       
       if (!is.null(input$select_dataframe)) {
+        workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        
         if (!is.null(input$select_IV)) {
           name <- levels(workingdata[,input$select_IV[1]])
           if (is.null(name[1])) {
@@ -195,13 +199,13 @@ pop_RmimicChisquare <- function() {
     
     shiny::observeEvent(toListen(), {
       if ((input$generatecode != 0) | (input$done != 0)) {
-          
         
         # Check that selections are made
         if (!is.null(input$select_dataframe)) {
+          
           if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
             # user has chosen a DV
-              
+            
             listofcalls <- c()
             
             boolrep <- FALSE

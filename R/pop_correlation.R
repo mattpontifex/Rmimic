@@ -160,11 +160,11 @@ pop_correlation <- function() {
             }
             tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
             if (!is.null(input$select_method)) {
-              tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'",tolower(input$select_method)))
+              tmpcall <- sprintf('%s, \n method=%s', tmpcall, sprintf("'%s'",tolower(input$select_method)))
             } else {
-              tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'pearson'"))
+              tmpcall <- sprintf('%s, \n method=%s', tmpcall, sprintf("'pearson'"))
             }
-            tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, listwise=TRUE, verbose=TRUE)', tmpcall)
+            tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, listwise=TRUE, verbose=TRUE)', tmpcall)
             
             # execute call
             codelevel <- 0 
