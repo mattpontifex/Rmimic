@@ -49,6 +49,15 @@ pop_correlation <- function() {
     ),
     
     shinyWidgets::actionBttn(
+      inputId = "generatecode",
+      label = "Generate Code Only",
+      style = "simple", 
+      color = "royal",
+      block=TRUE,
+      size="sm"
+    ),
+    
+    shinyWidgets::actionBttn(
       inputId = "done",
       label = "Compute",
       style = "simple", 
@@ -131,43 +140,53 @@ pop_correlation <- function() {
         )
       }
     })
+    toListen <- shiny::reactive({
+      list(input$done,input$generatecode)
+    })
     
-    shiny::observeEvent(input$done, {
-      
-      # Check that selections are made
-      if (!is.null(input$select_dataframe)) {
-        if (!is.null(input$select_variables)) {
-          tmpcall <- 'sR <- Rmimic::correlation('
-          # Extract current data from environment
-          workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
-          tmpcall <- sprintf('%svariables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
-          if (!is.null(input$select_partials)) {
-            tmpcall <- sprintf('%s, partial=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_partials[1]), collapse=", "))
-          }
-          tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
-          if (!is.null(input$select_method)) {
-            tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'",tolower(input$select_method)))
-          } else {
-            tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'pearson'"))
-          }
-          tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, listwise=TRUE, verbose=TRUE)', tmpcall)
+    shiny::observeEvent(toListen(), {
+      if ((input$generatecode != 0) | (input$done != 0)) {
           
-          # execute call
-          boolattempt <- FALSE
-          boolattempt <- tryCatch({
-            eval(parse(text=tmpcall))
-            boolattempt <- TRUE}
-          )
-          if (boolattempt == FALSE) {
-            Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+        
+        # Check that selections are made
+        if (!is.null(input$select_dataframe)) {
+          if (!is.null(input$select_variables)) {
+            tmpcall <- 'sR <- Rmimic::correlation('
+            # Extract current data from environment
+            workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+            tmpcall <- sprintf('%svariables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
+            if (!is.null(input$select_partials)) {
+              tmpcall <- sprintf('%s, partial=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_partials[1]), collapse=", "))
+            }
+            tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
+            if (!is.null(input$select_method)) {
+              tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'",tolower(input$select_method)))
+            } else {
+              tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'pearson'"))
+            }
+            tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, listwise=TRUE, verbose=TRUE)', tmpcall)
+            
+            # execute call
+            codelevel <- 0 
+            if (input$done) {
+              boolattempt <- FALSE
+              boolattempt <- tryCatch({
+                eval(parse(text=tmpcall))
+                boolattempt <- TRUE}
+              )
+              if (boolattempt == FALSE) {
+                Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+              }
+              codelevel <- 1
+              Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+            }
+            
+            Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
           }
-          
-          Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
-          Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
         }
+        
+        invisible(shiny::stopApp())
       }
-      
-      invisible(shiny::stopApp())
     })
     shiny::observeEvent(input$cancel, {
       invisible(shiny::stopApp())

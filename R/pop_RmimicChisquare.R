@@ -19,17 +19,20 @@ pop_RmimicChisquare <- function() {
   
   # Extract current data from environment
   environelements <- ls(envir=.GlobalEnv) # global elements
-  environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
-  environelements <- environelements[environelementsidx] 
-  
-  info_dfs <- lapply(
-    X = environelements,
-    FUN = function(x) {
-      tmp <- get(x, envir = .GlobalEnv)
-      sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
-    }
-  )
-  info_dfs <- unlist(info_dfs)
+  info_dfs <- ""
+  if (length(environelements) > 0) {
+    environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
+    environelements <- environelements[environelementsidx] 
+    
+    info_dfs <- lapply(
+      X = environelements,
+      FUN = function(x) {
+        tmp <- get(x, envir = .GlobalEnv)
+        sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
+      }
+    )
+    info_dfs <- unlist(info_dfs)
+  }
   
   ui <- miniUI::miniPage(
     miniUI::gadgetTitleBar("Rmimic: Compute Chi-square", left = miniUI::miniTitleBarCancelButton(), right=NULL),
@@ -46,6 +49,15 @@ pop_RmimicChisquare <- function() {
       ),
       
       shiny::uiOutput("ui1") # This outputs the dynamic UI component
+    ),
+    
+    shinyWidgets::actionBttn(
+      inputId = "generatecode",
+      label = "Generate Code Only",
+      style = "simple", 
+      color = "royal",
+      block=TRUE,
+      size="sm"
     ),
     
     shinyWidgets::actionBttn(
@@ -177,86 +189,97 @@ pop_RmimicChisquare <- function() {
       }
     })
     
-    shiny::observeEvent(input$done, {
-      
-      # Check that selections are made
-      if (!is.null(input$select_dataframe)) {
-        if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
-          # user has chosen a DV
+    toListen <- shiny::reactive({
+      list(input$done,input$generatecode)
+    })
+    
+    shiny::observeEvent(toListen(), {
+      if ((input$generatecode != 0) | (input$done != 0)) {
+          
+        
+        # Check that selections are made
+        if (!is.null(input$select_dataframe)) {
+          if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
+            # user has chosen a DV
+              
+            listofcalls <- c()
             
-          listofcalls <- c()
-          
-          boolrep <- FALSE
-          name <- levels(workingdata[,input$select_DV[1]])
-          if (is.null(name[1])) {
-            boolrep <- TRUE # needs to be factored
-            name <- unique(as.character(workingdata[,input$select_DV[1]]))
-          }
-          name <- paste(sprintf("'%s'", as.character(name)), sep="' '", collapse=", ")
-          comptext <- as.character(input$text_factorDV)
-          if (name != comptext) {
-            boolrep <- TRUE # needs to be factored
-            name <- comptext
-          }
-          if (boolrep == TRUE) {
-            tmpcall <- sprintf('%s[,%s] <- factor(%s[,%s]', input$select_dataframe, sprintf("'%s'",input$select_DV[1]), input$select_dataframe, sprintf("'%s'",input$select_DV[1]))
-            tmpcall <- sprintf('%s, levels=c(%s))', tmpcall, name)
-            listofcalls <- c(listofcalls, tmpcall)
-          }
-          
-          boolrep <- FALSE
-          name <- levels(workingdata[,input$select_IV[1]])
-          if (is.null(name[1])) {
-            boolrep <- TRUE # needs to be factored
-            name <- unique(as.character(workingdata[,input$select_IV[1]]))
-          }
-          name <- paste(sprintf("'%s'", as.character(name)), sep="' '", collapse=", ")
-          comptext <- as.character(input$text_factorIV)
-          if (name != comptext) {
-            boolrep <- TRUE # needs to be factored
-            name <- comptext
-          }
-          if (boolrep == TRUE) {
-            tmpcall <- sprintf('%s[,%s] <- factor(%s[,%s]', input$select_dataframe, sprintf("'%s'",input$select_IV[1]), input$select_dataframe, sprintf("'%s'",input$select_IV[1]))
-            tmpcall <- sprintf('%s, levels=c(%s))', tmpcall, name)
-            listofcalls <- c(listofcalls, tmpcall)
-          }
-          
-          tmpcall <- 'chisquareresult <- Rmimic::RmimicChisquare('
-          tmpcall <- sprintf('%svariables=c(%s, %s)', tmpcall, sprintf("'%s'",input$select_IV[1]), sprintf("'%s'",input$select_DV[1]))
-          tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
-          if (input$select_modelstyle == "Yes - Restrict output") {
-            tmpcall <- sprintf('%s, planned=FALSE', tmpcall)
-          } else {
-            tmpcall <- sprintf('%s, planned=TRUE', tmpcall)
-          }
-          tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
-          listofcalls <- c(listofcalls, tmpcall)
-         
-          # execute call
-          boolattempt <- FALSE
-          for (cR in 1:length(listofcalls)) {
-            tmpcall <- listofcalls[cR]
-            boolattempt <- tryCatch({
-              eval(parse(text=tmpcall))
-              boolattempt <- TRUE}
-            )
-          }
-          if (boolattempt == FALSE) {
-            Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
-          }
-          
-          # output calls
-          Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
-          for (cR in 1:length(listofcalls)) {
-            tmpcall <- listofcalls[cR]
-            Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
-          }
+            boolrep <- FALSE
+            name <- levels(workingdata[,input$select_DV[1]])
+            if (is.null(name[1])) {
+              boolrep <- TRUE # needs to be factored
+              name <- unique(as.character(workingdata[,input$select_DV[1]]))
+            }
+            name <- paste(sprintf("'%s'", as.character(name)), sep="' '", collapse=", ")
+            comptext <- as.character(input$text_factorDV)
+            if (name != comptext) {
+              boolrep <- TRUE # needs to be factored
+              name <- comptext
+            }
+            if (boolrep == TRUE) {
+              tmpcall <- sprintf('%s[,%s] <- factor(%s[,%s]', input$select_dataframe, sprintf("'%s'",input$select_DV[1]), input$select_dataframe, sprintf("'%s'",input$select_DV[1]))
+              tmpcall <- sprintf('%s, levels=c(%s))', tmpcall, name)
+              listofcalls <- c(listofcalls, tmpcall)
+            }
             
-        } # DV and IV select
-      } # dataframe select
-      
-      invisible(shiny::stopApp())
+            boolrep <- FALSE
+            name <- levels(workingdata[,input$select_IV[1]])
+            if (is.null(name[1])) {
+              boolrep <- TRUE # needs to be factored
+              name <- unique(as.character(workingdata[,input$select_IV[1]]))
+            }
+            name <- paste(sprintf("'%s'", as.character(name)), sep="' '", collapse=", ")
+            comptext <- as.character(input$text_factorIV)
+            if (name != comptext) {
+              boolrep <- TRUE # needs to be factored
+              name <- comptext
+            }
+            if (boolrep == TRUE) {
+              tmpcall <- sprintf('%s[,%s] <- factor(%s[,%s]', input$select_dataframe, sprintf("'%s'",input$select_IV[1]), input$select_dataframe, sprintf("'%s'",input$select_IV[1]))
+              tmpcall <- sprintf('%s, levels=c(%s))', tmpcall, name)
+              listofcalls <- c(listofcalls, tmpcall)
+            }
+            
+            tmpcall <- 'chisquareresult <- Rmimic::RmimicChisquare('
+            tmpcall <- sprintf('%svariables=c(%s, %s)', tmpcall, sprintf("'%s'",input$select_IV[1]), sprintf("'%s'",input$select_DV[1]))
+            tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
+            if (input$select_modelstyle == "Yes - Restrict output") {
+              tmpcall <- sprintf('%s, planned=FALSE', tmpcall)
+            } else {
+              tmpcall <- sprintf('%s, planned=TRUE', tmpcall)
+            }
+            tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+            listofcalls <- c(listofcalls, tmpcall)
+           
+            # execute call
+            codelevel <- 0 
+            if (input$done) {
+              boolattempt <- FALSE
+              for (cR in 1:length(listofcalls)) {
+                tmpcall <- listofcalls[cR]
+                boolattempt <- tryCatch({
+                  eval(parse(text=tmpcall))
+                  boolattempt <- TRUE}
+                )
+              }
+              if (boolattempt == FALSE) {
+                Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+              }
+              
+              # output calls
+              Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+              codelevel <- 1
+            }
+            for (cR in 1:length(listofcalls)) {
+              tmpcall <- listofcalls[cR]
+              Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
+            }
+              
+          } # DV and IV select
+        } # dataframe select
+        
+        invisible(shiny::stopApp())
+      }
     })
     shiny::observeEvent(input$cancel, {
       invisible(shiny::stopApp())

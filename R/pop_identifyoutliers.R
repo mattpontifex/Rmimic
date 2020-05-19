@@ -18,17 +18,20 @@ pop_identifyoutliers <- function() {
   
   # Extract current data from environment
   environelements <- ls(envir=.GlobalEnv) # global elements
-  environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
-  environelements <- environelements[environelementsidx] 
-  
-  info_dfs <- lapply(
-    X = environelements,
-    FUN = function(x) {
-      tmp <- get(x, envir = .GlobalEnv)
-      sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
-    }
-  )
-  info_dfs <- unlist(info_dfs)
+  info_dfs <- ""
+  if (length(environelements) > 0) {
+    environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
+    environelements <- environelements[environelementsidx] 
+    
+    info_dfs <- lapply(
+      X = environelements,
+      FUN = function(x) {
+        tmp <- get(x, envir = .GlobalEnv)
+        sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
+      }
+    )
+    info_dfs <- unlist(info_dfs)
+  }
   
   ui <- miniUI::miniPage(
     miniUI::gadgetTitleBar("Rmimic: Identify and Remove Outliers", left = miniUI::miniTitleBarCancelButton(), right=NULL),
@@ -45,6 +48,15 @@ pop_identifyoutliers <- function() {
       ),
       
       shiny::uiOutput("ui1") # This outputs the dynamic UI component
+    ),
+    
+    shinyWidgets::actionBttn(
+      inputId = "generatecode",
+      label = "Generate Code Only",
+      style = "simple", 
+      color = "royal",
+      block=TRUE,
+      size="sm"
     ),
     
     shinyWidgets::actionBttn(
@@ -131,53 +143,63 @@ pop_identifyoutliers <- function() {
       }
     })
     
-    shiny::observeEvent(input$done, {
-      
-      # Check that selections are made
-      if (!is.null(input$select_dataframe)) {
+    toListen <- shiny::reactive({
+      list(input$done,input$generatecode)
+    })
+    
+    shiny::observeEvent(toListen(), {
+      if ((input$generatecode != 0) | (input$done != 0)) {
         
-        tmpcall <- sprintf('%s <- Rmimic::identifyoutliersdataframe(data=%s',input$select_dataframe,input$select_dataframe)
-        
-        if (!is.null(input$select_variables)) {
-          workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
-          # Some variables were chosen
-          workingdatavariables <- names(workingdata)
-          if (paste(sprintf("'%s'",input$select_variables), collapse=", ") == paste(sprintf("'%s'",workingdatavariables), collapse=", ")) {
-            # all variables were selected
-            
-          } else {
-            # specific variables were selected
-            tmpcall <- sprintf('%s, variables=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
+        # Check that selections are made
+        if (!is.null(input$select_dataframe)) {
+          
+          tmpcall <- sprintf('%s <- Rmimic::identifyoutliersdataframe(data=%s',input$select_dataframe,input$select_dataframe)
+          
+          if (!is.null(input$select_variables)) {
+            workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+            # Some variables were chosen
+            workingdatavariables <- names(workingdata)
+            if (paste(sprintf("'%s'",input$select_variables), collapse=", ") == paste(sprintf("'%s'",workingdatavariables), collapse=", ")) {
+              # all variables were selected
+              
+            } else {
+              # specific variables were selected
+              tmpcall <- sprintf('%s, variables=c(%s) \n', tmpcall, paste(sprintf("'%s'",input$select_variables), collapse=", "))
+            }
           }
+          tmpcall <- sprintf('%s, iqrlimit=%d', tmpcall, input$select_iqrlimit)
+          
+          
+          if (input$select_restriction == "Two tailed") {
+            tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'both'))
+          } else if (input$select_restriction == "Upper only") {
+            tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'upperonly'))
+          } else if (input$select_restriction == "Lower only") {
+            tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'loweronly'))
+          }
+          tmpcall <- sprintf('%s, verbose=TRUE)', tmpcall)
+          
+          # execute call
+          codelevel <- 0 
+          if (input$done) {
+            boolattempt <- FALSE
+            boolattempt <- tryCatch({
+              eval(parse(text=tmpcall), envir = .GlobalEnv)
+              boolattempt <- TRUE}
+            )
+            if (boolattempt == FALSE) {
+              Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+            }
+            
+            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+            codelevel <- 1
+          }
+          Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
+          
         }
-        tmpcall <- sprintf('%s, iqrlimit=%d', tmpcall, input$select_iqrlimit)
         
-        
-        if (input$select_restriction == "Two tailed") {
-          tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'both'))
-        } else if (input$select_restriction == "Upper only") {
-          tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'upperonly'))
-        } else if (input$select_restriction == "Lower only") {
-          tmpcall <- sprintf('%s, direction=%s', tmpcall, sprintf("'%s'", 'loweronly'))
-        }
-        tmpcall <- sprintf('%s, verbose=TRUE)', tmpcall)
-        
-        # execute call
-        boolattempt <- FALSE
-        boolattempt <- tryCatch({
-          eval(parse(text=tmpcall), envir = .GlobalEnv)
-          boolattempt <- TRUE}
-        )
-        if (boolattempt == FALSE) {
-          Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
-        }
-        
-        Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
-        Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
-        
+        invisible(shiny::stopApp())
       }
-      
-      invisible(shiny::stopApp())
     })
     shiny::observeEvent(input$cancel, {
       invisible(shiny::stopApp())

@@ -18,17 +18,20 @@ pop_RmimicANOVA <- function() {
   
   # Extract current data from environment
   environelements <- ls(envir=.GlobalEnv) # global elements
-  environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
-  environelements <- environelements[environelementsidx] 
-  
-  info_dfs <- lapply(
-    X = environelements,
-    FUN = function(x) {
-      tmp <- get(x, envir = .GlobalEnv)
-      sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
-    }
-  )
-  info_dfs <- unlist(info_dfs)
+  info_dfs <- ""
+  if (length(environelements) > 0) {
+    environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
+    environelements <- environelements[environelementsidx] 
+    
+    info_dfs <- lapply(
+      X = environelements,
+      FUN = function(x) {
+        tmp <- get(x, envir = .GlobalEnv)
+        sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
+      }
+    )
+    info_dfs <- unlist(info_dfs)
+  }
   
   ui <- miniUI::miniPage(
     miniUI::gadgetTitleBar("Rmimic: Compute ANOVA", left = miniUI::miniTitleBarCancelButton(), right=NULL),
@@ -53,6 +56,15 @@ pop_RmimicANOVA <- function() {
       ),
       
       shiny::uiOutput("ui1") # This outputs the dynamic UI component
+    ),
+    
+    shinyWidgets::actionBttn(
+      inputId = "generatecode",
+      label = "Generate Code Only",
+      style = "simple", 
+      color = "royal",
+      block=TRUE,
+      size="sm"
     ),
     
     shinyWidgets::actionBttn(
@@ -192,79 +204,89 @@ pop_RmimicANOVA <- function() {
       }
     })
     
-    shiny::observeEvent(input$done, {
-      
-      # Check that selections are made
-      if (!is.null(input$select_dataframe)) {
+    toListen <- shiny::reactive({
+      list(input$done,input$generatecode)
+    })
+    
+    shiny::observeEvent(toListen(), {
+      if ((input$generatecode != 0) | (input$done != 0)) {
         
-        if (input$select_inputstyle == "Yes - Wide Format") {
-          # someday could implement this.
+        # Check that selections are made
+        if (!is.null(input$select_dataframe)) {
           
-        } else {
-          
-          if (!is.null(input$select_DV)) {
-            # user has chosen a DV
-            if ((!is.null(input$select_BSIV)) | (!is.null(input$select_WSIV))) {
-              # user has chosen at least either a between subjects or within subjects variable
-              tmpcall <- 'result <- Rmimic::RmimicAnova('
-              tmpcall <- sprintf('%sdata = %s', tmpcall, input$select_dataframe)
-              tmpcall <- sprintf('%s, dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
-              if (!is.null(input$select_subID)) {
-                tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
-              } else {
-                tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
-              }
-              if (!is.null(input$select_BSIV)) {
-                tmpcall <- sprintf('%s, between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
-              } else {
-                tmpcall <- sprintf('%s, between=NULL', tmpcall)
-              }
-              if (!is.null(input$select_WSIV)) {
-                tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
-              } else {
-                tmpcall <- sprintf('%s, within=NULL', tmpcall)
-              }
-              if (input$select_sphericitystyle == 'Greenhouse-Geisser') {
-                tmpcall <- sprintf('%s, sphericity=%s', tmpcall, sprintf("'%s'", 'Greenhouse-Geisser'))
-              } else {
-                tmpcall <- sprintf('%s, sphericity=%s', tmpcall, sprintf("'%s'", 'Huynh-Feldt'))
-              }
-              if (input$select_teststyle == 'Parametric') {
-                tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
-              } else {
-                tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
-              }
-              if (input$select_posthocmethod == 'False Discovery Rate Control') {
-                tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
-              } else {
-                tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
-              }
-              if (input$text_planned != '') {
-                tmpcall <- sprintf('%s, planned=c(%s)', tmpcall, input$text_planned)
-              } else {
-                tmpcall <- sprintf('%s, planned=NULL', tmpcall)
-              }
-              tmpcall <- sprintf('%s, feffect=%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall, sprintf("'%s'", "Generalized Eta Squared"))
-              
-              # execute call
-              boolattempt <- FALSE
-              boolattempt <- tryCatch({
-                eval(parse(text=tmpcall))
-                boolattempt <- TRUE}
-              )
-              if (boolattempt == FALSE) {
-                Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
-              }
-              Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
-              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
-              
-            } # BS or WS variable chosen
-          } # DV chosen
-          
-        } # end inputstyle
-      } #end empty dataframe
-      
-      invisible(shiny::stopApp())
+          if (input$select_inputstyle == "Yes - Wide Format") {
+            # someday could implement this.
+            
+          } else {
+            
+            if (!is.null(input$select_DV)) {
+              # user has chosen a DV
+              if ((!is.null(input$select_BSIV)) | (!is.null(input$select_WSIV))) {
+                # user has chosen at least either a between subjects or within subjects variable
+                tmpcall <- 'result <- Rmimic::RmimicAnova('
+                tmpcall <- sprintf('%sdata = %s', tmpcall, input$select_dataframe)
+                tmpcall <- sprintf('%s, dependentvariable=%s', tmpcall, sprintf("'%s'",input$select_DV))
+                if (!is.null(input$select_subID)) {
+                  tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
+                } else {
+                  tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
+                }
+                if (!is.null(input$select_BSIV)) {
+                  tmpcall <- sprintf('%s, between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_BSIV), collapse=", "))
+                } else {
+                  tmpcall <- sprintf('%s, between=NULL', tmpcall)
+                }
+                if (!is.null(input$select_WSIV)) {
+                  tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_WSIV), collapse=", "))
+                } else {
+                  tmpcall <- sprintf('%s, within=NULL', tmpcall)
+                }
+                if (input$select_sphericitystyle == 'Greenhouse-Geisser') {
+                  tmpcall <- sprintf('%s, \n sphericity=%s', tmpcall, sprintf("'%s'", 'Greenhouse-Geisser'))
+                } else {
+                  tmpcall <- sprintf('%s, \n sphericity=%s', tmpcall, sprintf("'%s'", 'Huynh-Feldt'))
+                }
+                if (input$select_teststyle == 'Parametric') {
+                  tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+                } else {
+                  tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+                }
+                if (input$select_posthocmethod == 'False Discovery Rate Control') {
+                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
+                } else {
+                  tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
+                }
+                if (input$text_planned != '') {
+                  tmpcall <- sprintf('%s, planned=c(%s)', tmpcall, input$text_planned)
+                } else {
+                  tmpcall <- sprintf('%s, planned=NULL', tmpcall)
+                }
+                tmpcall <- sprintf('%s, \n feffect=%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall, sprintf("'%s'", "Generalized Eta Squared"))
+                
+                # execute call
+                codelevel <- 0 
+                if (input$done) {
+                  boolattempt <- FALSE
+                  boolattempt <- tryCatch({
+                    eval(parse(text=tmpcall))
+                    boolattempt <- TRUE}
+                  )
+                  if (boolattempt == FALSE) {
+                    Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+                  }
+                  Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+                  codelevel <- 1
+                }
+                Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
+                
+              } # BS or WS variable chosen
+            } # DV chosen
+            
+          } # end inputstyle
+        } #end empty dataframe
+        
+        invisible(shiny::stopApp())
+      }
     })
     shiny::observeEvent(input$cancel, {
       invisible(shiny::stopApp())

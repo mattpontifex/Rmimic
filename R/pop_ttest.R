@@ -18,17 +18,20 @@ pop_ttest <- function() {
   
   # Extract current data from environment
   environelements <- ls(envir=.GlobalEnv) # global elements
-  environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
-  environelements <- environelements[environelementsidx] 
-  
-  info_dfs <- lapply(
-    X = environelements,
-    FUN = function(x) {
-      tmp <- get(x, envir = .GlobalEnv)
-      sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
-    }
-  )
-  info_dfs <- unlist(info_dfs)
+  info_dfs <- ""
+  if (length(environelements) > 0) {
+    environelementsidx <- which(sapply(environelements, function(x) is.data.frame(get(x)))) # only dataframes
+    environelements <- environelements[environelementsidx] 
+    
+    info_dfs <- lapply(
+      X = environelements,
+      FUN = function(x) {
+        tmp <- get(x, envir = .GlobalEnv)
+        sprintf("%d obs. of  %d variables", nrow(tmp), ncol(tmp))
+      }
+    )
+    info_dfs <- unlist(info_dfs)
+  }
   
   ui <- miniUI::miniPage(
     miniUI::gadgetTitleBar("Rmimic: Compute T-test", left = miniUI::miniTitleBarCancelButton(), right=NULL),
@@ -53,6 +56,15 @@ pop_ttest <- function() {
       ),
       
       shiny::uiOutput("ui1") # This outputs the dynamic UI component
+    ),
+    
+    shinyWidgets::actionBttn(
+      inputId = "generatecode",
+      label = "Generate Code Only",
+      style = "simple", 
+      color = "royal",
+      block=TRUE,
+      size="sm"
     ),
     
     shinyWidgets::actionBttn(
@@ -215,112 +227,122 @@ pop_ttest <- function() {
       }
     })
     
-    shiny::observeEvent(input$done, {
-      
-      # Check that selections are made
-      if (!is.null(input$select_dataframe)) {
+    toListen <- shiny::reactive({
+      list(input$done,input$generatecode)
+    })
+    
+    shiny::observeEvent(toListen(), {
+      if ((input$generatecode != 0) | (input$done != 0)) {
         
-        if (input$select_inputstyle == "Yes - Wide Format") {
-        
-          if (!is.null(input$select_variablesWF)) {
-            
-            # show user how to take data from wide to long format
-            tmpcall <- sprintf('workingdata <- rbind(')
-            for (cR in 1:length(input$select_variablesWF)) {
-              tmpcall <- sprintf('%sdata.frame(%s=%s', tmpcall, sprintf("'%s'", 'DV'), input$select_dataframe)
-              tmpcall <- sprintf('%s$%s',tmpcall, input$select_variablesWF[cR])
-              if (!is.null(input$select_subIDWF)) {
-                tmpcall <- sprintf('%s,%s=%s$%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]), input$select_dataframe, input$select_subIDWF[1])
-              }
-              tmpcall <- sprintf('%s,%s=%s)', tmpcall, sprintf("'%s'", 'IV'), sprintf("'%s'", input$select_variablesWF[cR]))
-              if (cR < (length(input$select_variablesWF))) {
-                tmpcall <- sprintf('%s, ',tmpcall)
-              }
-            }
-            tmpcall <- sprintf('%s)',tmpcall)
-            tmpcallseg1 <- tmpcall
-            eval(parse(text=tmpcall))
-            
-            tmpcall <- sprintf('ttestresult <- Rmimic::RmimicTtest(workingdata, dependentvariable=%s', sprintf("'DV'"))
-             if (!is.null(input$select_subIDWF)) {
-              tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]))
-            } else {
-              tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
-            }
-            if (input$select_IVstyleWF == 'Between Subjects') {
-              tmpcall <- sprintf('%s, between=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
-              tmpcall <- sprintf('%s, within=NULL', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, between=NULL', tmpcall)
-              tmpcall <- sprintf('%s, within=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
-            }
-            if (input$select_teststyleWF == 'Parametric') {
-              tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
-            }
-            if (input$select_posthocmethodWF == 'None') {
-              tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethodWF))
-            }
-            tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
-            
-            # execute call
-            eval(parse(text=tmpcall))
-            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
-            Rmimic::typewriter(tmpcallseg1, tabs=1, spaces=0, characters=80, indent='hanging')
-            Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
-          }
+        # Check that selections are made
+        if (!is.null(input$select_dataframe)) {
           
-        } else {
-          if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
-            tmpcall <- 'ttestresult <- Rmimic::RmimicTtest('
-            # Extract current data from environment
-            workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
-            tmpcall <- sprintf('%s%s', tmpcall, input$select_dataframe)
-            tmpcall <- sprintf('%s, dependentvariable=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_DV), collapse=", "))
-            if (!is.null(input$select_subID)) {
-              tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
-            } else {
-              tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
-            }
-            if (input$select_IVstyle == 'Between Subjects') {
-              tmpcall <- sprintf('%s, between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
-              tmpcall <- sprintf('%s, within=NULL', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, between=NULL', tmpcall)
-              tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
-            }
-            if (input$select_teststyle == 'Parametric') {
-              tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
-            }
-            if (input$select_posthocmethod == 'None') {
-              tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
-            } else {
-              tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
-            }
-            tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
-            
-            # execute call
-            boolattempt <- FALSE
-            boolattempt <- tryCatch({
+          if (input$select_inputstyle == "Yes - Wide Format") {
+          
+            if (!is.null(input$select_variablesWF)) {
+              
+              # show user how to take data from wide to long format
+              tmpcall <- sprintf('workingdata <- rbind(')
+              for (cR in 1:length(input$select_variablesWF)) {
+                tmpcall <- sprintf('%sdata.frame(%s=%s', tmpcall, sprintf("'%s'", 'DV'), input$select_dataframe)
+                tmpcall <- sprintf('%s$%s',tmpcall, input$select_variablesWF[cR])
+                if (!is.null(input$select_subIDWF)) {
+                  tmpcall <- sprintf('%s,%s=%s$%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]), input$select_dataframe, input$select_subIDWF[1])
+                }
+                tmpcall <- sprintf('%s,%s=%s)', tmpcall, sprintf("'%s'", 'IV'), sprintf("'%s'", input$select_variablesWF[cR]))
+                if (cR < (length(input$select_variablesWF))) {
+                  tmpcall <- sprintf('%s, ',tmpcall)
+                }
+              }
+              tmpcall <- sprintf('%s)',tmpcall)
+              tmpcallseg1 <- tmpcall
               eval(parse(text=tmpcall))
-              boolattempt <- TRUE}
-            )
-            if (boolattempt == FALSE) {
-              Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+              
+              tmpcall <- sprintf('ttestresult <- Rmimic::RmimicTtest(workingdata, dependentvariable=%s', sprintf("'DV'"))
+               if (!is.null(input$select_subIDWF)) {
+                tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]))
+              } else {
+                tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
+              }
+              if (input$select_IVstyleWF == 'Between Subjects') {
+                tmpcall <- sprintf('%s, between=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
+                tmpcall <- sprintf('%s, within=NULL', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, between=NULL', tmpcall)
+                tmpcall <- sprintf('%s, within=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
+              }
+              if (input$select_teststyleWF == 'Parametric') {
+                tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+              }
+              if (input$select_posthocmethodWF == 'None') {
+                tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethodWF))
+              }
+              tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+              
+              # execute call
+              eval(parse(text=tmpcall))
+              Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
+              Rmimic::typewriter(tmpcallseg1, tabs=1, spaces=0, characters=80, indent='hanging')
+              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
             }
-            Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
-            Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=200, indent='hanging')
-          }
-          
-        } # end inputstyle
-      } #end empty dataframe
-      
-      invisible(shiny::stopApp())
+            
+          } else {
+            if ((!is.null(input$select_DV)) & (!is.null(input$select_IV))) {
+              tmpcall <- 'ttestresult <- Rmimic::RmimicTtest('
+              # Extract current data from environment
+              workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+              tmpcall <- sprintf('%s%s', tmpcall, input$select_dataframe)
+              tmpcall <- sprintf('%s, dependentvariable=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_DV), collapse=", "))
+              if (!is.null(input$select_subID)) {
+                tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
+              } else {
+                tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
+              }
+              if (input$select_IVstyle == 'Between Subjects') {
+                tmpcall <- sprintf('%s, \n between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
+                tmpcall <- sprintf('%s, within=NULL', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, \n between=NULL', tmpcall)
+                tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
+              }
+              if (input$select_teststyle == 'Parametric') {
+                tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+              }
+              if (input$select_posthocmethod == 'None') {
+                tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
+              } else {
+                tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
+              }
+              tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+              
+              # execute call
+              codelevel <- 0 
+              if (input$done) {
+                boolattempt <- FALSE
+                boolattempt <- tryCatch({
+                  eval(parse(text=tmpcall))
+                  boolattempt <- TRUE}
+                )
+                if (boolattempt == FALSE) {
+                  Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+                }
+                Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+                codelevel <- 1
+              }
+              Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
+            }
+            
+          } # end inputstyle
+        } #end empty dataframe
+        
+        invisible(shiny::stopApp())
+      }
     })
     shiny::observeEvent(input$cancel, {
       invisible(shiny::stopApp())
