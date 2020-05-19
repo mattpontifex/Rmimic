@@ -1,10 +1,17 @@
+citHeader("")
 year <- sub("-.*", "", meta$Date)
-note <- sprintf("Version %s", meta$Version)
+note <- meta$Version
+
+citEntry(
+  textVersion = sprintf("Pontifex, M. B. (%s). Rmimic: An R package that mimic outputs of popular commercial statistics software packages. (Version %s) [Computer software]. https://github.com/mattpontifex/Rmimic", year, note)
+  )
+
 bibentry(bibtype = "Manual",
-  entry = "Software",
   title = "{Rmimic}: An R package that mimic outputs of popular commercial statistics software packages.",
   author = c(person("Matthew B.", "Pontifex")),
   year = year,
   note = note,
   url = "https://github.com/mattpontifex/Rmimic"
 )
+
+textVersion = sprintf("Pontifex, M. B. (%s). Rmimic: An R package that mimic outputs of popular commercial statistics software packages. (Version %s) [Computer software]. https://github.com/mattpontifex/Rmimic", year, note)
