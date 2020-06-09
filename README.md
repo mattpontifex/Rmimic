@@ -1,7 +1,9 @@
 Rmimic
 ==============
 
-An R package that mimics the functionalities of popular commercial statistics software packages in that it will compute
+**This package simply provides wrappers around well-established and validated packages (e.g. stats, lawstat, psychometric, MBESS, lme4, psych, epitools) to make their use and output more user friendly.**
+
+This R package mimics the functionalities of popular commercial statistics software packages in that it will compute
 multiple-related tests. However, rather than outputting all results blindly, the package uses the specified/
 automatically determined test correction/adjustments and outputs the results in APA format. Additionally, 
 when appropriate, functions will automatically break down the data to consider all potential comparisons
