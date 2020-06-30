@@ -153,7 +153,7 @@ pop_ttest <- function() {
               shinyWidgets::radioGroupButtons(
                 inputId = "select_posthocmethodWF",
                 label = "What posthoc tests should be run?",
-                choices = c("None", "Bonferroni", "Sidak", "Holm-Bonferroni"),
+                choices = c("Holm-Bonferroni", "Bonferroni", "Sidak"),
                 checkIcon = list(yes = shiny::icon("ok", lib = "glyphicon")),
                 size = "normal",
                 width = "80%",
@@ -214,7 +214,7 @@ pop_ttest <- function() {
               shinyWidgets::radioGroupButtons(
                 inputId = "select_posthocmethod",
                 label = "What posthoc tests should be run?",
-                choices = c("None", "Bonferroni", "Sidak", "Holm-Bonferroni"),
+                choices = c("Holm-Bonferroni", "Bonferroni", "Sidak"),
                 checkIcon = list(yes = shiny::icon("ok", lib = "glyphicon")),
                 size = "normal",
                 width = "80%",
@@ -233,6 +233,8 @@ pop_ttest <- function() {
     
     shiny::observeEvent(toListen(), {
       if ((input$generatecode != 0) | (input$done != 0)) {
+        
+        listofcalls <- c()
         
         # Check that selections are made
         if (!is.null(input$select_dataframe)) {
@@ -256,7 +258,8 @@ pop_ttest <- function() {
               }
               tmpcall <- sprintf('%s)',tmpcall)
               tmpcallseg1 <- tmpcall
-              eval(parse(text=tmpcall))
+              #eval(parse(text=tmpcall))
+              listofcalls <- c(listofcalls, tmpcall)
               
               tmpcall <- sprintf('ttestresult <- Rmimic::RmimicTtest(workingdata, dependentvariable=%s', sprintf("'DV'"))
                if (!is.null(input$select_subIDWF)) {
@@ -282,12 +285,31 @@ pop_ttest <- function() {
                 tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethodWF))
               }
               tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+              listofcalls <- c(listofcalls, tmpcall)
               
               # execute call
-              eval(parse(text=tmpcall))
-              Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=80, indent='hanging')
-              Rmimic::typewriter(tmpcallseg1, tabs=1, spaces=0, characters=80, indent='hanging')
-              Rmimic::typewriter(tmpcall, tabs=1, spaces=0, characters=80, indent='hanging')
+              codelevel <- 0 
+              if (input$done) {
+                boolattempt <- FALSE
+                for (cR in 1:length(listofcalls)) {
+                  tmpcall <- listofcalls[cR]
+                  boolattempt <- tryCatch({
+                    eval(parse(text=tmpcall))
+                    boolattempt <- TRUE}
+                  )
+                }
+                if (boolattempt == FALSE) {
+                  Rmimic::typewriter('Uh oh.. Something went wrong. But the syntax for the function is provided below.', tabs=0, spaces=0, characters=80, indent='hanging')
+                }
+                
+                # output calls
+                Rmimic::typewriter('Equivalent call:', tabs=0, spaces=0, characters=200, indent='hanging')
+                codelevel <- 1
+              }
+              for (cR in 1:length(listofcalls)) {
+                tmpcall <- listofcalls[cR]
+                Rmimic::typewriter(tmpcall, tabs=codelevel, spaces=0, characters=200, indent='hanging')
+              }
             }
             
           } else {
