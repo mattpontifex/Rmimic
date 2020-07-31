@@ -15,7 +15,7 @@ packages. Test results are also available as environmental variables and console
 using verbose calls to the function.
 
 Several functions are also available through the R Studio Addins dropdown menu to provide a graphic user interface similar to popular commercial statistics packages. You may have to restart R Studio after installing the package for the functions to show up. Functions accessed through the dropdown menu will pop up a graphical user interface for selecting variables and parameters, when the results of the function printed to the console window along with the syntax.
-<p align="center"><img src="/screencaps/screencap_PopGUI.png?raw=true" width="300" alt="screencap PopGUI"><img src="/screencaps/screencap_PopGUI2.png?raw=true" width="300" alt="screencap PopGUI2"></p>
+<p align="center"><img src="/screencaps/screencap_PopGUI.png?raw=true" width="400" alt="screencap PopGUI"><img src="/screencaps/screencap_PopGUI2.png?raw=true" width="400" alt="screencap PopGUI2"></p>
 
 Installation
 ------------
