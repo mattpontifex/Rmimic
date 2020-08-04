@@ -77,7 +77,13 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confide
       Rmimic::typewriter('Alert: Rmimic::RmimicChisquare requires either a data frame or a tabular input.', tabs=0, spaces=2, characters=floor(spansize*.9))
       stop("Rmimic::RmimicChisquare incorrect data input")
     }
-  } # end table check
+  } else {
+    if (length(which(tolower(names(data)) == (tolower('freq')))) > 0) {
+      # blow it up
+      data <- Rmimic::table2frame(data)
+    }
+  }
+  # end table check
   
   
   if ((x[1] != FALSE) | (y[1] != FALSE)) {

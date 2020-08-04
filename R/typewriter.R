@@ -193,10 +193,13 @@ typewriter <- function(textstring = NULL, tabs = NULL, spaces = NULL, characters
     }
 
     for (cT in 2:ncol(outputmat)) {
-      if (cT > 2) {
-        cat(sprintf("\n"))
+      if (!(stringr::str_trim(outputmat[1,cT]) == 'NA')) {
+        if (cT > 2) {
+          cat(sprintf("\n"))
+        }
+        cat(outputmat[1,cT])
       }
-      cat(outputmat[1,cT])
+      
     }
     cat(sprintf("\n"))
   }
