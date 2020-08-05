@@ -315,8 +315,6 @@ pop_RmimicChisquare <- function() {
             tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
             listofcalls <- c(listofcalls, tmpcall)
            
-            cat(tmpcall)
-            
             # execute call
             codelevel <- 0 
             if (input$done) {
@@ -348,7 +346,7 @@ pop_RmimicChisquare <- function() {
       }
     })
     shiny::observeEvent(input$cancel, {
-      invisible(shiny::stopApp())
+      pkgcond::suppress_conditions(invisible(shiny::stopApp()))
     })
   }
   
