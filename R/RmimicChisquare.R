@@ -6,6 +6,8 @@
 #' @param x Variable name for the predictor. If x is specified, it overrides the variables input.
 #' @param y Variable name for the outcome. If y is specified, it overrides the variables input.
 #' @param variables Variable name or list of variables to compute descriptives for. Data should be in the format column 1 is X (predictor), column 2 is Y (outcome).
+#' @param posthoc Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Sidak, or False Discovery Rate Control.
+#' @param FDRC Decimal representation of false discocvery rate control. Default is 0.05.
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param planned Boolean operator for if the posthoc tests should be outputted regardless of the test statistic. Default is FALSE.
@@ -28,18 +30,31 @@
 #'   # was sex related to the chance of survival on the Titanic
 #'   chisquareresult <- RmimicChisquare( 
 #'           x='Sex', y='Survived', data=Titanic, 
+#'           posthoc="False Discovery Rate Control", 
 #'           confidenceinterval=0.95, studywiseAlpha=0.05, 
 #'           planned=FALSE, verbose=TRUE)
 #'          
 #'   # is sex related to the likelihood of having a particular hair color 
 #'   chisquareresult <- RmimicChisquare( 
-#'           x='Sex', y='Hair',  data=HairEyeColor, 
+#'           x='Sex', y='Hair',  data=HairEyeColor,
+#'           posthoc="False Discovery Rate Control", 
+#'           confidenceinterval=0.95, studywiseAlpha=0.05, 
+#'           planned=FALSE, verbose=TRUE)
+#'          
+#'   # direct entry dataset example
+#'   tempdata <- data.frame("Age"="8","Pet"="Dog","Freq"=282)
+#'   tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Dog","Freq"=199))
+#'   tempdata <- rbind(tempdata, data.frame("Age"="8","Pet"="Cat","Freq"=170))
+#'   tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Cat","Freq"=240))
+#'   chisquareresult <- RmimicChisquare( 
+#'           x='Age', y='Pet',  data=tempdata, 
+#'           posthoc="False Discovery Rate Control",
 #'           confidenceinterval=0.95, studywiseAlpha=0.05, 
 #'           planned=FALSE, verbose=TRUE)
 #'
 #' @export
 
-RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE) {  
+RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, posthoc=TRUE, FDRC=0.05, confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE) {  
   
   # debug
   #variables <- c('MotherBMI', 'ChildBMI')
@@ -84,6 +99,20 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confide
     }
   }
   # end table check
+  
+  if (toupper(posthoc) == toupper("Bonferroni")) {
+    posthoc <- "Bonferroni"
+  } else if (toupper(posthoc) == toupper("Sidak")) {
+    posthoc <- "Sidak"
+  } else if (toupper(posthoc) == toupper("Holm-Bonferroni")) {
+    posthoc <- "Holm-Bonferroni"
+  } else if (posthoc == FALSE) {
+    posthoc <- NULL
+  } else if (toupper(posthoc) == toupper("False Discovery Rate Control")) {
+    posthoc <- "False Discovery Rate Control"
+  } else {
+    posthoc <- "False Discovery Rate Control"
+  }
   
   
   if ((x[1] != FALSE) | (y[1] != FALSE)) {
@@ -131,6 +160,35 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confide
     cDF[,2] <- factor(cDF[,2])
   }
   
+  # verify that the factor levels make sense
+  temp1levels <- levels(cDF[,1])
+  temp1values <- unique(as.character(unlist(cDF[,1])))
+  temp1intersect <- intersect(temp1levels, temp1values)
+  newlevels <- c()
+  for (cL in 1:length(temp1levels)) {
+    if (length(intersect(temp1intersect,temp1levels[cL])) > 0) {
+      newlevels <- c(newlevels, temp1levels[cL])
+    }
+  }
+  cDF[,1] <- factor(cDF[,1], levels=newlevels)
+  temp1levels <- levels(cDF[,2])
+  temp1values <- unique(as.character(unlist(cDF[,2])))
+  temp1intersect <- intersect(temp1levels, temp1values)
+  newlevels <- c()
+  for (cL in 1:length(temp1levels)) {
+    if (length(intersect(temp1intersect,temp1levels[cL])) > 0) {
+      newlevels <- c(newlevels, temp1levels[cL])
+    }
+  }
+  cDF[,2] <- factor(cDF[,2], levels=newlevels)
+  
+  
+  
+  mastertestselect <- sprintf("%s's Exact test", 'Fisher')
+  pval <- tryCatch(fisher.test(table(cDF[,1], cDF[,2]), alternative="two.sided")$p.value, error=function(e) NA)
+  if (is.na(pval)) {
+    mastertestselect <- sprintf("%s's Chi-squared test", 'Pearson')
+  }
   # kick to subprocess
   res <- Rmimic::subprocessRmimicChisquare(variables=variables, data=cDF)
   
@@ -259,8 +317,160 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confide
     } # end loop cOutcomeLevelsB
     res$posthocttest <- masterdataframeout
     
+    # Perform Posthoc Adjustments
+    if (!is.null(posthoc)) {
+      
+      # correction should be applied within each outcome chunk, but the nature of the  
+      # way comparisons are made allows to just apply it to all contrasts
+      if ((toupper(posthoc) == toupper("Bonferroni")) | (toupper(posthoc) == toupper("Sidak"))) {
+        critp <- studywiseAlpha
+        criticalphrase <- ""
+        critdivisor <- length(levels(cDF[,1]))-1
+        if (critdivisor < 1) {
+          critdivisor <- 1 # shouldnt be possible
+        }
+        if (toupper(posthoc) == toupper("Bonferroni")) {
+          critp <- (studywiseAlpha/critdivisor)
+          criticalphrase <- sprintf("(Bonferroni critical alpha = %.4f)", round(critp,4))
+        } else if (toupper(posthoc) == toupper("Sidak")) {
+          critp <- (1-(1-studywiseAlpha)^(1/critdivisor))
+          criticalphrase <- sprintf("(Sidak critical alpha = %.4f)", round(critp,4))
+        }
+        for (cR in 1:nrow(res$posthocttest)) {
+          outPvalue <- Rmimic::fuzzyP(res$posthocttest$p.value[cR])
+          if (outPvalue$interpret <= studywiseAlpha) {
+            if (outPvalue$interpret > critp) {
+              res$posthocttest$textoutput[cR] <- sprintf('%s. However, that effect did not remain significant following correction for multiple comparisons %s', res$posthocttest$textoutput[cR], criticalphrase)
+            }
+          }
+        }
+      }
+      
+      if ((toupper(posthoc) == toupper("Holm-Bonferroni")) | (toupper(posthoc) == toupper("False Discovery Rate Control"))) {
+        
+        # determine how many actual contrasts are being run and link stats
+        temporarycheckframe <- res$posthocttest
+        temporarycheckframe$linkrefs <- row.names(temporarycheckframe)
+        
+        chunks <- unique(res$posthocttest$Outcome)
+        masterlinkframe <- data.frame(matrix(NA,nrow=0,ncol=4))
+        names(masterlinkframe) <- c('Outcome', 'Contrast', 'p.value', 'Locations')
+        
+        for (cChunk in 1:length(chunks)) {
+          subtemporarycheckframe <- temporarycheckframe[which(temporarycheckframe$Outcome == chunks[cChunk]),] # subset for test chunk
+          templevels <- levels(cDF[,1])
+          for (cRa in 1:length(templevels)) {
+            for (cRb in 1:length(templevels)) {
+              if (cRb > cRa) {
+                currentlinelist <- c()
+                for (cRs in 1:nrow(subtemporarycheckframe)) {
+                  if ((subtemporarycheckframe$Reference[cRs] == templevels[cRa]) & (subtemporarycheckframe$Predictor[cRs] == templevels[cRb])) {
+                    currentlinelist <- c(currentlinelist, subtemporarycheckframe$linkrefs[cRs])
+                  } else if ((subtemporarycheckframe$Reference[cRs] == templevels[cRb]) & (subtemporarycheckframe$Predictor[cRs] == templevels[cRa])) {
+                    currentlinelist <- c(currentlinelist, subtemporarycheckframe$linkrefs[cRs])
+                  }
+                }
+                linkframe <- data.frame(matrix(NA,nrow=1,ncol=4))
+                names(linkframe) <- c('Outcome', 'Contrast', 'p.value', 'Locations')
+                linkframe$Outcome <- chunks[cChunk]
+                linkframe$Contrast <- sprintf('%s-%s', templevels[cRa], templevels[cRb])
+                if (length(currentlinelist) > 0) {
+                  linkframe$p.value <- temporarycheckframe$p.value[as.integer(currentlinelist[1])]
+                  linkframe$Locations <- sprintf('%s', paste(currentlinelist, collapse=","))
+                }
+                masterlinkframe <- rbind(masterlinkframe,linkframe)
+              }
+            }
+          }
+        } # end cChunk
+        
+        
+        # Holm-Bonferroni
+        if (toupper(posthoc) == toupper("Holm-Bonferroni")) {
+          # Holm, S. 1979. A simple sequential rejective multiple test procedure. Scandinavian Journal of Statistics 6:65-70
+          
+          # should be run within each chunk
+          for (cChunk in 1:length(chunks)) {
+            submasterlinkframe <- masterlinkframe[which(masterlinkframe$Outcome == chunks[cChunk]),] # subset for test chunk
+            submasterlinkframe$Flag <- 0
+            
+            temp <- data.frame(matrix(NA, nrow=nrow(submasterlinkframe), ncol=2))
+            colnames(temp) <- c("p.value", "location")
+            for (cR in 1:nrow(submasterlinkframe)) {
+              outPvalue <- Rmimic::fuzzyP(submasterlinkframe$p.value[cR])
+              if (as.numeric(outPvalue$interpret) <= as.numeric(studywiseAlpha)) {
+                temp[cR,1] <- outPvalue$interpret
+                temp[cR,2] <- cR
+              }
+            }
+            temp <- temp[order(-temp$p.value),]
+            ncomp <- length(which(temp$p.value <= as.numeric(studywiseAlpha)))
+            
+            # Loop through P values
+            rank <- 1
+            while (rank <= nrow(temp)) {
+              if (!is.na(temp$p.value[rank])) {
+                if (as.numeric(temp$p.value[rank]) <= as.numeric(studywiseAlpha)) {
+                  temppval <- (studywiseAlpha/(ncomp - rank + 1))
+                  if (as.numeric(temp$p.value[rank]) > as.numeric(temppval)) {
+                    # P value is no longer considered significant
+                    criticalphrase <- sprintf("(Holm-Bonferroni critical alpha = %.4f)", round(temppval, digits=4))
+                    submasterlinkframe$Flag[temp$location[rank]] <- sprintf('However, that effect did not remain significant following correction for multiple comparisons %s', criticalphrase)
+                  }
+                } else {
+                  # P value is not significant
+                  rank <- rank + 1
+                }
+              }
+              rank <- rank + 1
+            }
+            
+            # add flag to posthoc output
+            for (cR in 1:nrow(submasterlinkframe)) {
+              if (submasterlinkframe$Flag[cR] != 0) {
+                tempvect <- stringr::str_split(submasterlinkframe$Locations[cR], ",")[[1]]
+                for (cRc in 1:length(tempvect)) {
+                  res$posthocttest$textoutput[as.integer(tempvect[cRc])] <- sprintf('%s. %s', res$posthocttest$textoutput[as.integer(tempvect[cRc])], submasterlinkframe$Flag[cR])
+                }
+              }
+            } # end cR
+          } # end cChunk
+          
+        } # end HB
+        
+        if (toupper(posthoc) == toupper("False Discovery Rate Control")) {
+          # Glickman, M. E., Rao, S. R., Schultz, M. R. (2014). False discovery rate control is a recommended alternative to Bonferroni-type adjustments in health studies. Journal of Clinical Epidemiology, 67, 850-857.
+          
+          if ((!is.numeric(FDRC)) | ((FDRC < 0) | (FDRC > 0.99))) {
+            FDRC <- 0.05
+          }
+      
+          temp <- masterlinkframe[order(masterlinkframe$p.value),]
+          ncomp <- nrow(temp)
+          # Loop through P values
+          for (rank in 1:nrow(temp)) {
+            outPvalue <- Rmimic::fuzzyP(as.numeric(temp$p.value[rank]))
+            if (outPvalue$interpret <= studywiseAlpha) {
+              temppval <- (FDRC*(rank/ncomp))
+              if (as.numeric(temp$p.value[rank]) > as.numeric(temppval)) {
+                # P value is no longer considered significant
+                criticalphrase <- sprintf("(Benjamini-Hochberg critical alpha = %.3f)", temppval)
+                tempvect <- stringr::str_split(temp$Locations[rank], ",")[[1]]
+                for (cRc in 1:length(tempvect)) {
+                  res$posthocttest$textoutput[as.integer(tempvect[cRc])] <- sprintf('%s. However, that effect did not remain significant following false discovery rate control %s', res$posthocttest$textoutput[as.integer(tempvect[cRc])], criticalphrase)
+                }
+              }
+            }
+          }
+          
+        } # FDRC
+      } # end HB or FDRC
+      
+    } # end posthoc corrections
+    
   } # posthoc tests got borked
     
+  
   if (verbose == TRUE) {
     
     temptext <- "Chi-square Analysis"
@@ -276,13 +486,15 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, confide
     rvers <- unlist(strsplit(R.version.string, " "))
     rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
     outstring <- sprintf('%s in %s.', outstring, rvers)
-    if (nrow(cDF) < 1000) {
-      if (pitchfake == FALSE) {
-        outstring <- sprintf('%s Test statistics and odds ratios were computed using %s Exact test and conditional maximum likelihood estimation.', outstring, sprintf("%s's", 'Fisher'))
-      } else {
-        outstring <- sprintf('%s Test statistics and odds ratios were computed using %s Exact test and %s unconditional maximum likelihood estimation.', outstring, sprintf("%s's", 'Fisher'), sprintf("%s's", 'Wald'))
-      }
+    if (pitchfake == FALSE) {
+      outstring <- sprintf('%s Test statistics and odds ratios were computed using %s and conditional maximum likelihood estimation', outstring, mastertestselect)
+    } else {
+      outstring <- sprintf('%s Test statistics and odds ratios were computed using %s and %s unconditional maximum likelihood estimation', outstring, mastertestselect, sprintf("%s's", 'Wald'))
     }
+    if ((!is.null(posthoc)) & (posthoc != FALSE)) {
+      outstring <- sprintf('%s using the %s approach for post-hoc comparison corrections.', outstring, posthoc)
+    }
+    
     Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
     rm(outstring)
     cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))

@@ -44,6 +44,12 @@ subprocessRmimicChisquare <- function(variables=FALSE, data=FALSE) {
   if (nrow(cDF) < 1000) {
     boolfish <- TRUE
   }
+  
+  # test run fishers test
+  pval <- tryCatch(fisher.test(table(cDF[,1], cDF[,2]), alternative="two.sided")$p.value, error=function(e) NA)
+  if (is.na(pval)) {
+    boolfish <- FALSE
+  }
   results <- utils::capture.output(pkgcond::suppress_conditions(gmodels::CrossTable(cDF[,1], cDF[,2], fisher=boolfish, chisq=TRUE, expected=TRUE, sresid=TRUE, format="SPSS"), split = FALSE))
   
   stopindx <- which(pmatch(results, 'Statistics for All Table Factors') == 1)
