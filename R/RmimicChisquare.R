@@ -157,7 +157,7 @@ RmimicChisquare <- function(x=FALSE,y=FALSE,variables=FALSE, data=FALSE, posthoc
   if (!is.factor(cDF[,1])) {
     cDF[,1] <- factor(cDF[,1])
   }
-  if (!is.factor(cDF[,1])) {
+  if (!is.factor(cDF[,2])) {
     cDF[,2] <- factor(cDF[,2])
   }
   
