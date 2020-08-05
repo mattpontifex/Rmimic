@@ -11,6 +11,7 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, March 6, 2020
 #' 
+#' @importFrom stats fisher.test
 #' @importFrom gmodels CrossTable
 #' @importFrom stringr str_pad
 #' @importFrom utils capture.output

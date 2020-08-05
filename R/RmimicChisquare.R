@@ -21,6 +21,7 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 7, 2020
 #'
+#' @importFrom stats fisher.test
 #' @importFrom epitools oddsratio.fisher oddsratio.wald
 #' @importFrom pkgcond suppress_conditions
 #' @importFrom utils packageDate

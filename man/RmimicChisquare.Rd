@@ -9,6 +9,8 @@ RmimicChisquare(
   y = FALSE,
   variables = FALSE,
   data = FALSE,
+  posthoc = TRUE,
+  FDRC = 0.05,
   confidenceinterval = 0.95,
   studywiseAlpha = 0.05,
   planned = FALSE,
@@ -23,6 +25,10 @@ RmimicChisquare(
 \item{variables}{Variable name or list of variables to compute descriptives for. Data should be in the format column 1 is X (predictor), column 2 is Y (outcome).}
 
 \item{data}{Data frame containing the variables of interest.}
+
+\item{posthoc}{Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Sidak, or False Discovery Rate Control.}
+
+\item{FDRC}{Decimal representation of false discocvery rate control. Default is 0.05.}
 
 \item{confidenceinterval}{Decimal representation of confidence interval. Default 0.95.}
 
@@ -46,12 +52,25 @@ Compute SPSS style results for Chi-square analysis with odds ratios and confiden
   # was sex related to the chance of survival on the Titanic
   chisquareresult <- RmimicChisquare( 
           x='Sex', y='Survived', data=Titanic, 
+          posthoc="False Discovery Rate Control", 
           confidenceinterval=0.95, studywiseAlpha=0.05, 
           planned=FALSE, verbose=TRUE)
          
   # is sex related to the likelihood of having a particular hair color 
   chisquareresult <- RmimicChisquare( 
-          x='Sex', y='Hair',  data=HairEyeColor, 
+          x='Sex', y='Hair',  data=HairEyeColor,
+          posthoc="False Discovery Rate Control", 
+          confidenceinterval=0.95, studywiseAlpha=0.05, 
+          planned=FALSE, verbose=TRUE)
+         
+  # direct entry dataset example
+  tempdata <- data.frame("Age"="8","Pet"="Dog","Freq"=282)
+  tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Dog","Freq"=199))
+  tempdata <- rbind(tempdata, data.frame("Age"="8","Pet"="Cat","Freq"=170))
+  tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Cat","Freq"=240))
+  chisquareresult <- RmimicChisquare( 
+          x='Age', y='Pet',  data=tempdata, 
+          posthoc="False Discovery Rate Control",
           confidenceinterval=0.95, studywiseAlpha=0.05, 
           planned=FALSE, verbose=TRUE)
 

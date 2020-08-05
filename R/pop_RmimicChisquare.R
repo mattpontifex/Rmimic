@@ -176,6 +176,17 @@ pop_RmimicChisquare <- function() {
               width = "80%",
             ),
             
+            
+            shinyWidgets::radioGroupButtons(
+              inputId = "select_posthocmethod",
+              label = "What posthoc correction approach should be used?",
+              choices = c("False Discovery Rate Control","Holm-Bonferroni", "Bonferroni", "Sidak"),
+              checkIcon = list(yes = shiny::icon("ok", lib = "glyphicon")),
+              size = "normal",
+              width = "90%",
+            ),
+            
+            
           )
         )
       }
@@ -281,16 +292,31 @@ pop_RmimicChisquare <- function() {
             }
             
             tmpcall <- 'chisquareresult <- Rmimic::RmimicChisquare('
-            tmpcall <- sprintf('%svariables=c(%s, %s)', tmpcall, sprintf("'%s'",input$select_IV[1]), sprintf("'%s'",input$select_DV[1]))
+            
+            # array input
+            #tmpcall <- sprintf('%svariables=c(%s, %s)', tmpcall, sprintf("'%s'",input$select_IV[1]), sprintf("'%s'",input$select_DV[1]))
+            # specific input
+            tmpcall <- sprintf('%sx=%s', tmpcall, sprintf("'%s'",input$select_IV[1]))
+            tmpcall <- sprintf('%s, y=%s', tmpcall, sprintf("'%s'",input$select_DV[1]))
+            
             tmpcall <- sprintf('%s, data=%s', tmpcall, input$select_dataframe)
-            if (input$select_modelstyle == "Yes - Restrict output") {
-              tmpcall <- sprintf('%s, \n planned=FALSE', tmpcall)
+            
+            if (input$select_posthocmethod == 'False Discovery Rate Control') {
+              tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", 'False Discovery Rate Control'))
             } else {
-              tmpcall <- sprintf('%s, \n planned=TRUE', tmpcall)
+              tmpcall <- sprintf('%s, \n posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethod))
             }
-            tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+            
+            if (input$select_modelstyle == "Yes - Restrict output") {
+              tmpcall <- sprintf('%s, planned=FALSE', tmpcall)
+            } else {
+              tmpcall <- sprintf('%s, planned=TRUE', tmpcall)
+            }
+            tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
             listofcalls <- c(listofcalls, tmpcall)
            
+            cat(tmpcall)
+            
             # execute call
             codelevel <- 0 
             if (input$done) {

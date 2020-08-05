@@ -36,7 +36,8 @@ Compute SPSS style results for regression analysis with effect size and confiden
     # Compute Model from mtcars dataset
     basefit <- lm(mpg ~ am + wt, data = mtcars)
     fit <- lm(mpg ~ am + wt + qsec, data = mtcars)
-    regresult <- RmimicLMcontrast(basefit, fit, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
+    regresult <- RmimicLMcontrast(basefit, fit, 
+       confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)
 
 }
 \author{

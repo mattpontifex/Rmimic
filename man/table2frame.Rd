@@ -12,6 +12,16 @@ table2frame(data)
 \description{
 Helper function to blow up a table into a data frame.
 }
+\examples{
+
+  # create frequency frame
+  data <- data.frame("Outcome"="Yes","Predictor"="No","Freq"=3)
+  data <- rbind(data, data.frame("Outcome"="No","Predictor"="No","Freq"=15))
+  data <- rbind(data, data.frame("Outcome"="Yes","Predictor"="Yes","Freq"=20))
+  data <- rbind(data, data.frame("Outcome"="No","Predictor"="Yes","Freq"=17))
+  data <- table2frame(data)
+  
+}
 \author{
 Matthew B. Pontifex, \email{pontifex@msu.edu}, May 19, 2020
 }
