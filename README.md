@@ -1,8 +1,8 @@
 Rmimic
 ==============
 
-**<p align="center" style="padding-left: 2em; padding-right: 2em;">This package simply provides wrappers around well-established and validated packages (e.g. stats, lawstat,   
-    psychometric, MBESS, lme4, psych, epitools) to make their use and output more user friendly.</p>**
+**<p align="center" style="padding-left: 2em; padding-right: 2em;">This package simply provides wrappers around well-established and validated packages (e.g. stats, lawstat, psychometric, MBESS, lme4, psych, epitools) to make their use and output more user friendly.</p>**
+------------
 
 This R package mimics the functionalities of popular commercial statistics software packages in that it will compute
 multiple-related tests. However, rather than outputting all results blindly, the package uses the specified/
