@@ -24,12 +24,21 @@ To use this package, from R run the following commands:
     tryCatch(library(devtools), error=function(e){install.packages("devtools"); library(devtools)})
     devtools::install_github("mattpontifex/Rmimic", force=TRUE); library(Rmimic)  
 ```
-You may be prompted to update packages, you can select 'None' (3 typically) to just install Rmimic. You may
-also get a backports error installing devtools, this may require you to restart R and then run:
-```r
-    install.packages("backports"); 
-```
+
+**Common Issues**
+* You may be prompted to update packages, you can select 'None' (3) to just install Rmimic. 
+* You may get a backports error installing devtools, this may require you to restart R and then the code below.
 After completing that step, you can repeat the installation instructions above.
+```r
+    install.packages("backports") 
+```
+* You may get an error indicating that R cannot remove prior installation of a package. 
+You can try installing the package again to see if that fixes it. Most times you will need to run the code below, 
+then manually delete the folder and then run the install packages command.
+```r
+    find.package('farver') 
+```
+
 
 
 Super Function List
@@ -74,8 +83,19 @@ and will perform t-tests for each comparison with post-hoc comparison correction
 and confidence intervals. For samples less than 1000, Fishers exact test statistic is used if possible.
 The function can handle outcomes with more than 2 levels and will perform comparisons for each pair of outcomes.
 ```r
-    chisquareresult <- Rmimic::RmimicChisquare(variables=c('Sex', 'Survived'), data=Titanic, 
-                            confidenceinterval=0.95, studywiseAlpha=0.05, planned=FALSE, verbose=TRUE)  
+    tempdata <- data.frame("Age"="8","Pet"="Dog","Freq"=282)
+    tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Dog","Freq"=199))
+    tempdata <- rbind(tempdata, data.frame("Age"="8","Pet"="Cat","Freq"=170))
+    tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Cat","Freq"=240))
+    chisquareresult <- RmimicChisquare( 
+                            x='Age', y='Pet',  data=tempdata, 
+                            posthoc='False Discovery Rate Control',
+                            confidenceinterval=0.95, studywiseAlpha=0.05, 
+                            planned=FALSE, verbose=TRUE)
+
+    chisquareresult <- Rmimic::RmimicChisquare(x='Sex', y='Survived', data=Titanic,
+                            posthoc='False Discovery Rate Control', planned=FALSE, 
+                            confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE)  
 ```
 <p align="center"><img src="/screencaps/screencap_RmimicChisquare1.png?raw=true" width="600" alt="screencap RmimicChisquare1"></p>
 <p align="center"><img src="/screencaps/screencap_RmimicChisquare2.png?raw=true" width="600" alt="screencap RmimicChisquare2"></p>
