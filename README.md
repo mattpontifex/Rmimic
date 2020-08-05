@@ -88,8 +88,7 @@ The function can handle outcomes with more than 2 levels and will perform compar
     tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Dog","Freq"=199))
     tempdata <- rbind(tempdata, data.frame("Age"="8","Pet"="Cat","Freq"=170))
     tempdata <- rbind(tempdata, data.frame("Age"="30","Pet"="Cat","Freq"=240))
-    chisquareresult <- RmimicChisquare( 
-                            x='Age', y='Pet',  data=tempdata, 
+    chisquareresult <- RmimicChisquare(x='Age', y='Pet',  data=tempdata, 
                             posthoc='False Discovery Rate Control',
                             confidenceinterval=0.95, studywiseAlpha=0.05, 
                             planned=FALSE, verbose=TRUE)
