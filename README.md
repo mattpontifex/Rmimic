@@ -4,6 +4,18 @@ Rmimic
 **<p align="center" style="padding-left: 2em; padding-right: 2em;">This package simply provides wrappers around well-established and validated packages (e.g. stats, lawstat, psychometric, MBESS, lme4, psych, epitools) to make their use and output more user friendly.</p>**
 ------------
 
+Why should I use this package?
+------------
+Because using R for statistics should not be hard. This package:
+* Provides a standard operating approach for running statistics in R with results that generally align with 
+those that would be obtained through SPSS, SAS, and/or Systat.
+* Provides automatic posthoc decomposition of significant effects.
+* Provides statistical results, effect sizes, effect size confidence intervals, and interpretations in APA format.
+* Provides a graphical user interface for point and click analysis.
+
+
+What is this?
+------------
 This R package mimics the functionalities of popular commercial statistics software packages in that it will compute
 multiple-related tests. However, rather than outputting all results blindly, the package uses the specified/
 automatically determined test correction/adjustments and outputs the results in APA format. Additionally, 
