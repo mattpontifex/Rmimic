@@ -237,7 +237,7 @@ pop_RmimicMediation <- function() {
                 tmpcall <- sprintf('%s, conf.level=0.95)', tmpcall)
                 listofcalls <- c(listofcalls, tmpcall)
                 
-                tmpcall <- sprintf('res <- mediate2text(fitMed, studywiseAlpha=0.05)')
+                tmpcall <- sprintf('res <- Rmimic::mediate2text(fitMed, studywiseAlpha=0.05)')
                 listofcalls <- c(listofcalls, tmpcall)
                 
                 # execute call
