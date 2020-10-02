@@ -42,3 +42,8 @@ Name: Regression
 Description: Compute SPSS style regression analysis with effect size and confidence intervals.
 Binding: pop_RmimicLMcontrast
 Interactive: true
+
+Name: Mediation
+Description: Compute mediation analysis with confidence intervals.
+Binding: pop_RmimicMediation
+Interactive: true
