@@ -130,6 +130,18 @@ parameters for the approach (pearson (default), spearman, or kendall).
 <p align="center"><img src="/screencaps/screencap_descriptives.png?raw=true" width="600" alt="screencap descriptives"></p>
 
 
+* **mediate2text**: Function that outputs mediation results in a more intelligible format. 
+```r
+    workingdatabase <- Rmimic::gradwakefulness
+    fitM <- stats::lm(CaffeineConsumption ~ HoursAwake, data=workingdatabase)
+    fitY <- stats::lm(Wakefulness ~ HoursAwake + CaffeineConsumption, data=workingdatabase)
+    fitMed <- mediation::mediate(fitM, fitY, treat='HoursAwake', mediator='CaffeineConsumption',
+                              boot=FALSE, sims=1000, conf.level=0.95)
+    res <- Rmimic::mediate2text(fitMed, studywiseAlpha=0.05)
+```
+<p align="center"><img src="/screencaps/screencap_mediate2text.png?raw=true" width="600" alt="screencap mediate2text"></p>
+
+
 * **RmimicMLAnova**: Function that computes a SPSS style univariate ANOVA with effect size and confidence intervals using a multi-level model from the lme4 function. Main effects and interactions are automatically decomposed using the
 specified post-hoc corrections. 
 ```r
