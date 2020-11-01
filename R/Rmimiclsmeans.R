@@ -83,7 +83,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
   if (is.null(hold)) {
     hold <- ''
   } else {
-    hold <- sprintf('%s,', hold)
+    hold <- sprintf('%s ', hold)
   }
   
   # Assess what got fed into the function
@@ -168,9 +168,9 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           }
           posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
           
-          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[1], hold,tempvect[2]))
+          testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold, tempvect[1], hold, tempvect[2]))
           if (length(testinx) == 0) {
-            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold,tempvect[2], hold,tempvect[1]))
+            testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold, tempvect[2], hold, tempvect[1]))
           }
           if (length(testinx) > 0) {
             
@@ -362,26 +362,27 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     } # end cB
   } # end withinvariableL
   
-  # remove duplicate demographic entries
-  finalmasterdescriptives <- data.frame(matrix(NA, nrow=1, ncol=ncol(masterdescriptives)))
-  finalmasterdescriptivesL <- 1
-  colnames(finalmasterdescriptives) <- colnames(masterdescriptives)
-  mdVar <- unique(masterdescriptives$Variable)
-  for (cDV in 1:length(mdVar)) {
-    tempdataframe <- masterdescriptives[which(masterdescriptives$Variable == mdVar[cDV]),]
-    mdGro <- unique(tempdataframe$Group)
-    for (cB in 1:length(mdGro)) {
-      subtempdataframe <- tempdataframe[which(tempdataframe$Group == mdGro[cB]),]
-      mdNam <- unique(subtempdataframe$CollapsedName)
-      for (cN in 1:length(mdNam)) {
-        firstindex <- which(subtempdataframe$CollapsedName == mdNam[cN])[1]
-        finalmasterdescriptives[finalmasterdescriptivesL,] <- subtempdataframe[firstindex,]
-        finalmasterdescriptivesL <- finalmasterdescriptivesL + 1
+  if (!is.null(masterdescriptives)) {
+    # remove duplicate demographic entries
+    finalmasterdescriptives <- data.frame(matrix(NA, nrow=1, ncol=ncol(masterdescriptives)))
+    finalmasterdescriptivesL <- 1
+    colnames(finalmasterdescriptives) <- colnames(masterdescriptives)
+    mdVar <- unique(masterdescriptives$Variable)
+    for (cDV in 1:length(mdVar)) {
+      tempdataframe <- masterdescriptives[which(masterdescriptives$Variable == mdVar[cDV]),]
+      mdGro <- unique(tempdataframe$Group)
+      for (cB in 1:length(mdGro)) {
+        subtempdataframe <- tempdataframe[which(tempdataframe$Group == mdGro[cB]),]
+        mdNam <- unique(subtempdataframe$CollapsedName)
+        for (cN in 1:length(mdNam)) {
+          firstindex <- which(subtempdataframe$CollapsedName == mdNam[cN])[1]
+          finalmasterdescriptives[finalmasterdescriptivesL,] <- subtempdataframe[firstindex,]
+          finalmasterdescriptivesL <- finalmasterdescriptivesL + 1
+        }
       }
     }
+    rm(masterdescriptives, subtempdataframe, tempdataframe, mdNam, mdGro, mdVar, cN, cB, cDV)
   }
-  rm(masterdescriptives, subtempdataframe, tempdataframe, mdNam, mdGro, mdVar, cN, cB, cDV)
-  
   # populate interpretation
   dataframeout$interpretation <- NA
   for (cI in 1:nrow(dataframeout)) {

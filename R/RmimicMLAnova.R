@@ -12,7 +12,7 @@
 #' @param randomslope Parameter to indicate random slopes.
 #' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.
 #' @param posthoc Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Scheffe, Sidak, Tukey, or False Discovery Rate Control.
-#' @param FDRC Decimal representation of false discocvery rate control. Default is 0.05.
+#' @param FDRC Decimal representation of false discovery rate control. Default is 0.05.
 #' @param planned Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.
 #' @param suppressposthoc Parameter to specify a posthoc effect to ignore even if it is significant.
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
@@ -60,6 +60,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     within = c("Time")
     covariates = NULL
     randomintercept = c("PartID", "PartID:Condition", "PartID:Time")
+    randomintercept = c("PartID")
     randomslope = NULL
     df = NULL
     planned=NULL
