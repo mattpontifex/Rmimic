@@ -46,7 +46,7 @@ RmimicMLAnova(
 
 \item{posthoc}{Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Scheffe, Sidak, Tukey, or False Discovery Rate Control.}
 
-\item{FDRC}{Decimal representation of false discocvery rate control. Default is 0.05.}
+\item{FDRC}{Decimal representation of false discovery rate control. Default is 0.05.}
 
 \item{planned}{Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.}
 
