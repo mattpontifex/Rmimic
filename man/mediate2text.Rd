@@ -24,10 +24,6 @@ A list with:
 \description{
 Output mediate results in a more intelligible format.
 }
-\examples{
-
-
-}
 \author{
 Matthew B. Pontifex, \email{pontifex@msu.edu}, October 1, 2020
 }

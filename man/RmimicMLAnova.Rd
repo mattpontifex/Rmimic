@@ -70,16 +70,6 @@ RmimicMLAnova(
 \description{
 Compute SPSS style univariate ANOVA with effect size and confidence intervals using a multi-level model from the lme4 function. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. Note: Data should be in long format. As this function will conduct full post-hoc decompositions, the more factors assess the longer processing will take.
 }
-\examples{
-   result <- RmimicMLAnova(
-                data = Rmimic::alertness,
-                dependentvariable = "Alertness",
-                subjectid = "PartID",
-                between = "Group",
-                within = c("Condition", "Time"),
-                randomintercept = c("PartID", "PartID:Condition", "PartID:Time"))
-
-}
 \author{
 Matthew B. Pontifex, \email{pontifex@msu.edu}, May 11, 2020
 }
