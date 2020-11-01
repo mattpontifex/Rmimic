@@ -34,16 +34,7 @@
 #' @importFrom lmerTest lmer
 #' @importFrom emmeans lsmeans
 #' @importFrom MuMIn r.squaredGLMM
-#' 
 #'
-#' @examples
-#'    result <- RmimicMLAnova(
-#'                 data = Rmimic::alertness,
-#'                 dependentvariable = "Alertness",
-#'                 subjectid = "PartID",
-#'                 between = "Group",
-#'                 within = c("Condition", "Time"),
-#'                 randomintercept = c("PartID", "PartID:Condition", "PartID:Time"))
 #'
 #' @export
 
@@ -61,10 +52,12 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
   debug <- FALSE
   if (debug == TRUE) {
     data = Rmimic::alertness
+    data <- data[which(data$Condition == 'Condition2'),]
     dependentvariable = "Alertness"
     subjectid = "PartID"
     between = "Group"
-    within = c("Condition", "Time")
+    #within = c("Condition", "Time")
+    within = c("Time")
     covariates = NULL
     randomintercept = c("PartID", "PartID:Condition", "PartID:Time")
     randomslope = NULL

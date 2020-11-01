@@ -15,8 +15,6 @@
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 1, 2020
 #' 
-#' @examples
-#' 
 #' 
 #' @importFrom stats confint 
 #'

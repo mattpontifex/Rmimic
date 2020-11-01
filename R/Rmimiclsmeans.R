@@ -185,7 +185,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             if (temptstat > 37.6) {
               temptstat <- temptstat
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
             ttestresult$stud.conf.int <- confidenceinterval
@@ -322,7 +322,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             if (temptstat > 37.6) {
               temptstat <- temptstat
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval
