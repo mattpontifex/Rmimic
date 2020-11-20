@@ -220,6 +220,7 @@ paired t-tests for both parametric and nonparametric data.
 ```
 
 ## Accessory Function List
+* **pseudobootstrapsamples**: Data exploration function that randomly samples a dataset to increase the sample size.
 * **cell2span**: Function that takes a vector of data table cells and creates a character string of a particular
 length. The text empty will result in an open span in the output.
 * **decimalplaces**: Function to obtain the number of decimal places of precision in a vector.
