@@ -109,8 +109,8 @@ pop_RmimicMLAnova <- function() {
         }
         plannedcontrasttext <- shiny::HTML("Use this field to indicate any planned contrasts.<br><small>Contrasts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
         
-        randomintercepttext <- shiny::HTML("Use this field to indicate any random intercepts.<br><small>(the effect is the same for each variable, it just starts at different places)<br>Intercepts should be provided in quotes seperated by a comma, interactions should take the form variableX:variableY.</small>")
-        randomslopetext <- shiny::HTML("Use this field to indicate any random slopes to account for in the model.<br><small>(the effect has a different slope for each variable)<br>Slopes should be provided in quotes seperated by a comma in the form (mode | participant).</small>")
+        randomintercepttext <- shiny::HTML("Use this field to indicate any random intercepts.<br><small>(the effect is the same for each variable, it just starts at different places)<br>Intercepts should be seperated by a comma, interactions should take the form variableX:variableY.</small>")
+        randomslopetext <- shiny::HTML("Use this field to indicate any random slopes to account for in the model.<br><small>(the effect has a different slope for each variable)<br>Slopes should be seperated by a comma in the form (mode | participant).</small>")
         
         
         # determine what is presented based upon format
