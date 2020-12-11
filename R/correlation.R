@@ -332,7 +332,7 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
             cat(sprintf("\t%5s",""))
           } else {
             workingindx <- which(res$comparison1 == variables[cC] & res$comparison2 == variables[cB])
-            temppval <- fuzzyP(as.numeric(res$p.value[workingindx]))
+            temppval <- Rmimic::fuzzyP(as.numeric(res$p.value[workingindx]))
             tempval <- sprintf("%.3f", round(temppval$exact,digits=3))
             temparray <- unlist(strsplit(as.character(tempval),"[.]"))
             outval <- paste(".",temparray[[2]], sep = "")
@@ -343,7 +343,7 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
               tempval <- sprintf("%s", temppval$report)
               temparray <- unlist(strsplit(as.character(tempval),"[.]"))
               outval <- paste(".",temparray[[2]], sep = "")
-              newval <- paste("<", outval, sep = "")
+              newval <- paste("<", paste(outval,"*",sep = ""), sep = "")
               outval <- newval
             }
             cat(sprintf("\t%5s",outval))
@@ -392,7 +392,7 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
     # check to see what gets reported
     testinterps <- c()
     for (cR in 1:nrow(res)) {
-      temppval <- fuzzyP(as.numeric(res$p.value[cR]))
+      temppval <- Rmimic::fuzzyP(as.numeric(res$p.value[cR]))
       testinterps <- c(testinterps, temppval$interpret)
     }
     if (sum(testinterps <= studywiseAlpha) > 0) {
