@@ -680,6 +680,9 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
           if (factorsinvolved[cB] %in% between) {
             subbetween <- c(subbetween, factorsinvolved[cB])
           }
+          if (factorsinvolved[cB] %in% covariates) {
+            subbetween <- c(subbetween, factorsinvolved[cB])
+          }
           if (factorsinvolved[cB] %in% within) {
             subwithin <- c(subwithin, factorsinvolved[cB])
           }
