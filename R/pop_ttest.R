@@ -263,28 +263,28 @@ pop_ttest <- function() {
               
               tmpcall <- sprintf('ttestresult <- Rmimic::RmimicTtest(workingdata, dependentvariable=%s', sprintf("'DV'"))
                if (!is.null(input$select_subIDWF)) {
-                tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]))
+                tmpcall <- sprintf('%s, \n subjectid=%s', tmpcall, sprintf("'%s'", input$select_subIDWF[1]))
               } else {
                 tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
               }
               if (input$select_IVstyleWF == 'Between Subjects') {
-                tmpcall <- sprintf('%s, between=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
+                tmpcall <- sprintf('%s, \n between=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
                 tmpcall <- sprintf('%s, within=NULL', tmpcall)
               } else {
                 tmpcall <- sprintf('%s, between=NULL', tmpcall)
-                tmpcall <- sprintf('%s, within=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
+                tmpcall <- sprintf('%s, \n within=c(%s)', tmpcall, sprintf("'%s'", 'IV'))
               }
               if (input$select_teststyleWF == 'Parametric') {
-                tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+                tmpcall <- sprintf('%s, \n nonparametric=FALSE', tmpcall)
               } else {
-                tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+                tmpcall <- sprintf('%s, \n nonparametric=TRUE', tmpcall)
               }
               if (input$select_posthocmethodWF == 'None') {
                 tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
               } else {
                 tmpcall <- sprintf('%s, posthoc=%s', tmpcall, sprintf("'%s'", input$select_posthocmethodWF))
               }
-              tmpcall <- sprintf('%s, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
+              tmpcall <- sprintf('%s, \n studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE)', tmpcall)
               listofcalls <- c(listofcalls, tmpcall)
               
               # execute call
@@ -318,9 +318,9 @@ pop_ttest <- function() {
               # Extract current data from environment
               workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
               tmpcall <- sprintf('%s%s', tmpcall, input$select_dataframe)
-              tmpcall <- sprintf('%s, dependentvariable=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_DV), collapse=", "))
+              tmpcall <- sprintf('%s, \n dependentvariable=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_DV), collapse=", "))
               if (!is.null(input$select_subID)) {
-                tmpcall <- sprintf('%s, subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
+                tmpcall <- sprintf('%s, \n subjectid=%s', tmpcall, sprintf("'%s'", input$select_subID[1]))
               } else {
                 tmpcall <- sprintf('%s, subjectid=NULL', tmpcall)
               }
@@ -328,13 +328,13 @@ pop_ttest <- function() {
                 tmpcall <- sprintf('%s, \n between=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
                 tmpcall <- sprintf('%s, within=NULL', tmpcall)
               } else {
-                tmpcall <- sprintf('%s, \n between=NULL', tmpcall)
-                tmpcall <- sprintf('%s, within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
+                tmpcall <- sprintf('%s, between=NULL', tmpcall)
+                tmpcall <- sprintf('%s, \n within=c(%s)', tmpcall, paste(sprintf("'%s'",input$select_IV), collapse=", "))
               }
               if (input$select_teststyle == 'Parametric') {
-                tmpcall <- sprintf('%s, nonparametric=FALSE', tmpcall)
+                tmpcall <- sprintf('%s, \n nonparametric=FALSE', tmpcall)
               } else {
-                tmpcall <- sprintf('%s, nonparametric=TRUE', tmpcall)
+                tmpcall <- sprintf('%s, \n nonparametric=TRUE', tmpcall)
               }
               if (input$select_posthocmethod == 'None') {
                 tmpcall <- sprintf('%s, posthoc=FALSE', tmpcall)
