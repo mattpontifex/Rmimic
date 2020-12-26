@@ -96,10 +96,13 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     for (cB in 1:betweenvariableL) {
       
       # subset data for only that variable
-      workingdatabase <- data[,c(subjectid[1], between[cB], dependentvariable)]
+      workingdatabase <- as.data.frame(data[,c(subjectid[1], between[cB], dependentvariable)])
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,between[cB]]))))
+      if (length(spfactors) < 2) {
+        spfactors <- sort(unique(as.character(unlist(data[,between[cB]]))))
+      }
       outlist <- Rmimic::determineallpossiblecombinations(spfactors)
       spfactorscomparisons <- c()
       for (cC in 1:length(outlist)) {
@@ -171,7 +174,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/length(comparison1)) + (1/length(comparison2))))
             temptstat <- ttestresult$statistic
             if (temptstat > 37.6) {
-              temptstat <- temptstat
+              temptstat <- 37.5
             }
             ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
@@ -250,10 +253,13 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     for (cB in 1:withinvariableL) {
       
       # subset data for only that variable
-      workingdatabase <- data[,c(subjectid[1], within[cB], dependentvariable)]
+      workingdatabase <- as.data.frame(data[,c(subjectid[1], within[cB], dependentvariable)])
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,within[cB]]))))
+      if (length(spfactors) < 2) {
+        spfactors <- sort(unique(as.character(unlist(data[,within[cB]]))))
+      }
       outlist <- Rmimic::determineallpossiblecombinations(spfactors)
       spfactorscomparisons <- c()
       for (cC in 1:length(outlist)) {
@@ -267,6 +273,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
         # for each comparison
         for (cComparison in 1:length(spfactorscomparisons)) {
+          
           tempvect <- unlist(strsplit(spfactorscomparisons[cComparison], ':'))
           # Obtain databases for each group
           group1data <- workingdatabase[which(workingdatabase[,within[cB]] == tempvect[1]),]
@@ -333,7 +340,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             ttestresult$effectsize <- ttestresult$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             temptstat <- ttestresult$statistic
             if (temptstat > 37.6) {
-              temptstat <- temptstat
+              temptstat <- 37.5
             }
             ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
