@@ -242,12 +242,12 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   }
   res$changestats$fsquared[2] <- res$changestats$r.squared.change[2]/(1-res$stats$r.squared[1])
   temp <- psychometric::CI.Rsq(res$changestats$r.squared.change[2], length(msalt$residuals), length(trimws(unlist(strsplit(as.character(msalt$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
-  if (temp$LCL[1]<0) {
+  if ((temp$LCL[1]<0) | (is.na(temp$LCL[1]))) {
     res$changestats$fsquared.ci.lower[2] <- 0
   } else {
     res$changestats$fsquared.ci.lower[2] <- (temp$LCL[1]/(1-temporig$LCL[1]))
   }
-  if (temp$UCL[1] > 1) {
+  if ((temp$UCL[1] > 1) | (is.na(temp$UCL[1]))) {
     res$changestats$fsquared.ci.upper[2] <- Inf
   } else {
     res$changestats$fsquared.ci.upper[2] <- (temp$UCL[1]/(1-temporig$UCL[1]))
