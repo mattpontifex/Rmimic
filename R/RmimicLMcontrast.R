@@ -21,6 +21,7 @@
 #' @importFrom psychometric CI.Rsq
 #' @importFrom performance r2_tjur
 #' @importFrom utils packageDate
+#' @importFrom olsrr ols_test_breusch_pagan
 #' 
 #'
 #' @examples
@@ -42,6 +43,9 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   #confidenceinterval<-0.95
   #studywiseAlpha<-0.05
   #verbose<-TRUE
+  
+  #fit <- glm(vs ~ 1, family = "binomial", data = mtcars)
+  #altfit <- glm(vs ~ disp, family = "binomial", data = mtcars)
   
   logisticfit <- FALSE
   if (!is.null(fit$family)) {
@@ -72,7 +76,11 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   # create output structures
   res <- list()
   res$stats <- data.frame(matrix(data=NA,nrow=2,ncol=9))
-  names(res$stats) <- c('Model','DFn','DFd','F.value','p.value','r.squared','r.squaredadj','AIC', 'VIF')
+  names(res$stats) <- c('Model','DFn','DFd','F.value','p.value','r.squared','r.squaredadj','AIC','VIF')
+  
+  res$modelcheck <- data.frame(matrix(data=NA,nrow=4,ncol=6))
+  names(res$modelcheck) <- c('Model', 'Test', 'DF', 'Chisquared', 'p.value', 'decision')
+  
   res$changestats <- data.frame(matrix(data=NA,nrow=2,ncol=9))
   names(res$changestats) <- c('Model','r.squared.change','DFn','DFd','F.change','p.value','fsquared', 'fsquared.ci.lower', 'fsquared.ci.upper')
   res$coefficients <- data.frame(matrix(data=NA,nrow=2,ncol=9))
@@ -129,6 +137,33 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   res$stats$AIC[1] <- stats::extractAIC(fit)[2]
   res$stats$VIF[1] <- fmsb::VIF(fit)[1]
   
+  res$modelcheck$Model[1] <- res$stats$Model[1]
+  res$modelcheck$Model[2] <- res$stats$Model[1]
+  if (!logisticfit) {
+    res$modelcheck$Test[1] <- 'Fitted Values'
+    
+    tres <- olsrr::ols_test_breusch_pagan(fit) # USES THE FITTED VALUES OF THE MODEL
+    res$modelcheck$DF[1] <- 1
+    res$modelcheck$Chisquared[1] <- tres$bp
+    res$modelcheck$p.value[1] <- tres$p
+    #tres <- car::ncvTest(fit)
+    #res$modelcheck$DF[1] <- 1
+    #res$modelcheck$Chisquared[1] <- tres$ChiSquare
+    #res$modelcheck$p.value[1] <- tres$p
+    
+    res$modelcheck$Test[2] <- 'Indep Variables'
+    
+    tres <- olsrr::ols_test_breusch_pagan(fit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    res$modelcheck$DF[2] <- length(tres$preds)
+    res$modelcheck$Chisquared[2] <- tres$bp
+    res$modelcheck$p.value[2] <- tres$p
+    #tres <- lmtest::bptest(fit, studentize=TRUE)
+    #res$modelcheck$DF[2] <- tres$parameter[[1]]
+    #res$modelcheck$Chisquared[2] <- tres$statistic[[1]]
+    #res$modelcheck$p.value[2] <- tres$p.value[[1]]
+    
+  }
+  
   res$changestats$Model[1] <- res$stats$Model[1]
   res$changestats$r.squared.change[1] <- res$stats$r.squared[1]
   res$changestats$DFn[1] <- res$stats$DFn[1]
@@ -143,12 +178,12 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   }
   if (!is.null(ms$r.squared[1])) {
     temporig <- psychometric::CI.Rsq(ms$r.squared, length(ms$residuals), length(trimws(unlist(strsplit(as.character(ms$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
-    if (temporig$LCL[1]<0) {
+    if ((temporig$LCL[1]<0) | (is.na(temporig$LCL[1]))) {
       res$changestats$fsquared.ci.lower[1] <- 0
     } else {
       res$changestats$fsquared.ci.lower[1] <- (temporig$LCL[1]/(1-temporig$LCL[1]))
     }
-    if (temporig$UCL[1] > 1) {
+    if ((temporig$UCL[1] > 1) | (is.na(temporig$UCL[1]))) {
       res$changestats$fsquared.ci.upper[1] <- Inf
     } else {
       res$changestats$fsquared.ci.upper[1] <- (temporig$UCL[1]/(1-temporig$UCL[1]))
@@ -225,6 +260,34 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   res$stats$AIC[2] <- stats::extractAIC(altfit)[2]
   res$stats$VIF[2] <- fmsb::VIF(altfit)[1]
   
+  res$modelcheck$Model[3] <- res$stats$Model[2]
+  res$modelcheck$Model[4] <- res$stats$Model[2]
+  if (!logisticfit) {
+    res$modelcheck$Test[3] <- 'Fitted Values'
+    
+    tres <- olsrr::ols_test_breusch_pagan(altfit) # USES THE FITTED VALUES OF THE MODEL
+    res$modelcheck$DF[3] <- 1
+    res$modelcheck$Chisquared[3] <- tres$bp
+    res$modelcheck$p.value[3] <- tres$p
+    #tres <- car::ncvTest(fit)
+    #res$modelcheck$DF[3] <- 1
+    #res$modelcheck$Chisquared[3] <- tres$ChiSquare
+    #res$modelcheck$p.value[3] <- tres$p
+    
+    res$modelcheck$Test[4] <- 'Indep Variables'
+    
+    tres <- olsrr::ols_test_breusch_pagan(altfit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    res$modelcheck$DF[4] <- length(tres$preds)
+    res$modelcheck$Chisquared[4] <- tres$bp
+    res$modelcheck$p.value[4] <- tres$p
+    #tres <- lmtest::bptest(fit, studentize=TRUE)
+    #res$modelcheck$DF[4] <- tres$parameter[[1]]
+    #res$modelcheck$Chisquared[4] <- tres$statistic[[1]]
+    #res$modelcheck$p.value[4] <- tres$p.value[[1]]
+    
+  }
+  
+  
   changeresult <- stats::anova(fit, altfit)
   if (logistic) {
     changeresult <- anova(fit, altfit, test="Chisq")
@@ -280,6 +343,16 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     
   }
   Coeffcurrentline <- Coeffcurrentline + nrow(mcoef)
+  
+  # interpret modelcheck
+  for (cR in 1:nrow(res$modelcheck)) {
+    outPvalue <- Rmimic::fuzzyP(as.numeric(res$modelcheck$p.value[cR]))
+    if (outPvalue$interpret <= studywiseAlpha) {
+      res$modelcheck$decision[cR] <- 'Unacceptable.'
+    } else {
+      res$modelcheck$decision[cR] <- 'Acceptable.'
+    }
+  }
   
   # place data into text output
   res$changestats$textoutput <- NA
@@ -442,6 +515,38 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     sepgap[1,8] = sepgap[1,8] - 6
     Rmimic::table2console(outputdataframe, sepgap=sepgap, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
     rm(outputdataframe)
+    
+    if (!logistic) {
+      outstring <- "Heteroscedasticity Model Check"
+      cat(sprintf("\n"))
+      Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
+      rm(outstring)
+      outputdataframe <- res$modelcheck
+      #names(res$modelcheck) <- c('Model', 'Test', 'DF', 'Chisquared', 'p.value', 'decision')
+      names(outputdataframe) <- c('Model', 'Using', 'df', 'Chisq', 'p', 'decision')
+      outputdataframe[,4] <- sprintf('%0.1f', round(outputdataframe[,4], digits=1))
+      for (cR in 1:nrow(outputdataframe)) {
+        outPvalue <- Rmimic::fuzzyP(as.double(outputdataframe[cR,5]))
+        if (outPvalue$modifier == "=") {
+          pullvalue <- outPvalue$report
+        } else {
+          pullvalue <- sprintf('%s %s', outPvalue$modifier, outPvalue$report)
+        }
+        if (outPvalue$interpret <= studywiseAlpha) {
+          pullvalue <- sprintf('%s%s', pullvalue, "**")
+        }
+        outputdataframe[cR,5] <- pullvalue
+      }
+      sepgap <- data.frame(matrix(floor(spansize/ncol(outputdataframe)), nrow=1, ncol=ncol(outputdataframe)))
+      sepgap[1,1] = sepgap[1,1] - 3
+      sepgap[1,2] = sepgap[1,2] + 9
+      sepgap[1,3] = sepgap[1,3] - 4
+      sepgap[1,4] = sepgap[1,4] - 4
+      sepgap[1,5] = sepgap[1,5] - 3
+      sepgap[1,6] = sepgap[1,6] + 9
+      Rmimic::table2console(outputdataframe, sepgap=sepgap, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
+      rm(outputdataframe)
+    }
     
     outstring <- "Change Statistics"
     cat(sprintf("\n"))
@@ -608,7 +713,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outtextstring <- sprintf("%s the inclusion of a constant", outtextstring)
     }    
       
-    temppval <- fuzzyP(as.numeric(res$stats$p.value[1]))
+    temppval <- Rmimic::fuzzyP(as.numeric(res$stats$p.value[1]))
     outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
     if (temppval$interpret <= studywiseAlpha) {
       outtextstring <- sprintf("%s explained a statistically significant", outtextstring)
@@ -670,7 +775,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       }
     }
     
-    temppval <- fuzzyP(as.numeric(res$changestats$p.value[2]))
+    temppval <- Rmimic::fuzzyP(as.numeric(res$changestats$p.value[2]))
     outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
     if (temppval$interpret <= studywiseAlpha) {
       outtextstring <- sprintf("%s explained a statistically significant", outtextstring)
