@@ -33,6 +33,7 @@ Imports:
     mediation,
     gvlma,
     stargazer,
+    olsrr,
     psych,
     gmodels,
     epitools,
