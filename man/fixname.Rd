@@ -7,7 +7,7 @@
 fixname(tmpname)
 }
 \arguments{
-\item{datain}{names}
+\item{tmpname}{names}
 }
 \description{
 Function to check variable names for issues and fix them.

@@ -2,7 +2,7 @@
 #'
 #' @description Function to check variable names for issues and fix them.
 #'
-#' @param datain names
+#' @param tmpname names
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, September 13, 2021
 #'

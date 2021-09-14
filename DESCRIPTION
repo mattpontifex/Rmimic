@@ -41,7 +41,8 @@ Imports:
     performance,
     insight,
     esquisse,
-    stringr
+    stringr,
+    tibble
 Suggests:
     testthat,
     devtools,
