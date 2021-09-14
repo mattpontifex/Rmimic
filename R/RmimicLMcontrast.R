@@ -39,6 +39,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   # debug variables
   #fit <- lm(mpg ~ 1, data = mtcars)
   #fit <- lm(mpg ~ am + wt, data = mtcars)
+  #altfit <- lm(mpg ~ am + wt, data = mtcars)
   #altfit <- lm(mpg ~ am + wt + qsec, data = mtcars)
   #confidenceinterval<-0.95
   #studywiseAlpha<-0.05
@@ -46,6 +47,12 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   
   #fit <- glm(vs ~ 1, family = "binomial", data = mtcars)
   #altfit <- glm(vs ~ disp, family = "binomial", data = mtcars)
+  
+  # check model
+  boolsame <- FALSE
+  if (fit$call == altfit$call) {
+    boolsame <- TRUE
+  }
   
   logisticfit <- FALSE
   if (!is.null(fit$family)) {
@@ -303,6 +310,20 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     res$changestats$F.change[2] <- changeresult$F[-1]
     res$changestats$p.value[2] <- changeresult$`Pr(>F)`[-1]
   }
+  
+  if (is.na(res$changestats$F.change[1])) {
+    res$changestats$F.change[1] <- 0.0
+  }
+  if (is.na(res$changestats$F.change[2])) {
+    res$changestats$F.change[2] <- 0.0
+  }
+  if (is.na(res$changestats$p.value[1])) {
+    res$changestats$p.value[1] <- 0.99999
+  }
+  if (is.na(res$changestats$p.value[2])) {
+    res$changestats$p.value[2] <- 0.99999
+  }
+  
   res$changestats$fsquared[2] <- res$changestats$r.squared.change[2]/(1-res$stats$r.squared[1])
   temp <- psychometric::CI.Rsq(res$changestats$r.squared.change[2], length(msalt$residuals), length(trimws(unlist(strsplit(as.character(msalt$terms[[3]]),"[+]"))))-1, level = confidenceinterval)
   if ((temp$LCL[1]<0) | (is.na(temp$LCL[1]))) {
@@ -748,64 +769,65 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     Rmimic::typewriter(outtextstring, tabs=1, spaces=0, characters=floor(spansize *.90))
     rm(outtextstring)
     
-    outtextstring <- sprintf("Step 2: Model: %s", modelcalls[2])
-    Rmimic::typewriter(outtextstring, tabs=0, spaces=0, characters=floor(spansize *.90))
-    outtextstring <- sprintf("Hierarchical regression analysis indicated that")
-    suboutputdataframe <- outputdataframe[which(outputdataframe$Model == modelcalls[2]),]
-    for (cCoef in 2:nrow(suboutputdataframe)) {
-      outtextstring <- sprintf("%s %s", outtextstring, suboutputdataframe$Variable[cCoef]) # add variable label
-      outtextstring <- sprintf("%s (B = %1.2f", outtextstring, suboutputdataframe$B[cCoef]) # add B
-      outtextstring <- sprintf("%s [%2.0f%% CI: %1.2f to %1.2f],", outtextstring, confidenceinterval*100, suboutputdataframe$B.lower.conf.int[cCoef], suboutputdataframe$B.upper.conf.int[cCoef]) # add B
-      outtextstring <- sprintf("%s SE B = %1.2f,", outtextstring, suboutputdataframe$SE[cCoef]) # add SE B
-      if (logistic) {
-        outtextstring <- sprintf("%s Odds Ratio = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add OR
-      } else {
-        outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
-      }
-      if ((nrow(suboutputdataframe)-cCoef) > 0) {
-        if ((nrow(suboutputdataframe)-cCoef) == 1) {
-          if (nrow(suboutputdataframe) > 3) {
-            outtextstring <- sprintf("%s, and", outtextstring)
-          } else {
-            outtextstring <- sprintf("%s and", outtextstring)
-          }
+    if (boolsame == FALSE) {
+      outtextstring <- sprintf("Step 2: Model: %s", modelcalls[2])
+      Rmimic::typewriter(outtextstring, tabs=0, spaces=0, characters=floor(spansize *.90))
+      outtextstring <- sprintf("Hierarchical regression analysis indicated that")
+      suboutputdataframe <- outputdataframe[which(outputdataframe$Model == modelcalls[2]),]
+      for (cCoef in 2:nrow(suboutputdataframe)) {
+        outtextstring <- sprintf("%s %s", outtextstring, suboutputdataframe$Variable[cCoef]) # add variable label
+        outtextstring <- sprintf("%s (B = %1.2f", outtextstring, suboutputdataframe$B[cCoef]) # add B
+        outtextstring <- sprintf("%s [%2.0f%% CI: %1.2f to %1.2f],", outtextstring, confidenceinterval*100, suboutputdataframe$B.lower.conf.int[cCoef], suboutputdataframe$B.upper.conf.int[cCoef]) # add B
+        outtextstring <- sprintf("%s SE B = %1.2f,", outtextstring, suboutputdataframe$SE[cCoef]) # add SE B
+        if (logistic) {
+          outtextstring <- sprintf("%s Odds Ratio = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add OR
         } else {
-          outtextstring <- sprintf("%s, ", outtextstring)
+          outtextstring <- sprintf("%s Beta = %1.2f)", outtextstring, suboutputdataframe$Beta[cCoef]) # add Beta
+        }
+        if ((nrow(suboutputdataframe)-cCoef) > 0) {
+          if ((nrow(suboutputdataframe)-cCoef) == 1) {
+            if (nrow(suboutputdataframe) > 3) {
+              outtextstring <- sprintf("%s, and", outtextstring)
+            } else {
+              outtextstring <- sprintf("%s and", outtextstring)
+            }
+          } else {
+            outtextstring <- sprintf("%s, ", outtextstring)
+          }
         }
       }
-    }
-    
-    temppval <- Rmimic::fuzzyP(as.numeric(res$changestats$p.value[2]))
-    outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
-    if (temppval$interpret <= studywiseAlpha) {
-      outtextstring <- sprintf("%s explained a statistically significant", outtextstring)
-    } else {
-      outtextstring <- sprintf("%s failed to explain a statistically significant", outtextstring)
-    }
-    outtextstring <- sprintf("%s (%s),", outtextstring, res$changestats$textoutput[2])
-    outtextstring <- sprintf("%s change in variance in %s", outtextstring, trimws(strsplit(modelcalls[2], split = '~')[[1]][1]))
-    outtextstring <- sprintf("%s (R^2change = %.2f, R^2adj = %.2f).", outtextstring, res$changestats$r.squared.change[2], res$stats$r.squaredadj[2])
-    
-    if (!is.na(res$stats$VIF[1])) {
-      if (res$stats$VIF[2] > 2.5) {
-        outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[2])
+      
+      temppval <- Rmimic::fuzzyP(as.numeric(res$changestats$p.value[2]))
+      outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
+      if (temppval$interpret <= studywiseAlpha) {
+        outtextstring <- sprintf("%s explained a statistically significant", outtextstring)
+      } else {
+        outtextstring <- sprintf("%s failed to explain a statistically significant", outtextstring)
+      }
+      outtextstring <- sprintf("%s (%s),", outtextstring, res$changestats$textoutput[2])
+      outtextstring <- sprintf("%s change in variance in %s", outtextstring, trimws(strsplit(modelcalls[2], split = '~')[[1]][1]))
+      outtextstring <- sprintf("%s (R^2change = %.2f, R^2adj = %.2f).", outtextstring, res$changestats$r.squared.change[2], res$stats$r.squaredadj[2])
+      
+      if (!is.na(res$stats$VIF[1])) {
         if (res$stats$VIF[2] > 2.5) {
-          degree <- "slight"
+          outtextstring <- sprintf("%s [Warning: VIF is %.1f, suggesting a", outtextstring, res$stats$VIF[2])
+          if (res$stats$VIF[2] > 2.5) {
+            degree <- "slight"
+          }
+          if (res$stats$VIF[2] > 5) {
+            degree <- "moderate"
+          }
+          if (res$stats$VIF[2] > 10) {
+            degree <- "severe"
+          }
+          outtextstring <- sprintf("%s %s", outtextstring, degree)
+          outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
         }
-        if (res$stats$VIF[2] > 5) {
-          degree <- "moderate"
-        }
-        if (res$stats$VIF[2] > 10) {
-          degree <- "severe"
-        }
-        outtextstring <- sprintf("%s %s", outtextstring, degree)
-        outtextstring <- sprintf("%s multicollinearity issue].", outtextstring)
       }
+      
+      outtextstring <- sprintf("%s\n", outtextstring)
+      Rmimic::typewriter(outtextstring, tabs=1, spaces=0, characters=floor(spansize *.90))
     }
-    
-    outtextstring <- sprintf("%s\n", outtextstring)
-    Rmimic::typewriter(outtextstring, tabs=1, spaces=0, characters=floor(spansize *.90))
-    
     cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
   }
   return(res)
