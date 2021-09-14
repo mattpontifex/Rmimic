@@ -35,14 +35,16 @@ table2console <- function(dataframein, sepgap=NULL, spansize=95, headers=TRUE, a
     for (cC in 1:ncol(dataframein)) {
       tempcheck[,cC] <- max(nchar(dataframein[,cC]))
     }
-    if (sum(tempcheck) < spansize) {
-      paddsize <- floor((spansize-sum(tempcheck))/numberofcolumns)
-      if (paddsize > 0) {
-        for (cC in 1:ncol(dataframein)) {
-          sepgap[1,cC] <- tempcheck[1,cC] + paddsize
+    if (!is.na(sum(tempcheck))) {
+      if (sum(tempcheck) < spansize) {
+        paddsize <- floor((spansize-sum(tempcheck))/numberofcolumns)
+        if (paddsize > 0) {
+          for (cC in 1:ncol(dataframein)) {
+            sepgap[1,cC] <- tempcheck[1,cC] + paddsize
+          }
+        } else {
+          sepgap[1,] <- tempcheck[1,]
         }
-      } else {
-        sepgap[1,] <- tempcheck[1,]
       }
     }
   }
