@@ -336,34 +336,35 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   } else {
     res$changestats$fsquared.ci.upper[2] <- (temp$UCL[1]/(1-temporig$UCL[1]))
   }
-  
-  for (cV in 1:nrow(mcoef)) {
-    res$coefficients[Coeffcurrentline + cV, 1] <- res$stats$Model[2]
-    res$coefficients$Variable[Coeffcurrentline + cV] <- row.names(mcoef)[cV]
-    res$coefficients$B[Coeffcurrentline + cV] <- mcoef[cV,1]
-    res$coefficients$SE[Coeffcurrentline + cV] <- mcoef[cV,2]
-    if (logistic) {
-      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta[cV]
-    } else {
-      res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
-    }
-    res$coefficients$t[Coeffcurrentline + cV] <- mcoef[cV,3]
-    res$coefficients$p.value[Coeffcurrentline + cV] <- mcoef[cV,4]
-    if (logistic) {
-      if (nrow(mcoef) == 1) {
-        res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[1]
-        res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[2]
+  if (boolsame == FALSE) {
+    for (cV in 1:nrow(mcoef)) {
+      res$coefficients[Coeffcurrentline + cV, 1] <- res$stats$Model[2]
+      res$coefficients$Variable[Coeffcurrentline + cV] <- row.names(mcoef)[cV]
+      res$coefficients$B[Coeffcurrentline + cV] <- mcoef[cV,1]
+      res$coefficients$SE[Coeffcurrentline + cV] <- mcoef[cV,2]
+      if (logistic) {
+        res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta[cV]
+      } else {
+        res$coefficients$Beta[Coeffcurrentline + cV] <- mbeta$standardized.coefficients[cV]
+      }
+      res$coefficients$t[Coeffcurrentline + cV] <- mcoef[cV,3]
+      res$coefficients$p.value[Coeffcurrentline + cV] <- mcoef[cV,4]
+      if (logistic) {
+        if (nrow(mcoef) == 1) {
+          res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[1]
+          res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[2]
+        } else {
+          res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
+          res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+        }
       } else {
         res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
         res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
       }
-    } else {
-      res$coefficients$B.lower.conf.int[Coeffcurrentline + cV] <- mci[cV,1]
-      res$coefficients$B.upper.conf.int[Coeffcurrentline + cV] <- mci[cV,2]
+      
     }
-    
+    Coeffcurrentline <- Coeffcurrentline + nrow(mcoef)
   }
-  Coeffcurrentline <- Coeffcurrentline + nrow(mcoef)
   
   # interpret modelcheck
   for (cR in 1:nrow(res$modelcheck)) {
