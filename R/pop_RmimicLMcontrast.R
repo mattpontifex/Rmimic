@@ -82,6 +82,7 @@ pop_RmimicLMcontrast <- function() {
         
         # Extract current data from environment
         workingdata <- get(input$select_dataframe, envir = .GlobalEnv)
+        workingdata <- Rmimic::antitibbler(workingdata)
         workingdatavariables <- names(workingdata)
         names(workingdatavariables) <- workingdatavariables
         workingdatavariablestypes <- c()
@@ -199,6 +200,8 @@ pop_RmimicLMcontrast <- function() {
               }
               
               listofcalls <- c()
+              tmpcall <- sprintf('%s <- Rmimic::antitibbler(%s)\n', input$select_dataframe, input$select_dataframe)
+              listofcalls <- c(listofcalls, tmpcall)
               tmppref <- ''
               tempsuff <- ''
               if (input$select_modelstyle == 'Linear Regression') {
