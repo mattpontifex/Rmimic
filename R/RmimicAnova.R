@@ -56,7 +56,7 @@
 RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NULL, within=NULL, sphericity=NULL, feffect=NULL, nonparametric=FALSE, posthoc="False Discovery Rate Control", FDRC=0.05, planned=NULL, suppressposthoc=NULL, confidenceinterval=0.95, studywiseAlpha=0.05, verbose=TRUE, verbosedescriptives=TRUE, posthoclimit=6) {
 
   # revise to incorporate data screening to provide useful error information.
-  
+  debug <- TRUE
   options(contrasts = c("contr.sum", "contr.poly"))
   oldw <- getOption("warn")
   options(warn = -1) # ezANOVA likes to warn about lots of crap
@@ -151,14 +151,23 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     }
   }
   tempcal <- sprintf("%s, FUN=c(mean), data=completedata, keep.names=TRUE)", tempcal)
+  if (debug) {
+    print(tempcal)
+  }
   suppressWarnings(eval(parse(text=tempcal)))
   rm(tempcal, cB)
+  if (debug) {
+    print(sprintf('Passed Line 160\n'))
+  }
   
   # Prepare output
   res <- list()
   
   # Compute demographics
   res$demographics <- Rmimic::descriptives(variables=c(dependentvariable[1]), groupvariable = c(between, within), data=completedata, verbose=FALSE)
+  if (debug) {
+    print(sprintf('Passed Line 166\n'))
+  }
   
   # Output model
   demoout <- FALSE
@@ -176,7 +185,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     for (cB in 1:length(faclist)) {
       factorname <- tolower(faclist[cB])
       factorname <- paste(c(toupper(substr(factorname, 1, 1)), substr(factorname,2,nchar(factorname))), collapse = "")
-      factorsinvolved <- tolower(unique(unlist(as.character(completedata[,faclist[cB]]))))
+      factorsinvolved <- tolower(unique(unlist(as.character(unlist(completedata[,faclist[cB]])))))
       outstring <- sprintf("%s %d (%s: %s)", outstring, length(factorsinvolved), factorname, paste(factorsinvolved, collapse = ", "))
       if (cB < length(faclist)) {
         outstring <- sprintf("%s \u00D7", outstring) # seems to work on Mac as well
@@ -201,11 +210,17 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       }
       colnames(outputdataframe)[1] <- 'empty'
       
+      if (debug) {
+        print(sprintf('Passed Line 214\n'))
+      }
       Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
       rm(outputdataframe)
     }
     
   } # end verbose
+  if (debug) {
+    print(sprintf('Passed Line 219\n'))
+  }
   
   # ezANOVA is not presently able to take inputs using dynamic variable names
   funcal <- sprintf('result <- pkgcond::suppress_conditions(ez::ezANOVA(data=completedata,dv=%s,wid=%s,', dependentvariable[1], subjectid[1])
@@ -239,7 +254,9 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     funcal <- sprintf('%s, within=NULL,', funcal)
   }
   funcal <- sprintf('%stype=3,detailed=TRUE,return_aov=TRUE))', funcal)
-  
+  if (debug) {
+    print(funcal)
+  }
   # Evaluate the text string and tell ezANOVA to shut up, outputs to results
   suppressWarnings(eval(parse(text=funcal)))
   #res$call <- funcal
@@ -659,7 +676,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             }
           }
         }
-        rm(ncomp, temp, rank, outPvalue, temppval)
+        rm(ncomp, temp, rank, outPvalue)
       }
     }
   }

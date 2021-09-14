@@ -162,7 +162,6 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           # determine type of independent test to do
           if (nonparametric == FALSE) {
             # independent samples parametric test
-            
             # test variance
             varianceEqual <- TRUE
             variancetest <- pkgcond::suppress_conditions(lawstat::levene.test(tempframe[,'DV'], tempframe[,'Group'], location="median"))
@@ -254,6 +253,8 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
       # subset data for only that variable
       workingdatabase <- as.data.frame(data[,c(subjectid[1], within[cB], dependentvariable)])
+      
+      
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,within[cB]]))))
