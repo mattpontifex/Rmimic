@@ -50,7 +50,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   
   # check model
   boolsame <- FALSE
-  if (fit$call == altfit$call) {
+  if ((sum(!as.character(fit$call) == as.character(altfit$call))) == 0) {
     boolsame <- TRUE
   }
   
