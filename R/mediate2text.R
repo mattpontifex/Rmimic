@@ -218,6 +218,7 @@ mediate2text <- function(fit, studywiseAlpha=0.05, verbose=TRUE) {
   outstring <- sprintf('%s mediated by %s', outstring, Mediatorlabel) 
   
   outstring <- sprintf('%s (Proportion Mediated = %0.1f%%', outstring, round(fitMS[["n0"]],3)*100)
+  outstring <- sprintf('%s [%2.0f%% CI: %0.1f%% to %0.1f%%]', outstring, floor(confidenceinterval*100), round(fitMS[["n0.ci"]][[1]],3)*100, round(fitMS[["n0.ci"]][[2]],3)*100)
   
   outstring <- sprintf('%s; Average Causal Mediation Effect = %0.2f', outstring, round(fitMS[["d0"]], 2))
   outstring <- sprintf('%s [%2.0f%% CI: %0.2f to %0.2f]', outstring, floor(confidenceinterval*100), round(fitMS[["d0.ci"]][[1]],2), round(fitMS[["d0.ci"]][[2]],2))
