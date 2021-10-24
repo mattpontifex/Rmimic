@@ -22,6 +22,9 @@
 
 mediate2text <- function(fit, studywiseAlpha=0.05, verbose=TRUE) {
   
+  # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2819361/
+  # mediate vs confound vs suppression effects
+  
   spancharacter <- "-"
   spansize <- 95
   operatingsystem <- Sys.info()['sysname']
@@ -250,6 +253,62 @@ mediate2text <- function(fit, studywiseAlpha=0.05, verbose=TRUE) {
     
   }
   outstring <- sprintf('%s.', outstring)
+  
+  #MacKinnon, D. P., Krull, J. L., & Lockwood, C. M. (2000). Equivalence of the mediation, confounding and suppression effect. Prevention science, 1(4), 173-181.
+  popvalinitialeffect <- result$paths$estimate[1]
+  popvaldirecteffect <- result$paths$estimate[4]
+  popvalthirdvareffect <- result$paths$estimate[1]-result$paths$estimate[4]
+  tempstring <- 'chance'
+  if (!is.na(popvaldirecteffect)) {
+    if (!is.na(popvalthirdvareffect)) {
+      if (popvaldirecteffect > 0.01) {
+        # positive
+        if (popvalthirdvareffect > 0.01) {
+          # positive
+          if (popvalinitialeffect > popvaldirecteffect) {
+            tempstring <- 'mediation'
+          }
+        } else if (popvalthirdvareffect < -0.01) {
+          # negative
+          if (popvalinitialeffect < popvaldirecteffect) {
+            tempstring <- 'suppression'
+          }
+        }
+      } else if (popvaldirecteffect < -0.01) {
+        # negative
+        if (popvalthirdvareffect > 0.01) {
+          # positive
+          if (popvalinitialeffect > popvaldirecteffect) {
+            tempstring <- 'suppression'
+          }
+        } else if (popvalthirdvareffect < -0.01) {
+          # negative
+          if (popvalinitialeffect < popvaldirecteffect) {
+            tempstring <- 'mediation'
+          }
+        }
+      } else {
+        if (popvalthirdvareffect > 0.01) {
+          # positive
+          if (popvalinitialeffect > popvaldirecteffect) {
+            tempstring <- 'mediation'
+          }
+        } else if (popvalthirdvareffect < -0.01) {
+          # negative
+          if (popvalinitialeffect < popvaldirecteffect) {
+            tempstring <- 'mediation'
+          }
+        }
+      }
+    }
+  }
+  if (tempstring == 'chance') {
+    outstring <- sprintf('%s \n \n The directionality of the effects suggests that the relationship may occur by chance.', outstring)
+  } else if (tempstring == 'mediation') {
+    tempstring <- 'The nature of the relationship indicates it may be mediation or confounding.'
+  } else if (tempstring == 'suppression') {
+    outstring <- sprintf('%s \n \n The directionality of the effects suggests that suppression may be occuring rather than mediation or confounding. Including %s within the regression appears to increase the strength of the relationship between %s and %s.', outstring, Mediatorlabel, IVlabel, DVlabel)
+  }
   
   result$interpretation <- outstring
   result$propmediated <- fitMS[["n0"]]
