@@ -16,6 +16,13 @@ antitibbler <- function(datain) {
   # check variable names for issues
   for (cR in 1:length(colnames(datain))) {
     tmpname <- colnames(datain)[cR]
+    if ((tmpname == '') | (tmpname == sprintf('...%d', cR))) {
+      # empty variable name fill with random characters
+      tmpname <- sprintf('%s%04d%s', 
+              paste0(sample(LETTERS, 3, TRUE), collapse=''),
+              sample(9999, 1, TRUE), 
+              paste0(sample(LETTERS, 3, TRUE), collapse=''))
+    }
     if (Rmimic::fixname(tmpname) != colnames(datain)[cR]) {
       colnames(datain)[cR] <- Rmimic::fixname(tmpname)
     }
