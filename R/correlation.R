@@ -5,7 +5,7 @@
 #' @param data Data frame containing the variables of interest.
 #' @param variables Variable name or list of variables to compute descriptives for.
 #' @param partial Parameter to specify the variable name to use for partial correlations.
-#' @param method Specifies the type of correlation. Options are pearson (default), spearman, or kendall.
+#' @param method Specifies the type of correlation. Options are pearson (default), spearman, kendall, or percentagebend.
 #' @param listwise Boolean operator for if the correlations should be computed using list-wise deletion for missing values.
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
@@ -29,6 +29,7 @@
 #'
 #' @importFrom stats cor.test
 #' @importFrom ppcor pcor.test
+#' @importFrom WRS2 pbcor
 #' @importFrom psych r.con
 #' @importFrom utils packageDate
 #'
@@ -40,7 +41,7 @@
 #'
 #' @export
 
-correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE, listwise=TRUE, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE) {
+correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE, listwise=TRUE, beta=0.2, studywiseAlpha=0.05, confidenceinterval=0.95, verbose=TRUE) {
  
   # debug variables
   #data <- data.frame("X" = runif(100), "Y" = runif(100), "Z" = runif(100))
@@ -76,6 +77,8 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
     method <- "spearman"
   } else if (toupper(method[1]) == toupper("kendall")) {
     method <- "kendall"
+  } else if (toupper(method[1]) == toupper("percentagebend")) {
+    method <- "percentagebend"
   } else {
     method <- "pearson"
   }
@@ -130,7 +133,11 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
         comparison2 <- tempframe[[2]]
         
         if (partial[1]==FALSE) {
-          sR <- stats::cor.test(comparison2, comparison1, exact=FALSE, alternative='two.sided', method = method[1], conf.level = confidenceinterval, use = "complete.obs")
+          if (method == "percentagebend") {
+            sR <- stats::cor.test(comparison2, comparison1, exact=FALSE, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
+          } else {
+            sR <- stats::cor.test(comparison2, comparison1, exact=FALSE, alternative='two.sided', method = method[1], conf.level = confidenceinterval, use = "complete.obs")
+          }
           if (method == "pearson") {
             res[dataframeoutL,'conf.int.lower'] <- sR$conf.int[1]
             res[dataframeoutL,'conf.int.upper'] <- sR$conf.int[2]
@@ -141,12 +148,28 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
             # Statistical Analysis, 7(2), 416-434.
             res[dataframeoutL,'conf.int.lower'] <- tanh(((1/2)*log((1+sR$estimate)/(1-sR$estimate))) - sqrt(1/(nrow(tempframe)-3)) * qnorm((1+confidenceinterval)/2))
             res[dataframeoutL,'conf.int.upper'] <- tanh(((1/2)*log((1+sR$estimate)/(1-sR$estimate))) + sqrt(1/(nrow(tempframe)-3)) * qnorm((1+confidenceinterval)/2))
+            
+          } else if (method == "percentagebend") {
+            sR2 <- WRS2::pbcor(comparison2, comparison1, beta=beta, ci=TRUE, alpha=1-confidenceinterval)
+            sR$statistic <- sR2$test
+            sR$parameter[[1]] <- sR2$n
+            sR$p.value <- sR2$p.value
+            sR$estimate <- sR2$cor
+            sR$conf.int[1] <- sR2$cor_ci[1]
+            sR$conf.int[2] <- sR2$cor_ci[2]
+            res[dataframeoutL,'conf.int.lower'] <- sR$conf.int[1]
+            res[dataframeoutL,'conf.int.upper'] <- sR$conf.int[2]
+            res[dataframeoutL,'parameter'] <- sR$parameter[[1]]
           }
           res[dataframeoutL,'gp'] <- 0
           res[dataframeoutL,'null.value'] <- sR$null.value[[1]]
           res[dataframeoutL,'alternative'] <- sR$alternative[[1]]
           res[dataframeoutL,'method'] <- sR$method[[1]]
         } else {
+          if (method == "percentagebend") {
+            method <- "pearson"
+          }
+          
           comparison3 <- tempframe[,partial]
           sR <- ppcor::pcor.test(comparison2, comparison1, comparison3, method = method[1])
           if (method == "pearson") {
@@ -258,6 +281,8 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
       outstring <- sprintf('%s Spearman\'s rho correlation coefficients', outstring)
     } else if (toupper(method) == toupper("kendall")) {
       outstring <- sprintf('%s Kendall\'s tau correlation coefficients', outstring)
+    } else if (method == "percentagebend") {
+      outstring <- sprintf('%s Robust %.1f%%-bend correlation coefficients', outstring, round(beta*100,digits=2))
     } else {
       outstring <- sprintf('%s Pearson\'s product moment correlation coefficients', outstring)
     }
@@ -268,6 +293,9 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
     
     outstring <- sprintf('%s using the', outstring)
     if (partial[1]==FALSE) {
+      if (method == "percentagebend") {
+        outstring <- sprintf('%s WRS2 (Mair, Wilcox, & Patil, %s),', outstring, strsplit(as.character(utils::packageDate("WRS2")),"-")[[1]][1])
+      }
       outstring <- sprintf('%s stats (R Core Team, %s)', outstring, strsplit(as.character(utils::packageDate("stats")),"-")[[1]][1])
     } else {
       outstring <- sprintf('%s ppcor (Kim, %s)', outstring, strsplit(as.character(utils::packageDate("ppcor")),"-")[[1]][1])

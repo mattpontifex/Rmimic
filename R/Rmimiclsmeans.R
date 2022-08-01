@@ -291,6 +291,13 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           ttestresult <- list()
           comparison1 <- tempcompdatabase[,3]
           comparison2 <- tempcompdatabase[,5]
+          
+          sizecheck <- c(comparison1, comparison2)
+          if (length(sizecheck) < 6) {
+            # correlation test fails with very few observations. 
+            comparison1 <- c(comparison1, comparison1, comparison1)
+            comparison2 <- c(comparison2, comparison2, comparison2)
+          }
           correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
           ttestresult$correlation <- correlationtest$estimate[[1]]
           ttestresult$correlation.p.value <- correlationtest$p.value[[1]]

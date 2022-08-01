@@ -10,6 +10,7 @@ correlation(
   data = FALSE,
   method = FALSE,
   listwise = TRUE,
+  beta = 0.2,
   studywiseAlpha = 0.05,
   confidenceinterval = 0.95,
   verbose = TRUE
@@ -22,7 +23,7 @@ correlation(
 
 \item{data}{Data frame containing the variables of interest.}
 
-\item{method}{Specifies the type of correlation. Options are pearson (default), spearman, or kendall.}
+\item{method}{Specifies the type of correlation. Options are pearson (default), spearman, kendall, or percentagebend.}
 
 \item{listwise}{Boolean operator for if the correlations should be computed using list-wise deletion for missing values.}
 
