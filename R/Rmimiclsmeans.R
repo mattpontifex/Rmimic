@@ -305,8 +305,6 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           tempmax <- max(c(length(comparison1), length(comparison2)), na.rm=TRUE)
           comparison1 <- comparison1[1:tempmax]
           comparison2 <- comparison2[1:tempmax]
-          cat(comparison1)
-          cat(comparison2)
           
           correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
           ttestresult$correlation <- correlationtest$estimate[[1]]
