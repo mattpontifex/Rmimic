@@ -132,6 +132,12 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
         comparison1 <- tempframe[[1]]
         comparison2 <- tempframe[[2]]
         
+        if ((length(comparison1) < 5) | (length(comparison2) < 5)) {
+          # stupid simple hack for insufficient finite observations
+          comparison1 <- c(comparison1, comparison1, comparison1)
+          comparison2 <- c(comparison2, comparison2, comparison2)
+        }
+        
         if (partial[1]==FALSE) {
           if (method == "percentagebend") {
             sR <- stats::cor.test(comparison2, comparison1, exact=FALSE, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
