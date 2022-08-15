@@ -293,11 +293,6 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           comparison2 <- tempcompdatabase[,5]
           
           if ((length(comparison1) < 5) | (length(comparison2) < 5)) {
-            # stupid simple hack for insufficient finite observations
-            comparison1 <- c(comparison1, comparison1, comparison1)
-            comparison2 <- c(comparison2, comparison2, comparison2)
-          }
-          if ((length(comparison1) < 5) | (length(comparison2) < 5)) {
             # us full data
             comparison1 <- group1data[,dependentvariable[cDV]]
             comparison2 <- group2data[,dependentvariable[cDV]]
@@ -307,6 +302,11 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
               comparison2 <- c(comparison2, comparison2, comparison2)
             }
           }
+          tempmax <- max(c(length(comparison1), length(comparison2)), na.rm=TRUE)
+          comparison1 <- comparison1[1:tempmax]
+          comparison2 <- comparison2[1:tempmax]
+          cat(comparison1)
+          cat(comparison2)
           
           correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
           ttestresult$correlation <- correlationtest$estimate[[1]]
