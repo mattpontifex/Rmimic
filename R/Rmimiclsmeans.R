@@ -299,8 +299,9 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           }
           
           tryCatch(correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs"), 
-                   error=function(e){cat(sprintf('corlength: %d by %d', length(comparison1), length(comparison2)));correlationtest <- stats::cor.test(runif(100), runif(100), alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs"); correlationtest$estimate[[1]] <- 0.5})
-          correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
+                   error=function(e){cat(sprintf('\n%s\ncorlength: %d by %d', tempcal, length(group1data[,dependentvariable[cDV]]), length(comparison1)));correlationtest <- stats::cor.test(runif(100), runif(100), alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs"); correlationtest$estimate[[1]] <- 0.5})
+          
+          #correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
           ttestresult$correlation <- correlationtest$estimate[[1]]
           ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
           
