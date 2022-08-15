@@ -131,7 +131,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           spfactorscomparisons <- c(spfactorscomparisons, outlist[cC])
         }
       }
-      rm(cC, outlist, spfactors)
+      #rm(cC, outlist, spfactors)
       
       # for each dependent variable
       for (cDV in 1:dependentvariableL) {
@@ -192,7 +192,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Independent samples t-test'
-            rm(ncp, ttestresult)
+            #rm(ncp, ttestresult)
             
             # populate output
             dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
@@ -216,16 +216,16 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             }
             
             dataframeoutL <- dataframeoutL + 1
-            rm(tempout, tempframe, desc, comparison1, comparison2)
+            #rm(tempout, tempframe, desc, comparison1, comparison2)
           }
         } # end cComparison
         chunkingL <- chunkingL + 1
       } # end cDV
       
-      rm(cComparison, workingdatabase, spfactorscomparisons)
+      #rm(cComparison, workingdatabase, spfactorscomparisons)
     } # end cB
     
-    rm(cB)
+    #rm(cB)
   } # end betweenvariableL
   
   # Address Paired Samples tests next
@@ -280,7 +280,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           }
           tempcal <- sprintf("%s, FUN=c(mean), data=subworkingdatabase, keep.names=TRUE)", tempcal)
           suppressWarnings(eval(parse(text=tempcal)))
-          rm(tempcal, ccollapse)
+          #rm(tempcal, ccollapse)
           subgroup1data <- subworkingdatabase[which(subworkingdatabase[,within[cB]] == tempvect[1]),]
           subgroup1data <- subgroup1data[stats::complete.cases(subgroup1data),]
           subgroup2data <- subworkingdatabase[which(subworkingdatabase[,within[cB]] == tempvect[2]),]
@@ -292,9 +292,8 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           comparison1 <- tempcompdatabase[,3]
           comparison2 <- tempcompdatabase[,5]
           
-          sizecheck <- c(comparison1, comparison2)
-          if (length(sizecheck) < 6) {
-            # correlation test fails with very few observations. 
+          if ((length(comparison1) < 5) | (length(comparison2) < 5)) {
+            # stupid simple hack for insufficient finite observations
             comparison1 <- c(comparison1, comparison1, comparison1)
             comparison2 <- c(comparison2, comparison2, comparison2)
           }
@@ -336,7 +335,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             tempout <- ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Paired samples t-test'
-            rm(correlationtest, ncp, ttestresult)
+            #rm(correlationtest, ncp, ttestresult)
             
             # populate output
             dataframeout[dataframeoutL,'Variable'] <- dependentvariable[cDV]
@@ -360,7 +359,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             }
             
             dataframeoutL <- dataframeoutL + 1
-            rm(tempout, tempframe, desc, comparison1, comparison2)
+            #rm(tempout, tempframe, desc, comparison1, comparison2)
           }
           
         } # end cComparison
@@ -388,7 +387,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
         }
       }
     }
-    rm(masterdescriptives, subtempdataframe, tempdataframe, mdNam, mdGro, mdVar, cN, cB, cDV)
+    #rm(masterdescriptives, subtempdataframe, tempdataframe, mdNam, mdGro, mdVar, cN, cB, cDV)
   }
   # populate interpretation
   dataframeout$interpretation <- NA
@@ -410,9 +409,9 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     } else {
       dataframeout$interpretation[cI] <- sprintf("%s %s%s", temptextout0, temptextout1, temptextout3)
     }
-    rm(outPvalue)
+    #rm(outPvalue)
   }
-  rm(cI, temptextout0, temptextout1, temptextout2, temptextout3)
+  #rm(cI, temptextout0, temptextout1, temptextout2, temptextout3)
   
   # Post hoc adjustments
   if (!is.null(posthoc)) {
@@ -543,7 +542,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
     outstring <- sprintf('%s in %s.', outstring, rvers)
     Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
-    rm(outstring)
+    #rm(outstring)
     
     # find out what needs to be printed
     grouplabels <- unique(as.character(finalmasterdescriptives$CollapsedName))
