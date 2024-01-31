@@ -106,6 +106,8 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
       stop("Error in Rmimiclsmeans: A paired samples ttest has been requested, but no subjectid parameter was provided to ensure pairwise comparisons. Please provide a column of subject ids.")
     }
   }
+  #cat(sprintf('withinvariableL: %d, betweenvariableL: %d\n', withinvariableL, betweenvariableL))
+  #cat(sprintf('%s\n', within))
   
   # establish output
   masterdescriptives <- NULL
@@ -182,10 +184,14 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             ttestresult$method <- " Two Sample t-test"
             ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/desc$N[1]) + (1/desc$N[2])))
             temptstat <- ttestresult$statistic
-            if (temptstat > 37.6) {
+            if (temptstat > 37.5) {
+              #"The observed noncentrality parameter of the noncentral t-distribution has exceeded 37.62
+              # in magnitude (R's limitation for accurate probabilities from the noncentral t-distribution)
+              # in the function's iterative search for the appropriate value(s). The results may be fine, 
+              # but they might be inaccurate; use caution."
               temptstat <- temptstat
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(suppressWarnings(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval)))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/desc$N[1]) + (1/desc$N[2]))
             ttestresult$stud.conf.int <- confidenceinterval
@@ -306,9 +312,20 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           comparison1 <- comparison1[1:tempmax]
           comparison2 <- comparison2[1:tempmax]
           
-          correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
-          ttestresult$correlation <- correlationtest$estimate[[1]]
-          ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
+          
+          # safety
+          correlationtest <- list()
+          correlationtest$estimate[[1]] <- 0.5
+          ttestresult$correlation <- 0.5 # to still penalize effect size
+          ttestresult$correlation.p.value <- 1.0
+          tryCatch(
+            expr = {
+              correlationtest <- stats::cor.test(comparison1, comparison2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
+              ttestresult$correlation <- correlationtest$estimate[[1]]
+              ttestresult$correlation.p.value <- correlationtest$p.value[[1]]
+            },
+            error = function(e){booler <- 1}
+          )
           
           # extract data from model fit
           # emmeans like to pop out messages for main effects - Works for lmer and lm
@@ -334,10 +351,14 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             ttestresult$effectsize <- ttestresult$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             
             temptstat <- ttestresult$statistic
-            if (temptstat > 37.6) {
+            if (temptstat > 37.5) {
+              #"The observed noncentrality parameter of the noncentral t-distribution has exceeded 37.62
+              # in magnitude (R's limitation for accurate probabilities from the noncentral t-distribution)
+              # in the function's iterative search for the appropriate value(s). The results may be fine, 
+              # but they might be inaccurate; use caution."
               temptstat <- temptstat
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(suppressWarnings(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter[[1]], conf.level = confidenceinterval)))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval
@@ -398,6 +419,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     }
     #rm(masterdescriptives, subtempdataframe, tempdataframe, mdNam, mdGro, mdVar, cN, cB, cDV)
   }
+  #cat(sprintf('Rmimiclsmeans: 412\n'))
   # populate interpretation
   dataframeout$interpretation <- NA
   for (cI in 1:nrow(dataframeout)) {
@@ -439,7 +461,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           criticalphrase <- sprintf("(Sidak critical alpha = %.4f)", round(critp,4))
         }
         for (cR in 1:nrow(submatrix)) {
-          outPvalue <- fuzzyP(submatrix$p.value[cR])
+          outPvalue <- Rmimic::fuzzyP(submatrix$p.value[cR])
           if (outPvalue$interpret <= studywiseAlpha) {
             if (outPvalue$interpret > critp) {
               submatrix$interpretation[cR] <- sprintf('%s However, that difference did not remain significant following correction for multiple comparisons, %s.', submatrix$interpretation[cR], criticalphrase)
@@ -469,7 +491,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
         temp <- data.frame(matrix(NA, nrow=nrow(submatrix), ncol=2))
         colnames(temp) <- c("p.value", "location")
         for (cR in 1:nrow(submatrix)) {
-          outPvalue <- fuzzyP(submatrix$p.value[cR])
+          outPvalue <- Rmimic::fuzzyP(submatrix$p.value[cR])
           if (as.numeric(outPvalue$interpret) <= as.numeric(studywiseAlpha)) {
             temp[cR,1] <- outPvalue$interpret
             temp[cR,2] <- cR
@@ -554,6 +576,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     #rm(outstring)
     
     # find out what needs to be printed
+    #cat(sprintf('Rmimiclsmeans: 569\n'))
     grouplabels <- unique(as.character(finalmasterdescriptives$CollapsedName))
     nongrouplabels <- unique(as.character(finalmasterdescriptives$Variable))
     ngroups <- length(grouplabels)
@@ -779,7 +802,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
         }
         cat(sprintf("For %s:\n",nongrouplabels[cB]))
         for (cG in 1:nrow(submatrix)) {
-          typewriter(submatrix$interpretation[cG], tabs=1, spaces=0, characters=spansize, indent="hanging")
+          Rmimic::typewriter(submatrix$interpretation[cG], tabs=1, spaces=0, characters=spansize, indent="hanging")
           if (cG < nrow(submatrix)) {
             cat(sprintf('\n'))
           }
@@ -788,7 +811,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
       cat(sprintf("%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
     } # end cT
   } # end verbose
-  
+  #cat(sprintf('Rmimiclsmeans: 804\n'))
   # output to environmental variables
   res <- list()
   res$descriptives <- finalmasterdescriptives

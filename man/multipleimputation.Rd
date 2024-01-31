@@ -19,7 +19,7 @@ multipleimputation(
 
 \item{variables}{Variable name or list of variables to impute.}
 
-\item{method}{A string specifying the imputation method. Default is predictive mean matching but see mice help file.}
+\item{method}{A string specifying the imputation method. Default is predictive mean matching but see mice help file. missForest to use that package.}
 
 \item{imputations}{The number of imputations to perform. Default is 50.}
 
@@ -33,7 +33,7 @@ multipleimputation(
 \item{database}{Database of variables with missing data replaced for the specified variables.}
 }
 \description{
-Use multiple imputation (using the mice package) to replace missing data points. For each missing observation, multiple imputation is performed n times to create a combined multivariable modeling estimate. The database is returned with the missing data replaced with the modeling estimate.
+Use multiple imputation (using the mice or missForest packages) to replace missing data points. For each missing observation, multiple imputation is performed n times to create a combined multivariable modeling estimate. The database is returned with the missing data replaced with the modeling estimate.
 }
 \examples{
 

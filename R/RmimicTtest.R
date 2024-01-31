@@ -175,7 +175,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             if (temptstat > 37.6) {
               temptstat <- 37.5
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval, sup.int.warns = FALSE))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((1/length(comparison1)) + (1/length(comparison2)))
             ttestresult$stud.conf.int <- confidenceinterval
@@ -253,8 +253,6 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       
       # subset data for only that variable
       workingdatabase <- as.data.frame(data[,c(subjectid[1], within[cB], dependentvariable)])
-      
-      
       
       # populate list of comparisons
       spfactors <- sort(unique(unlist(as.character(data[,within[cB]]))))
@@ -343,7 +341,7 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             if (temptstat > 37.6) {
               temptstat <- 37.5
             }
-            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval))
+            ncp <- pkgcond::suppress_conditions(MBESS::conf.limits.nct(ncp = temptstat, df = ttestresult$parameter, conf.level = confidenceinterval, sup.int.warns = FALSE))
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval

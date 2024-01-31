@@ -107,13 +107,14 @@ pop_imputation <- function() {
           }
         }
         
-        methodoptions <- c("Predictive mean matching",
+        methodoptions <- c("missForest",
+                           "Predictive mean matching",
                            "Weighted predictive mean matching", 
                            "Random sample from observed values",
                            "Unconditional mean imputation",
                            "Logistic regression")
         imputationtext <- shiny::HTML("Select the method for imputation:<br><small>
-                                   See mice help file for a complete list of methods.</small>")
+                                   See mice help file for a complete list of methods. <br>missForest will use the missForest package instead of the mice package.</small>")
         imputationnumtext <- shiny::HTML("How many imputations should be performed?<br><small>
                                    The larger the number of imputations, the longer this will take.</small>")
         
@@ -186,7 +187,9 @@ pop_imputation <- function() {
             }
           }
           
-          if (input$select_method == "Predictive mean matching") {
+          if (input$select_method == "missForest") {
+            tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'", 'missForest'))
+          } else if (input$select_method == "Predictive mean matching") {
             tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'", 'pmm'))
           } else if (input$select_method == "Weighted predictive mean matching") {
             tmpcall <- sprintf('%s, method=%s', tmpcall, sprintf("'%s'", 'midastouch'))

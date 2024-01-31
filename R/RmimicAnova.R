@@ -155,7 +155,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     print(tempcal)
   }
   suppressWarnings(eval(parse(text=tempcal)))
-  rm(tempcal, cB)
+  #rm(tempcal, cB)
   if (debug) {
     print(sprintf('Passed Line 160\n'))
   }
@@ -200,7 +200,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
     outstring <- sprintf('%s ANOVA using the ez (Lawrence, %s) and Rmimic (Pontifex, %s) packages in %s.', outstring, strsplit(as.character(utils::packageDate("ez")),"-")[[1]][1],strsplit(as.character(utils::packageDate("Rmimic")),"-")[[1]][1], rvers)
     Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
-    rm(outstring)
+    #rm(outstring)
     
     # output demographics to console
     if (verbosedescriptives != FALSE) {
@@ -214,7 +214,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         print(sprintf('Passed Line 214\n'))
       }
       Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
-      rm(outputdataframe)
+      #rm(outputdataframe)
     }
     
   } # end verbose
@@ -234,7 +234,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
     }
     tfuncal <- sprintf('%s)', tfuncal)
     funcal <- sprintf('%sbetween=%s,', funcal, tfuncal)
-    rm(tfuncal)
+    #rm(tfuncal)
   } else {
     funcal <- sprintf('%sbetween=NULL,', funcal)
   }
@@ -246,10 +246,10 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         tfuncal <- sprintf('%s,', tfuncal)
       }
     }
-    rm(cB)
+    #rm(cB)
     tfuncal <- sprintf('%s)', tfuncal)
     funcal <- sprintf('%swithin=%s,', funcal, tfuncal)
-    rm(tfuncal)
+    #rm(tfuncal)
   } else {
     funcal <- sprintf('%s, within=NULL,', funcal)
   }
@@ -260,7 +260,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
   # Evaluate the text string and tell ezANOVA to shut up, outputs to results
   suppressWarnings(eval(parse(text=funcal)))
   #res$call <- funcal
-  rm(funcal)
+  #rm(funcal)
   
   # obtain effect size estimates and confidence intervals
   result <- Rmimic::ezANOVA2text(result, numparticipants=length(indivparticipant), feffect=feffect, sphericity=sphericity, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha)
@@ -314,7 +314,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         pullvalue <- sprintf('%s%s', pullvalue, "**")
       }
       outputdataframe[cR,4] <- pullvalue
-      rm(outPvalue)
+      #rm(outPvalue)
     }
     
     # manage df 
@@ -356,7 +356,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       }
       pullvalue <- sprintf('%s [%s, %s]', tempfsq, tempfsqlw, tempfsqup)
       outputdataframe[cR,5] <- pullvalue
-      rm(pullvalue)
+      #rm(pullvalue)
     }
     
     # Write to console
@@ -396,7 +396,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       }
     } 
     res$stats$EffectLevels[currentAnovaLine] <- sprintf('[%s]', templist)
-    rm(cB, templist)
+    #rm(cB, templist)
     
     # check to see if planned contrast
     forcetrig <- 0
@@ -409,7 +409,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             forcetrig <- 1
           }
         }
-        rm(cXR)
+        #rm(cXR)
       }
     }
     if (!is.null(suppressposthoc)) {
@@ -418,7 +418,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           forcetrig <- -1
         }
       }
-      rm(cXR)
+      #rm(cXR)
     }
     
     # snag p value 
@@ -446,7 +446,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
         }
         tempcal <- sprintf("%s, FUN=c(mean), data=workingdatabase, keep.names=TRUE)", tempcal)
         suppressWarnings(eval(parse(text=tempcal)))
-        rm(tempcal, cB)
+        #rm(tempcal, cB)
         
         subbetween <- NULL
         subwithin <- NULL
@@ -492,7 +492,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
             posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
           }
           
-          rm(subbetween,subwithin, ttestresult)
+          #rm(subbetween,subwithin, ttestresult)
         } else {
           # interaction
           
@@ -533,7 +533,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
               }
               tempcal <- sprintf("%s, FUN=c(mean), data=subworkingdatabase, keep.names=TRUE)", tempcal)
               suppressWarnings(eval(parse(text=tempcal)))
-              rm(tempcal, cE)
+              #rm(tempcal, cE)
               
               subbetween <- NULL
               subwithin <- NULL
@@ -545,7 +545,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                   subwithin <- c(subwithin, otherfactorsinvolved[cE])
                 }
               }
-              rm(cE)
+              #rm(cE)
               
               booltrig <- 0
               # more than one additional variable
@@ -593,7 +593,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
                   posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
                 }
                 
-                rm(subbetween,subwithin, ttestresult)
+                #rm(subbetween,subwithin, ttestresult)
                 
               } else {
                 # need to run full anova again
@@ -631,7 +631,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
               }
               rm (booltrig)
             }
-            rm(cD)
+            #rm(cD)
           }
         }
       } else {
@@ -671,12 +671,12 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
               tempinterlocation <- sprintf("%s However, that difference did not remain significant following false discovery rate control %s.", tempinterlocation, criticalphrase)
               funcal <- sprintf('res$%s$interpretation[%d] <- tempinterlocation',templocation,temprow)
               suppressWarnings(eval(parse(text=funcal)))
-              rm(templocation, temprow, funcal, tempinterlocation)
+              #rm(templocation, temprow, funcal, tempinterlocation)
               
             }
           }
         }
-        rm(ncomp, temp, rank, outPvalue)
+        #rm(ncomp, temp, rank, outPvalue)
       }
     }
   }
@@ -686,7 +686,7 @@ RmimicAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
       outtext <- sprintf("An interaction exceeding %d variables was detected. To conserve computational resouces, interactions exceeding %d variables should be decomposed in a stepwise fashion manually.", (posthoclimit-1), (posthoclimit-1))
       Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
-      rm(outtext)
+      #rm(outtext)
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
     }
     

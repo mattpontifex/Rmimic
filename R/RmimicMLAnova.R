@@ -186,6 +186,14 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     stop("Rmimic::RMimicMLAnova each factor must have at least two levels")
   }
   
+  # Check that factors are not numeric
+  for (cB in 1:length(fixedterms)) {
+    if (pkgcond::suppress_conditions(suppressWarnings(all(!is.na(as.numeric(completedata[,fixedterms[cB]])))))) {
+      # factor is really a number
+      completedata[,fixedterms[cB]] <- paste('v', completedata[,fixedterms[cB]], sep="")
+    }
+  }
+  
   # Check which random factors can be applied
   booloverfitwarning <- FALSE
   if (!is.null(randomintercept)) {
@@ -201,14 +209,14 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
       outcal <- sprintf('%s)', outcal)
       eval(parse(text=outcal))
-      rm(outcal)
+      #rm(outcal)
       # number of levels of each grouping factor must be < number of observations
       if (nrow(datamatrix) < nrow(completedata)) {
         randomterms <- c(randomterms, randomintercept[cB])
       }
     }
     randomintercept <- randomterms
-    rm(randomterms)
+    #rm(randomterms)
   }
   if (!is.null(randomslope)) {
     randomterms <- NULL
@@ -230,14 +238,14 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
       outcal <- sprintf('%s)', outcal)
       eval(parse(text=outcal))
-      rm(outcal)
+      #rm(outcal)
       # number of levels of each grouping factor must be < number of observations
       if (nrow(datamatrix) < nrow(completedata)) {
         randomterms <- c(randomterms, randomslope[cB])
       }
     }
     randomslope <- randomterms
-    rm(randomterms)
+    #rm(randomterms)
   }
   
   # Prepare output
@@ -446,7 +454,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                          strsplit(as.character(utils::packageDate("emmeans")),"-")[[1]][1],
                          strsplit(as.character(utils::packageDate("Rmimic")),"-")[[1]][1], rvers)
     Rmimic::typewriter(outstring, tabs=0, spaces=0, characters=floor(spansize*.9))
-    rm(outstring)
+    #rm(outstring)
     
     # output demographics to console
     if (verbosedescriptives != FALSE) {
@@ -456,7 +464,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
       colnames(outputdataframe)[1] <- 'empty'
       Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
-      rm(outputdataframe)
+      #rm(outputdataframe)
     }
     outtext <- sprintf('Total unique participants = %d', length(indivparticipant))
     Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
@@ -495,7 +503,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
         pullvalue <- sprintf('%s%s', pullvalue, "**")
       }
       outputdataframe[cR,4] <- pullvalue
-      rm(outPvalue)
+      #rm(outPvalue)
     }
     # manage df 
     DFn <- round(as.numeric(res$stats$DFn), digits=1)
@@ -536,7 +544,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
       pullvalue <- sprintf('%s [%s, %s]', tempfsq, tempfsqlw, tempfsqup)
       outputdataframe[cR,5] <- pullvalue
-      rm(pullvalue)
+      #rm(pullvalue)
     }
     
     Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
@@ -580,7 +588,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
         pullvalue <- sprintf('%s%s', pullvalue, "**")
       }
       outputdataframe[cR,5] <- pullvalue
-      rm(outPvalue)
+      #rm(outPvalue)
     }
     
     Rmimic::table2console(outputdataframe, sepgap=NULL, spansize=spansize, headers=TRUE, alternate=TRUE, seperators=TRUE)
@@ -639,7 +647,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
     } 
     res$stats$EffectLevels[currentAnovaLine] <- sprintf('[%s]', templist)
-    rm(cB, templist)
+    #rm(cB, templist)
     
     # check to see if planned contrast
     forcetrig <- 0
@@ -652,7 +660,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
             forcetrig <- 1
           }
         }
-        rm(cXR)
+        #rm(cXR)
       }
     }
     if (!is.null(suppressposthoc)) {
@@ -661,7 +669,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
           forcetrig <- -1
         }
       }
-      rm(cXR)
+      #rm(cXR)
     }
     
     # snag p value 
@@ -720,7 +728,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
             posthoclinkmatrix[posthoclinkmatrixL, 'Link'] <- 'posthocttest'
             posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
           }
-          rm(subbetween,subwithin, ttestresult)
+          #rm(subbetween,subwithin, ttestresult)
         } else {
           # interaction
           
@@ -759,7 +767,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                   subwithin <- c(subwithin, otherfactorsinvolved[cE])
                 }
               }
-              rm(cE)
+              #rm(cE)
               
               booltrig <- 0
               # more than one additional variable
@@ -808,7 +816,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                   posthoclinkmatrix[posthoclinkmatrixL, 'Row'] <- cE
                 }
                 
-                rm(subbetween,subwithin, ttestresult)
+                #rm(subbetween,subwithin, ttestresult)
                 
               } else {
                 # need to run full anova again
@@ -831,14 +839,14 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                     }
                     outcal <- sprintf('%s)', outcal)
                     eval(parse(text=outcal))
-                    rm(outcal)
+                    #rm(outcal)
                     # number of levels of each grouping factor must be < number of observations
                     if (nrow(datamatrix) < nrow(subworkingdatabase)) {
                       randomterms <- c(randomterms, randomintercept[phcB])
                     }
                   }
                   randomintercept <- randomterms
-                  rm(randomterms)
+                  #rm(randomterms)
                 }
                 if (!is.null(randomslope)) {
                   randomterms <- NULL
@@ -860,14 +868,14 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
                     }
                     outcal <- sprintf('%s)', outcal)
                     eval(parse(text=outcal))
-                    rm(outcal)
+                    #rm(outcal)
                     # number of levels of each grouping factor must be < number of observations
                     if (nrow(datamatrix) < nrow(subworkingdatabase)) {
                       randomterms <- c(randomterms, randomslope[phcB])
                     }
                   }
                   randomslope <- randomterms
-                  rm(randomterms)
+                  #rm(randomterms)
                 }
                 
                 if (is.null(randomintercept) & is.null(randomslope)) {
@@ -957,12 +965,12 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
               tempinterlocation <- sprintf("%s However, that difference did not remain significant following false discovery rate control %s.", tempinterlocation, criticalphrase)
               funcal <- sprintf('res$%s$interpretation[%d] <- tempinterlocation',templocation,temprow)
               suppressWarnings(eval(parse(text=funcal)))
-              rm(templocation, temprow, funcal, tempinterlocation)
+              #rm(templocation, temprow, funcal, tempinterlocation)
               
             }
           }
         }
-        rm(ncomp, temp, rank, outPvalue)
+        #rm(ncomp, temp, rank, outPvalue)
       }
     }
   }
@@ -972,7 +980,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
       outtext <- sprintf("An interaction exceeding %d variables was detected. To conserve computational resouces, interactions exceeding %d variables should be decomposed in a stepwise fashion manually.", (posthoclimit-1), (posthoclimit-1))
       Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
-      rm(outtext)
+      #rm(outtext)
       cat(sprintf("\n%s\n",paste(replicate(spansize, spancharacter), collapse = "")))
     }
     
