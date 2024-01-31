@@ -64,6 +64,8 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
   } else {
     if (toupper(df) == toupper("Shattertwaite")) {
       df = "Shattertwaite"
+    } else if (toupper(df) == toupper("Traditional")) {
+      df = "Traditional"
     } else {
       df = "Kenward-Roger"
     }
@@ -82,12 +84,13 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     colnames(dataframeout) <- c("Effect", "DFn", "DFd", "SSn", "SSd", "SSe", "F.value", "p.value", "partialetasquared", "fsquared","fsquared.ci.lower", "fsquared.ci.upper")
     
     dataframeout['Effect'] <- rownames(as)
-    dataframeout['DFn'] <- as$NumDF
-    dataframeout['DFd'] <- as$DenDF
+    dataframeout['DFn'] <- as.interger(as$NumDF)
+    dataframeout['DFd'] <- as.interger(as$DenDF)
     dataframeout['SSn'] <- as$Sum.Sq
     dataframeout['SSd'] <- as$Mean.Sq
     dataframeout['SSe'] <- sum(dataframeout$SSd, na.rm=TRUE) + mean(stats::residuals(fit)^2)
     dataframeout['F.value'] <- as$F.value
+    #stats::pf(F,DFn,DFd, lower.tail=FALSE)
     dataframeout['p.value'] <- as$Pr..F.
     dataframeout$partialetasquared <- dataframeout$SSn / (dataframeout$SSn + dataframeout$SSe)
 
@@ -95,7 +98,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     dataframeout$fsquared <- dataframeout$partialetasquared/(1-dataframeout$partialetasquared)
     for (cT in 1:nrow(dataframeout)) {
       if (!is.na(dataframeout$partialetasquared[cT])) {
-        temp <- psychometric::CI.Rsq(dataframeout$partialetasquared[cT], numparticipants, length(unlist(strsplit(as.character(dataframeout$Effect[cT]),"[:]"))), level = confidenceinterval)
+        temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$partialetasquared[cT], numparticipants, length(unlist(strsplit(as.character(dataframeout$Effect[cT]),"[:]"))), level = confidenceinterval)))
         if (temp$LCL[1]<0) {
           dataframeout$fsquared.ci.lower[cT] <- 0
         } else {
@@ -160,9 +163,12 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
         temptext <- sprintf('%s f\u00b2 %s [%2.0f%% CI: %s to %s].', temptext,
                             tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
       } else {
-        temptext <- sprintf('%s f^2 %s [%2.0f%% CI: %s to %s].', temptext,
+        #temptext <- sprintf('%s f^2 %s [%2.0f%% CI: %s to %s].', temptext,
+        #                    tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
+        temptext <- sprintf('%s f\u00b2 %s [%2.0f%% CI: %s to %s].', temptext,
                             tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
       }
+      Encoding(temptext) <-  "UTF-8"
       result$ANOVA$textoutput[cR] <- temptext
       rm(tempfsq, tempfsqlw, tempfsqup, temptext)
     }
@@ -175,7 +181,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     colnames(dataframeout) <- c("FixedEffects", "FixedEffects.ci.lower", "FixedEffects.ci.upper", "RandomEffects", "RandomEffects.ci.lower", "RandomEffects.ci.upper", "Model", "Model.ci.lower", "Model.ci.upper")
     
     dataframeout$FixedEffects <- suppressWarnings(MuMIn::r.squaredGLMM(fit)[1])
-    temp <- psychometric::CI.Rsq(dataframeout$FixedEffects[1], numparticipants, numfactors, level=confidenceinterval)
+    temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$FixedEffects[1], numparticipants, numfactors, level=confidenceinterval)))
     if (temp$LCL[1]<0) {
       temp$LCL[1] <- 0
     } 
@@ -186,7 +192,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     dataframeout$FixedEffects.ci.upper <- temp$UCL[1]
     
     dataframeout$Model <- suppressWarnings(MuMIn::r.squaredGLMM(fit)[2])
-    temp <- psychometric::CI.Rsq(dataframeout$Model[1], numparticipants, numfactors, level=confidenceinterval)
+    temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$Model[1], numparticipants, numfactors, level=confidenceinterval)))
     if (temp$LCL[1]<0) {
       temp$LCL[1] <- 0
     } 
@@ -197,7 +203,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     dataframeout$Model.ci.upper <- temp$UCL[1]
     
     dataframeout$RandomEffects <- dataframeout$Model - dataframeout$FixedEffects
-    temp <- psychometric::CI.Rsq(dataframeout$RandomEffects[1], numparticipants, numfactors, level=confidenceinterval)
+    temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$RandomEffects[1], numparticipants, numfactors, level=confidenceinterval)))
     if (temp$LCL[1]<0) {
       temp$LCL[1] <- 0
     } 

@@ -117,16 +117,22 @@ ttest2text <- function(datalist, verbose=TRUE) {
         if (ttestdist == "parametric") {
           if (ttesttype == "independent") {
             if (operatingsystem == "Windows") {
-              res$text <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
+              temptext <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
             } else {
-              res$text <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
+              temptext <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
+              #temptext <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
             }
+            Encoding(temptext) <-  "UTF-8"
+            res$text <- temptext
           } else {
             if (operatingsystem == "Windows") {
-              res$text <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+              temptext <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
             } else {
-              res$text <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
+              temptext <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+              #temptext <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
             }
+            Encoding(temptext) <-  "UTF-8"
+            res$text <- temptext
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {
             dataframeout[[1,'effectsize.conf.int.lower']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.lower']]), digits = 2))

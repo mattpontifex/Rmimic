@@ -8,7 +8,7 @@
 #' @param subjectid Variable name corresponding to the subject id column in the data. Required for paired tests of within subjects variables, encouraged otherwise.
 #' @param between Variable name or list of variables to use to compute independent samples t tests.
 #' @param within Variable name or list of variables to use to compute paired samples t tests.
-#' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.
+#' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other options are Shattertwaite or Classic.
 #' @param posthoc Parameter to determine what post-hoc comparison approach to use. Options are Bonferroni, Sidak, or Holm-Bonferroni.
 #' @param criticaldiff Parameter to specify the critical difference used in Tukey and Scheffe post-hoc comparison approaches.
 #' @param confidenceinterval Parameter to control the confidence interval. Default is 0.95.
@@ -45,7 +45,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
   #collapse=FALSE
   #posthoc=FALSE
   
-  
+  operatingsystem <- Sys.info()['sysname']
   if (!is.null(posthoc)) {
     if (toupper(posthoc) == toupper("Bonferroni")) {
       posthoc <- "Bonferroni"
@@ -71,6 +71,8 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
       df = "Kenward-Roger"
     } else if (toupper(df) == toupper("Shattertwaite")) {
       df = "Shattertwaite"
+    } else if (toupper(df) == toupper("Traditional")) {
+      df = "Traditional"
     }
   } else {
     df = "Kenward-Roger"
@@ -85,6 +87,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
   } else {
     hold <- sprintf('%s ', hold)
   }
+  #cat(sprintf('RunningLocal'))
   
   # Assess what got fed into the function
   dependentvariableL <- length(dependentvariable)
@@ -97,7 +100,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
   } else {
     indivparticipant <- sort(unique(as.character(rownames(data))))
     if ((withinvariableL == 0) & (betweenvariableL > 0)) {
-      # no subject ID parameter was provided and the analyis is between subjects
+      # no subject ID parameter was provided and the analysis is between subjects
       # assume each is unique
       data$subjectid <- 1:nrow(data)
       subjectid <- "subjectid"
@@ -161,13 +164,19 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           desc$N[1] <- length(unique(unlist(as.character(group1data[,subjectid[1]]))))
           desc$N[2] <- length(unique(unlist(as.character(group2data[,subjectid[1]]))))
           
+          tempuniquesubjects <- length(unique(c(unlist(as.character(group1data[,subjectid[1]])),unlist(as.character(group2data[,subjectid[1]])))))
+          tempuniquesubjects <- length(indivparticipant)
+          
           # extract data from model fit
           # emmeans like to pop out messages for main effects - Works for lmer and lm
           if (toupper(df[1]) == toupper("Shattertwaite")) {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='satterthwaite')))", nest, between[cB])))
+            textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='satterthwaite')))", nest, between[cB])
+            eval(parse(text=textcall))
           } else {
-            eval(parse(text=sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='kenward-roger')))", nest, between[cB])))
+            textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(emmeans::emmeans(fit, list(pairwise ~ %s%s), adjust = 'none', mode='kenward-roger')))", nest, between[cB])
+            eval(parse(text=textcall))
           }
+          #cat(textcall)
           posthoctemptestmeansmatrix <- data.frame(posthoctemptestfull[2])
           
           testinx <- which(posthoctemptestmeansmatrix[,1] == sprintf('%s%s - %s%s', hold, tempvect[1], hold, tempvect[2]))
@@ -182,6 +191,12 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             ttestresult$parameter[[1]] <- floor(posthoctemptestmeansmatrix[testinx,4])
             ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
             ttestresult$method <- " Two Sample t-test"
+            
+            if (toupper(df[1]) == toupper("Traditional")) {
+              ttestresult$parameter[[1]] <- (tempuniquesubjects - 2)
+              ttestresult$p.value <- 2*stats::pt(q=-ttestresult$statistic, (tempuniquesubjects - 2))
+            }
+            
             ttestresult$effectsize <- abs(ttestresult$statistic * sqrt((1/desc$N[1]) + (1/desc$N[2])))
             temptstat <- ttestresult$statistic
             if (temptstat > 37.5) {
@@ -274,6 +289,9 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           desc$N[1] <- length(unique(unlist(as.character(group1data[,subjectid[1]]))))
           desc$N[2] <- length(unique(unlist(as.character(group2data[,subjectid[1]]))))
           
+          tempuniquesubjects <- length(unique(c(unlist(as.character(group1data[,subjectid[1]])),unlist(as.character(group2data[,subjectid[1]])))))
+          tempuniquesubjects <- length(indivparticipant)
+          
           # obtain correlation estimate
           tempcal <- sprintf("subworkingdatabase <- doBy::summaryBy(%s ~", dependentvariable[1])
           faclist <- c(subjectid[1], within[cB])
@@ -348,6 +366,10 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             ttestresult$p.value <- posthoctemptestmeansmatrix[testinx,6]
             ttestresult$method <- "Paired t-test"
             
+            if (toupper(df[1]) == toupper("Traditional")) {
+              ttestresult$parameter[[1]] <- (tempuniquesubjects - 1)
+              ttestresult$p.value <- 2*stats::pt(q=-ttestresult$statistic, (tempuniquesubjects - 1))
+            }
             ttestresult$effectsize <- ttestresult$statistic * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             
             temptstat <- ttestresult$statistic
@@ -362,7 +384,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
             ttestresult$effectsize.conf.int.lower <- ncp$Lower.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$effectsize.conf.int.upper <- ncp$Upper.Limit * sqrt((2*(1-correlationtest$estimate[[1]]))/length(comparison2))
             ttestresult$stud.conf.int <- confidenceinterval
-            tempout <- ttest2text(ttestresult, verbose=FALSE)
+            tempout <- Rmimic::ttest2text(ttestresult, verbose=FALSE)
             
             dataframeout[dataframeoutL,'Test'] <- 'Paired samples t-test'
             #rm(correlationtest, ncp, ttestresult)
@@ -424,7 +446,14 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
   dataframeout$interpretation <- NA
   for (cI in 1:nrow(dataframeout)) {
     temptextout0 <- "No significant differences were observed between"
-    temptextout1 <- sprintf("%s (%.1f +/- %.1f) and %s (%.1f +/- %.1f)", dataframeout$Group1.label[cI], dataframeout$Group1.mean[cI], dataframeout$Group1.sd[cI], dataframeout$Group2.label[cI], dataframeout$Group2.mean[cI], dataframeout$Group2.sd[cI])
+    if (operatingsystem == "Windows") {
+      temptextout1 <- sprintf("%s (%.1f \u00b1 %.1f) and %s (%.1f \u00b1 %.1f)", dataframeout$Group1.label[cI], dataframeout$Group1.mean[cI], dataframeout$Group1.sd[cI], dataframeout$Group2.label[cI], dataframeout$Group2.mean[cI], dataframeout$Group2.sd[cI])
+      
+    } else {
+      temptextout1 <- sprintf("%s (%.1f \u00b1 %.1f) and %s (%.1f \u00b1 %.1f)", dataframeout$Group1.label[cI], dataframeout$Group1.mean[cI], dataframeout$Group1.sd[cI], dataframeout$Group2.label[cI], dataframeout$Group2.mean[cI], dataframeout$Group2.sd[cI])
+      
+    }
+    
     temptextout2 <- ""
     if (dependentvariableL > 1) {
       temptextout3 <- sprintf(" for %s; %s", dataframeout$Variable[cI], dataframeout$textoutput[cI])
@@ -440,6 +469,9 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
     } else {
       dataframeout$interpretation[cI] <- sprintf("%s %s%s", temptextout0, temptextout1, temptextout3)
     }
+    
+    Encoding(dataframeout$interpretation[cI]) <- "UTF-8"
+    
     #rm(outPvalue)
   }
   #rm(cI, temptextout0, temptextout1, temptextout2, temptextout3)
@@ -697,15 +729,18 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
         } else if (vectnames[cC] == "p.value") {
           cat(sprintf("%-*s",sepgap[1,cC],"p"))
         } else if (vectnames[cC] == "effectsize") {
+          effectsizetext <- ""
           if (testlabels[cT] == "Independent samples t-test") {
-            cat(sprintf("%-*s",sepgap[1,cC],sprintf('cohens ds [%d%% CI]', floor(confidenceinterval * 100))))
+            effectsizetext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens d\u209B [%d%% CI]', floor(confidenceinterval * 100)))
           } else if (testlabels[cT] == 'Independent samples Mann-Whitney test') {
-            cat(sprintf("%-*s",sepgap[1,cC],"r"))
+            effectsizetext <- sprintf("%-*s",sepgap[1,cC],"r")
           } else if (testlabels[cT] == 'Paired samples t-test') {
-            cat(sprintf("%-*s",sepgap[1,cC],sprintf('cohens drm [%d%% CI]', floor(confidenceinterval * 100))))
+            effectsizetext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens d\u1D63\u2098 [%d%% CI]', floor(confidenceinterval * 100)))
           } else if (testlabels[cT] == 'Paired samples Wilcoxon signed rank test') {
-            cat(sprintf("%-*s",sepgap[1,cC],"r"))
+            effectsizetext <- sprintf("%-*s",sepgap[1,cC],"r")
           }
+          Encoding(effectsizetext) <- "UTF-8"
+          cat(effectsizetext)
         } else {
           cat(sprintf("%-*s",sepgap[1,cC],vectnames[cC]))
         }

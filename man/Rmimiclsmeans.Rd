@@ -34,7 +34,7 @@ Rmimiclsmeans(
 
 \item{within}{Variable name or list of variables to use to compute paired samples t tests.}
 
-\item{df}{Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.}
+\item{df}{Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other options are Shattertwaite or Classic.}
 
 \item{posthoc}{Parameter to determine what post-hoc comparison approach to use. Options are Bonferroni, Sidak, or Holm-Bonferroni.}
 

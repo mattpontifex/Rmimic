@@ -10,7 +10,7 @@
 #' @param covariates Non interactive variables to be included in the analysis as covariates.
 #' @param randomintercept Parameter to indicate random intercepts.
 #' @param randomslope Parameter to indicate random slopes.
-#' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.
+#' @param df Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other options are Shattertwaite or Traditional.
 #' @param posthoc Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Scheffe, Sidak, Tukey, or False Discovery Rate Control.
 #' @param FDRC Decimal representation of false discovery rate control. Default is 0.05.
 #' @param planned Parameter to specify an effect to show the post-hoc comparisons even if they are not significant.
@@ -74,6 +74,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     FDRC=0.05
   }
   
+  #cat(sprintf('RunningLocal'))
   
   #### START FUNCTION
   
@@ -99,6 +100,8 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       df = "Kenward-Roger"
     } else if (toupper(df) == toupper("Shattertwaite")) {
       df = "Shattertwaite"
+    } else if (toupper(df) == toupper("Traditional")) {
+      df = "Traditional"
     }
   } else {
     df = "Kenward-Roger"
@@ -287,8 +290,9 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
   # Execute models
   res$model <- sprintf("%s ~ %s",dependentvariable, fullmodel)
   if (length(randomtermsmodel) > 0) {
-    
-    eval(parse(text=sprintf("fit <- pkgcond::suppress_conditions(lmerTest::lmer(%s, data = completedata))", res$model)))
+    modeltext <- sprintf("fit <- pkgcond::suppress_conditions(lmerTest::lmer(%s, data = completedata))", res$model)
+    #cat(modeltext)
+    eval(parse(text=modeltext))
     # see if the model may be over-fit
     if (lme4::isSingular(fit) == TRUE) {
       booloverfitwarning <- TRUE
@@ -481,8 +485,9 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     if (operatingsystem == "Windows") {
       temptext <- sprintf("f\u00b2 [%2.0f%% CI]", floor(confidenceinterval*100))
     } else {
-      temptext <- sprintf("f^2 [%2.0f%% CI]", floor(confidenceinterval*100))
+      temptext <- sprintf("f\u00b2 [%2.0f%% CI]", floor(confidenceinterval*100))
     }
+    Encoding(temptext) <-  "UTF-8"
     vectnames <- c(vectnames, temptext)
     colnames(outputdataframe) <- vectnames
     outputdataframe[,1] <- res$stats$Effect
@@ -538,9 +543,19 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
         tempfsqlw <- "0.0"
       }
+      if (tempfsqlw == "0.0") {
+        if (res$stats$fsquared.ci.lower[cR] > 0.0) {
+          tempfsqlw <- "0.01"
+        }
+      }
       tempfsqup <- sprintf("%.2f", round(as.numeric(res$stats$fsquared.ci.upper[cR]), digits = 2))
       if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
         tempfsqup <- "0.0"
+      }
+      if (tempfsqup == "0.0") {
+        if (res$stats$fsquared.ci.upper[cR] > 0.0) {
+          tempfsqup <- "0.01"
+        }
       }
       pullvalue <- sprintf('%s [%s, %s]', tempfsq, tempfsqlw, tempfsqup)
       outputdataframe[cR,5] <- pullvalue
@@ -557,9 +572,19 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
       tempfsqlw <- "0.0"
     }
+    if (tempfsqlw == "0.0") {
+      if (res$Rsquared$FixedEffects.ci.lower[1] > 0.0) {
+        tempfsqlw <- "0.01"
+      }
+    }
     tempfsqup <- sprintf("%.2f", round(as.numeric(res$Rsquared$FixedEffects.ci.upper[1]), digits = 2))
     if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
       tempfsqup <- "0.0"
+    }
+    if (tempfsqup == "0.0") {
+      if (res$Rsquared$FixedEffects.ci.upper[1] > 0.0) {
+        tempfsqup <- "0.01"
+      }
     }
     outtext <- sprintf('Fixed effects r.squared = %s [%2.0f%% CI: %s, %s]', tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
     Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
@@ -601,9 +626,19 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
       tempfsqlw <- "0.0"
     }
+    if (tempfsqlw == "0.0") {
+      if (res$Rsquared$RandomEffects.ci.lower[1] > 0.0) {
+        tempfsqlw <- "0.01"
+      }
+    }
     tempfsqup <- sprintf("%.2f", round(as.numeric(res$Rsquared$RandomEffects.ci.upper[1]), digits = 2))
     if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
       tempfsqup <- "0.0"
+    }
+    if (tempfsqup == "0.0") {
+      if (res$Rsquared$RandomEffects.ci.upper[1] > 0.0) {
+        tempfsqup <- "0.01"
+      }
     }
     outtext <- sprintf('Random effects r.squared = %s [%2.0f%% CI: %s, %s]', tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
     Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))

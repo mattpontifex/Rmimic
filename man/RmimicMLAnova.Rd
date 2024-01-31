@@ -42,7 +42,7 @@ RmimicMLAnova(
 
 \item{randomslope}{Parameter to indicate random slopes.}
 
-\item{df}{Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other option is Shattertwaite.}
+\item{df}{Parameter to indicate what degrees of freedom approximation should be used. Default is Kenward-Roger. Other options are Shattertwaite or Traditional.}
 
 \item{posthoc}{Parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Scheffe, Sidak, Tukey, or False Discovery Rate Control.}
 
