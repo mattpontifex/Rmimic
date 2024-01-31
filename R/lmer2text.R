@@ -84,8 +84,8 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
     colnames(dataframeout) <- c("Effect", "DFn", "DFd", "SSn", "SSd", "SSe", "F.value", "p.value", "partialetasquared", "fsquared","fsquared.ci.lower", "fsquared.ci.upper")
     
     dataframeout['Effect'] <- rownames(as)
-    dataframeout['DFn'] <- as.interger(as$NumDF)
-    dataframeout['DFd'] <- as.interger(as$DenDF)
+    dataframeout['DFn'] <- as.integer(as$NumDF)
+    dataframeout['DFd'] <- as.integer(as$DenDF)
     dataframeout['SSn'] <- as$Sum.Sq
     dataframeout['SSd'] <- as$Mean.Sq
     dataframeout['SSe'] <- sum(dataframeout$SSd, na.rm=TRUE) + mean(stats::residuals(fit)^2)
