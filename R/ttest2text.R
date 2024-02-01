@@ -137,8 +137,27 @@ ttest2text <- function(datalist, verbose=TRUE) {
             res$text <- temptext
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {
-            dataframeout[[1,'effectsize.conf.int.lower']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.lower']]), digits = 2))
-            dataframeout[[1,'effectsize.conf.int.upper']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.upper']]), digits = 2))
+            tempfsqlw <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.lower']]), digits = 2))
+            if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
+              tempfsqlw <- "0.0"
+            }
+            if (tempfsqlw == "0.0") {
+              if (as.double(dataframeout[[1,'effectsize.conf.int.lower']]) > 0.0) {
+                tempfsqlw <- "0.01"
+              }
+            }
+            dataframeout[[1,'effectsize.conf.int.lower']] <- tempfsqlw
+            
+            tempfsqup <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize.conf.int.upper']]), digits = 2))
+            if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
+              tempfsqup <- "0.0"
+            }
+            if (tempfsqup == "0.0") {
+              if (as.double(dataframeout[[1,'effectsize.conf.int.upper']]) > 0.0) {
+                tempfsqup <- "0.01"
+              }
+            }
+            dataframeout[[1,'effectsize.conf.int.upper']] <- tempfsqup
             res$text <- sprintf('%s [%s CI: %s to %s].', res$text, dataframeout[[1,'stud.conf.int']], dataframeout[[1,'effectsize.conf.int.lower']], dataframeout[[1,'effectsize.conf.int.upper']])
           } else {
             res$text <- sprintf('%s.', res$text)

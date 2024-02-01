@@ -488,7 +488,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     #} else {
     #  temptext <- sprintf("f\u00b2 [%2.0f%% CI]", floor(confidenceinterval*100))
     #}
-    temptext <- sprintf("%s [%2.0f%% CI]", sprintf('%s\u200a\u00b2', cli::style_italic('f')), floor(confidenceinterval*100))
+    temptext <- sprintf("%s [%2.0f%% CI]", sprintf('f\u00b2'), floor(confidenceinterval*100))
     Encoding(temptext) <-  "UTF-8"
     
     vectnames <- c(vectnames, temptext)
