@@ -1,7 +1,7 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic: An R package that mimic outputs of popular commercial statistics software packages with effect sizes and confidence intervals
-Version: 1.0.5.3
+Version: 1.0.5.4
 Date: 2024-02-01
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
@@ -53,6 +53,7 @@ Imports:
     gamlss.dist,
     ltm,
     common,
+    cli,
     questionr,
     tibble
 Suggests:

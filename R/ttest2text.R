@@ -11,7 +11,7 @@
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 7, 2019
 #' 
-#' @importFrom common subsc
+#' @importFrom cli style_italic
 #'
 #' @export
 
@@ -93,20 +93,20 @@ ttest2text <- function(datalist, verbose=TRUE) {
         dataframeout[[1,'df']] <- pullvalue
       }
       if (ttestdist == "parametric") {
-        res$text <- sprintf('t(%s) = %s', dataframeout[[1,'df']], dataframeout[[1,'statistic']])
+        res$text <- sprintf('%s(%s) = %s', cli::style_italic('t'), dataframeout[[1,'df']], dataframeout[[1,'statistic']])
       } else {
         if (ttesttype == "independent") {
-          res$text <- sprintf('Mann–Whitney U = %s', dataframeout[[1,'statistic']])
+          res$text <- sprintf('%s U = %s', cli::style_italic('Mann–Whitney U'), dataframeout[[1,'statistic']])
         } else {
-          res$text <- sprintf('Wilcoxon V = %s', dataframeout[[1,'statistic']])
+          res$text <- sprintf('%s = %s', cli::style_italic('Wilcoxon V'), dataframeout[[1,'statistic']])
         }
         dataframeout[[1,'z.value']] <- sprintf('%.1f', round(as.double(dataframeout[[1,'z.value']]), digits = 1))
-        res$text <- sprintf('%s, Z = %s', res$text, dataframeout[[1,'z.value']])
+        res$text <- sprintf('%s, %s = %s', res$text, cli::style_italic('Z'), dataframeout[[1,'z.value']])
       }
       
       # report P value
       outPvalue <- fuzzyP(as.double(dataframeout[[1,'p.value']]))
-      res$text <- sprintf('%s, p %s %s', res$text, outPvalue$modifier, outPvalue$report)
+      res$text <- sprintf('%s, %s %s %s', res$text, cli::style_italic('p'), outPvalue$modifier, outPvalue$report)
 
       # effect size reporting
       if (!is.na(dataframeout[[1,'effectsize']])) {
@@ -123,8 +123,8 @@ ttest2text <- function(datalist, verbose=TRUE) {
             #} else {
             #  temptext <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
             #}
-            #Encoding(temptext) <-  "UTF-8"
-            temptext <- sprintf('%s, d%s = %s', res$text, common::subsc("s"), dataframeout[[1,'effectsize']])
+            temptext <- sprintf("%s, %s = %s", res$text, cli::style_italic(sprintf('%s%s', 'd','\u209b')), dataframeout[[1,'effectsize']])
+            Encoding(temptext) <-  "UTF-8"
             res$text <- temptext
           } else {
             #if (operatingsystem == "Windows") {
@@ -132,8 +132,8 @@ ttest2text <- function(datalist, verbose=TRUE) {
             #} else {
             #  temptext <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
             #}
-            #Encoding(temptext) <-  "UTF-8"
-            temptext <- sprintf('%s, d%s = %s', res$text, common::subsc("rm"), dataframeout[[1,'effectsize']])
+            temptext <- sprintf('%s, %s = %s', res$text, cli::style_italic(sprintf('%s%s%s', 'd','\u1d63', '\u2098')), dataframeout[[1,'effectsize']])
+            Encoding(temptext) <-  "UTF-8"
             res$text <- temptext
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {
@@ -145,7 +145,7 @@ ttest2text <- function(datalist, verbose=TRUE) {
           }
         } else {
           # cohens r
-          res$text <- sprintf('%s, r = %s.', res$text, dataframeout[[1,'effectsize']])
+          res$text <- sprintf('%s, %s = %s.', res$text, cli::style_italic('r'), dataframeout[[1,'effectsize']])
         }
       }
     }

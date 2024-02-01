@@ -334,7 +334,7 @@ Rmimiclsmeans <- function(fit, data, dependentvariable=NULL, subjectid=NULL, bet
           # safety
           correlationtest <- list()
           correlationtest$estimate[[1]] <- 0.5
-          ttestresult$correlation <- 0.5 # to still penalize effect size
+          ttestresult$correlation <- 0.5 # assumption
           ttestresult$correlation.p.value <- 1.0
           tryCatch(
             expr = {

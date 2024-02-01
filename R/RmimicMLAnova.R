@@ -34,7 +34,7 @@
 #' @importFrom lmerTest lmer
 #' @importFrom emmeans lsmeans
 #' @importFrom MuMIn r.squaredGLMM
-#' @importFrom common supsc
+#' @importFrom cli style_italic
 #'
 #'
 #' @export
@@ -488,8 +488,8 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
     #} else {
     #  temptext <- sprintf("f\u00b2 [%2.0f%% CI]", floor(confidenceinterval*100))
     #}
-    #Encoding(temptext) <-  "UTF-8"
-    temptext <- sprintf("f%s [%2.0f%% CI]", common::supsc(" 2"), floor(confidenceinterval*100))
+    temptext <- sprintf("%s [%2.0f%% CI]", sprintf('%s\u200a\u00b2', cli::style_italic('f')), floor(confidenceinterval*100))
+    Encoding(temptext) <-  "UTF-8"
     
     vectnames <- c(vectnames, temptext)
     colnames(outputdataframe) <- vectnames
@@ -590,7 +590,8 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
     }
     #outtext <- sprintf('Fixed effects r.squared = %s [%2.0f%% CI: %s, %s]', tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
-    outtext <- sprintf('Fixed effects R%s = %s [%2.0f%% CI: %s, %s]', common::supsc(" 2"), tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
+    outtext <- sprintf('%s = %s [%2.0f%% CI: %s, %s]', sprintf('%s\u200a\u00b2', cli::style_italic('Fixed effects R')), tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
+    Encoding(outtext) <-  "UTF-8"
     Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
     
     # Show Random effects ANOVA Table
@@ -644,7 +645,8 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
       }
     }
     #outtext <- sprintf('Random effects r.squared = %s [%2.0f%% CI: %s, %s]', tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
-    outtext <- sprintf('Random effects R%s = %s [%2.0f%% CI: %s, %s]', common::supsc(" 2"), tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
+    outtext <- sprintf('%s = %s [%2.0f%% CI: %s, %s]', sprintf('%s\u200a\u00b2', cli::style_italic('Random effects R')), tempfsq, floor(confidenceinterval*100),tempfsqlw,tempfsqup)
+    Encoding(outtext) <-  "UTF-8"
     Rmimic::typewriter(outtext, tabs=0, spaces=0, characters=floor(spansize*.9))
     if (booloverfitwarning == TRUE) {
       outtext <- sprintf('Warning: the model is approaching a singular fit, try reducing the number of random effects in the model.')

@@ -27,7 +27,7 @@
 #' @importFrom MuMIn r.squaredGLMM
 #' @importFrom psychometric CI.Rsq
 #' @importFrom lmerTest ranova
-#' @importFrom common supsc
+#' @importFrom cli style_italic
 #'
 #' @export
 
@@ -128,7 +128,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
           pullvalue <- substr(pullvalue, 1, nchar(pullvalue)-2)
         }
       }
-      temptext <- sprintf('F(%s,', pullvalue)
+      temptext <- sprintf('%s(%s,', cli::style_italic('F'), pullvalue)
       
       pullvalue <- sprintf('%.1f', round(as.numeric(result$ANOVA$DFd[cR]), digits = 1))
       if (substr(pullvalue, nchar(pullvalue), nchar(pullvalue)) == "0") {
@@ -142,7 +142,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
       if (pullvalue == " = 0.0") {
         pullvalue = " < 0.1"
       }
-      temptext <- sprintf('%s%s, p', temptext, pullvalue)
+      temptext <- sprintf('%s%s, %s', temptext, pullvalue, cli::style_italic('p'))
       # P val
       outPvalue <- Rmimic::fuzzyP(as.numeric(result$ANOVA$p.value[cR]))
       temptext <- sprintf('%s %s %s,', temptext, outPvalue$modifier, outPvalue$report)
@@ -167,9 +167,9 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
         #temptext <- sprintf('%s f^2 %s [%2.0f%% CI: %s to %s].', temptext,
         #                    tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
       #}
-      #Encoding(temptext) <-  "UTF-8"
-      temptext <- sprintf('%s f%s %s [%2.0f%% CI: %s to %s].', temptext, common::supsc(" 2"),
-                          tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
+      temptext <- sprintf('%s %s %s [%2.0f%% CI: %s to %s].', temptext, sprintf('%s\u200a\u00b2', cli::style_italic('f')),
+                            tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
+      Encoding(temptext) <-  "UTF-8"
       result$ANOVA$textoutput[cR] <- temptext
       rm(tempfsq, tempfsqlw, tempfsqup, temptext)
     }
@@ -239,7 +239,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
           pullvalue <- substr(pullvalue, 1, nchar(pullvalue)-2)
         }
       }
-      temptext <- sprintf('Likelihood Ratio (%s)', pullvalue)
+      temptext <- sprintf('%s (%s)', cli::style_italic('Likelihood Ratio'), pullvalue)
       
       # LRT stat
       if (round(as.numeric(result$RandomEffectsANOVA$LRT[cR]), digits = 1) < 0.0) {
@@ -262,7 +262,7 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
           pullvalue = " < 0.1"
         }
       }
-      temptext <- sprintf('%s log-likelihood%s, p', temptext, pullvalue)
+      temptext <- sprintf('%s %s %s, %s', temptext, cli::style_italic('log-likelihood'), pullvalue, cli::style_italic('p'))
       
       # P val
       outPvalue <- Rmimic::fuzzyP(as.numeric(result$RandomEffectsANOVA$p.value[cR]))
