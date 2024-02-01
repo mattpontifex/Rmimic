@@ -10,6 +10,8 @@
 #' \item{text}{Statistics formatted in text.}
 #' 
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, October 7, 2019
+#' 
+#' @importFrom common subsc
 #'
 #' @export
 
@@ -116,22 +118,22 @@ ttest2text <- function(datalist, verbose=TRUE) {
         dataframeout[[1,'effectsize']] <- sprintf('%.2f', round(as.double(dataframeout[[1,'effectsize']]), digits = 2))
         if (ttestdist == "parametric") {
           if (ttesttype == "independent") {
-            if (operatingsystem == "Windows") {
-              temptext <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
-            } else {
-              temptext <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
-              #temptext <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
-            }
-            Encoding(temptext) <-  "UTF-8"
+            #if (operatingsystem == "Windows") {
+            #  temptext <- sprintf("%s, d\u209b = %s", res$text, dataframeout[[1,'effectsize']])
+            #} else {
+            #  temptext <- sprintf("%s, ds = %s", res$text, dataframeout[[1,'effectsize']])
+            #}
+            #Encoding(temptext) <-  "UTF-8"
+            temptext <- sprintf('%s, d%s = %s', res$text, common::subsc("s"), dataframeout[[1,'effectsize']])
             res$text <- temptext
           } else {
-            if (operatingsystem == "Windows") {
-              temptext <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
-            } else {
-              temptext <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
-              #temptext <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
-            }
-            Encoding(temptext) <-  "UTF-8"
+            #if (operatingsystem == "Windows") {
+            #  temptext <- sprintf('%s, d\u1d63\u2098 = %s', res$text, dataframeout[[1,'effectsize']])
+            #} else {
+            #  temptext <- sprintf('%s, drm = %s', res$text, dataframeout[[1,'effectsize']])
+            #}
+            #Encoding(temptext) <-  "UTF-8"
+            temptext <- sprintf('%s, d%s = %s', res$text, common::subsc("rm"), dataframeout[[1,'effectsize']])
             res$text <- temptext
           }
           if (!is.na(dataframeout[[1,'effectsize.conf.int.lower']])) {

@@ -27,6 +27,7 @@
 #' @importFrom MuMIn r.squaredGLMM
 #' @importFrom psychometric CI.Rsq
 #' @importFrom lmerTest ranova
+#' @importFrom common supsc
 #'
 #' @export
 
@@ -159,16 +160,16 @@ lmer2text <- function(fit, model=NULL, df=NULL, numparticipants=NULL, numfactors
       if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
         tempfsqup <- "0.0"
       }
-      if (operatingsystem == "Windows") {
-        temptext <- sprintf('%s f\u00b2 %s [%2.0f%% CI: %s to %s].', temptext,
-                            tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
-      } else {
+      #if (operatingsystem == "Windows") {
+      #  temptext <- sprintf('%s f\u00b2 %s [%2.0f%% CI: %s to %s].', temptext,
+      #                      tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
+      #} else {
         #temptext <- sprintf('%s f^2 %s [%2.0f%% CI: %s to %s].', temptext,
         #                    tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
-        temptext <- sprintf('%s f\u00b2 %s [%2.0f%% CI: %s to %s].', temptext,
-                            tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
-      }
-      Encoding(temptext) <-  "UTF-8"
+      #}
+      #Encoding(temptext) <-  "UTF-8"
+      temptext <- sprintf('%s f%s %s [%2.0f%% CI: %s to %s].', temptext, common::supsc(" 2"),
+                          tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
       result$ANOVA$textoutput[cR] <- temptext
       rm(tempfsq, tempfsqlw, tempfsqup, temptext)
     }

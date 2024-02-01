@@ -26,6 +26,7 @@
 #' @importFrom MBESS conf.limits.nct
 #' @importFrom utils packageDate
 #' @importFrom pkgcond suppress_conditions
+#' @importFrom common subsc
 #' 
 #' @examples
 #' 
@@ -711,11 +712,15 @@ RmimicTtest <- function(data, dependentvariable=NULL, subjectid=NULL, between=NU
           cat(sprintf("%-*s",sepgap[1,cC],"p"))
         } else if (vectnames[cC] == "effectsize") {
           if (testlabels[cT] == "Independent samples t-test") {
-            cat(sprintf("%-*s",sepgap[1,cC],sprintf('cohens ds [%d%% CI]', floor(confidenceinterval * 100))))
+            #temptext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens ds [%d%% CI]', floor(confidenceinterval * 100)))
+            temptext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens d%s [%d%% CI]', common::subsc("s"), floor(confidenceinterval * 100)))
+            cat(temptext)
           } else if (testlabels[cT] == 'Independent samples Mann-Whitney test') {
             cat(sprintf("%-*s",sepgap[1,cC],"r"))
           } else if (testlabels[cT] == 'Paired samples t-test') {
-            cat(sprintf("%-*s",sepgap[1,cC],sprintf('cohens drm [%d%% CI]', floor(confidenceinterval * 100))))
+            #temptext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens drm [%d%% CI]', floor(confidenceinterval * 100)))
+            temptext <- sprintf("%-*s",sepgap[1,cC],sprintf('cohens d%s [%d%% CI]', common::subsc("rm"), floor(confidenceinterval * 100)))
+            cat(temptext)
           } else if (testlabels[cT] == 'Paired samples Wilcoxon signed rank test') {
             cat(sprintf("%-*s",sepgap[1,cC],"r"))
           }
