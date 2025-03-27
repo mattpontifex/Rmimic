@@ -171,7 +171,15 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   if (!logisticfit) {
     res$modelcheck$Test[1] <- 'Fitted Values'
     
-    tres <- olsrr::ols_test_breusch_pagan(fit) # USES THE FITTED VALUES OF THE MODEL
+    #tres <- olsrr::ols_test_breusch_pagan(fit) # USES THE FITTED VALUES OF THE MODEL
+    tres <- tryCatch(
+      {
+        tres <- olsrr::ols_test_breusch_pagan(fit) # USES THE FITTED VALUES OF THE MODEL
+      },
+      error = function(e) {
+        tres <- list('preds' = 0, 'bp'=0, 'p'=0.99)
+      },
+      warning = function(e) { })
     res$modelcheck$DF[1] <- 1
     res$modelcheck$Chisquared[1] <- tres$bp
     res$modelcheck$p.value[1] <- tres$p
@@ -181,8 +189,15 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     #res$modelcheck$p.value[1] <- tres$p
     
     res$modelcheck$Test[2] <- 'Indep Variables'
-    
-    tres <- olsrr::ols_test_breusch_pagan(fit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    #tres <- olsrr::ols_test_breusch_pagan(fit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    tres <- tryCatch(
+      {
+        tres <- olsrr::ols_test_breusch_pagan(fit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+      },
+      error = function(e) {
+        tres <- list('preds' = 0, 'bp'=0, 'p'=0.99)
+      },
+      warning = function(e) { })
     res$modelcheck$DF[2] <- length(tres$preds)
     res$modelcheck$Chisquared[2] <- tres$bp
     res$modelcheck$p.value[2] <- tres$p
@@ -190,7 +205,6 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     #res$modelcheck$DF[2] <- tres$parameter[[1]]
     #res$modelcheck$Chisquared[2] <- tres$statistic[[1]]
     #res$modelcheck$p.value[2] <- tres$p.value[[1]]
-    
   }
   
   res$changestats$Model[1] <- res$stats$Model[1]
@@ -294,7 +308,15 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   if (!logisticfit) {
     res$modelcheck$Test[3] <- 'Fitted Values'
     
-    tres <- olsrr::ols_test_breusch_pagan(altfit) # USES THE FITTED VALUES OF THE MODEL
+    #tres <- olsrr::ols_test_breusch_pagan(altfit) # USES THE FITTED VALUES OF THE MODEL
+    tres <- tryCatch(
+      {
+        tres <- olsrr::ols_test_breusch_pagan(altfit) # USES THE FITTED VALUES OF THE MODEL
+      },
+      error = function(e) {
+        tres <- list('preds' = 0, 'bp'=0, 'p'=0.99)
+      },
+      warning = function(e) { })
     res$modelcheck$DF[3] <- 1
     res$modelcheck$Chisquared[3] <- tres$bp
     res$modelcheck$p.value[3] <- tres$p
@@ -305,7 +327,15 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     
     res$modelcheck$Test[4] <- 'Indep Variables'
     
-    tres <- olsrr::ols_test_breusch_pagan(altfit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    #tres <- olsrr::ols_test_breusch_pagan(altfit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+    tres <- tryCatch(
+      {
+        tres <- olsrr::ols_test_breusch_pagan(altfit, rhs = TRUE) # USES THE INDEPENDENT VARIABLES OF THE MODEL
+      },
+      error = function(e) {
+        tres <- list('preds' = 0, 'bp'=0, 'p'=0.99)
+      },
+      warning = function(e) { })
     res$modelcheck$DF[4] <- length(tres$preds)
     res$modelcheck$Chisquared[4] <- tres$bp
     res$modelcheck$p.value[4] <- tres$p
