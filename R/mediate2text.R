@@ -58,15 +58,37 @@ mediate2text <- function(fit, studywiseAlpha=0.05, verbose=TRUE) {
   outstring <- sprintf('Mediated Path A: ')
   outstring <- sprintf('%s %s ---> %s', outstring, IVlabel, Mediatorlabel)
   result$paths[2,1] <- outstring
-  result$paths[2,2] <- fit$model.m[["coefficients"]][[IVlabel]]
+  
+  checkdata <- 'impossibletext'
+  tryCatch(
+    checkdata <- fit$model.m[["coefficients"]][[IVlabel]],
+  error=function(e){errcheck <- FALSE})
+  if (checkdata == 'impossibletext') {
+    if (length(fit$model.m[["coefficients"]]) == 2) {
+      checkdata <- fit$model.m[["coefficients"]][[length(fit$model.m[["coefficients"]])]]
+    } else {
+      checkdata <- fit$model.m[["coefficients"]][[IVlabel]]
+    }
+  } 
+  result$paths[2,2] <- checkdata
   
   tempA <- stats::confint(fit$model.m, level=confidenceinterval)
   tempAi <- which(rownames(tempA) == IVlabel)
+  if (length(tempAi) == 0) {
+    if (nrow(tempA) == 2) {
+      tempAi <- 2
+    }
+  }
   result$paths[2,3] <- tempA[tempAi,1]
   result$paths[2,4] <- tempA[tempAi,2]
   msA <- summary(fit$model.m)
   msAf <- data.frame(msA$coefficients)
   tempAi <- which(rownames(msAf) == IVlabel)
+  if (length(tempAi) == 0) {
+    if (nrow(msAf) == 2) {
+      tempAi <- 2
+    }
+  }
   result$paths[2,5] <- msAf[tempAi,4]
   
   outstring <- sprintf('Mediated Path B: ')

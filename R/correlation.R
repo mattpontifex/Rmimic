@@ -200,31 +200,52 @@ correlation <- function(variables=FALSE, partial=FALSE, data=FALSE, method=FALSE
         res[dataframeoutL,'estimate'] <- sR$estimate[[1]]
         res[dataframeoutL,'p.value'] <- sR$p.value[[1]]
         res[dataframeoutL,'statistic'] <- sR$statistic[[1]]
+        if (is.na(res[dataframeoutL,'estimate'])) {
+          res[dataframeoutL,'estimate'] <- 0
+          res[dataframeoutL,'p.value'] <- 0.99
+        }
+        if (is.null(res[dataframeoutL,'estimate'])) {
+          res[dataframeoutL,'estimate'] <- 0
+          res[dataframeoutL,'p.value'] <- 0.99
+        }  
+        
         
         # prepare p value for text output
         temppval <- Rmimic::fuzzyP(as.numeric(res[dataframeoutL,'p.value']))
         outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
         
         # prepare strength statement
-        if (abs(res[dataframeoutL,'estimate']) < 0.09) {
-          interp <- "very weak"
-        } else if (abs(res[dataframeoutL,'estimate']) < 0.26) {
-          interp <- "weak"
-        } else if (abs(res[dataframeoutL,'estimate']) < 0.39) {
-          interp <- "weak to moderate"
-        } else if (abs(res[dataframeoutL,'estimate']) < 0.6) {
-          interp <- "moderate"
-        } else if (abs(res[dataframeoutL,'estimate']) < 0.76) {
-          interp <- "moderate to strong"
-        } else if (abs(res[dataframeoutL,'estimate']) < 0.9) {
-          interp <- "strong"
-        } else if (abs(res[dataframeoutL,'estimate']) >= 0.9) {
-          interp <- "very strong"
+        if (!is.null(res[dataframeoutL,'estimate'])) {
+          if (!is.na(res[dataframeoutL,'estimate'])) {
+            if (abs(res[dataframeoutL,'estimate']) < 0.09) {
+              interp <- "very weak"
+            } else if (abs(res[dataframeoutL,'estimate']) < 0.26) {
+              interp <- "weak"
+            } else if (abs(res[dataframeoutL,'estimate']) < 0.39) {
+              interp <- "weak to moderate"
+            } else if (abs(res[dataframeoutL,'estimate']) < 0.6) {
+              interp <- "moderate"
+            } else if (abs(res[dataframeoutL,'estimate']) < 0.76) {
+              interp <- "moderate to strong"
+            } else if (abs(res[dataframeoutL,'estimate']) < 0.9) {
+              interp <- "strong"
+            } else if (abs(res[dataframeoutL,'estimate']) >= 0.9) {
+              interp <- "very strong"
+            }
+          } else {
+            interp <- ''
+          }
+        } else {
+          interp <- ''
         }
           
         directmodifier <- ""
-        if (res[dataframeoutL,'estimate'] < 0) {
-          directmodifier <- " inverse"
+        if (!is.null(res[dataframeoutL,'estimate'])) {
+          if (!is.na(res[dataframeoutL,'estimate'])) {
+            if (res[dataframeoutL,'estimate'] < 0) {
+              directmodifier <- " inverse"
+            }
+          }
         }
         phraser <- ""
         if (temppval$interpret <= studywiseAlpha) {

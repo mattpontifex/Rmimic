@@ -435,7 +435,7 @@ RmimicMLAnova <- function(data, dependentvariable=NULL, subjectid=NULL, between=
         if (length(factorsinvolved) < 6) {
           outstring <- sprintf("%s %s (%s)", outstring, factorname, paste(factorsinvolved, collapse = ", "))
         } else {
-          outstring <- sprintf("%s %s", factorname)
+          outstring <- sprintf("%s %s", outstring, factorname)
         }
         if (length(covariates) > 1) {
           # more than one random term

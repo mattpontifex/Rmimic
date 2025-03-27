@@ -138,8 +138,30 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     res$stats$r.squared[1] <- 0
     res$stats$r.squaredadj[1] <- 0
   } else {
-    res$stats$r.squared[1] <- ms$r.squared
-    res$stats$r.squaredadj[1] <- ms$adj.r.squared
+    if (!is.na(ms$r.squared[1])) {
+      res$stats$r.squared[1] <- ms$r.squared
+      res$stats$r.squaredadj[1] <- ms$adj.r.squared
+    } else {
+      #Formulation of a robust r2. in this case, we have a metric that tells us how
+      #much better our model is than a median of our observations using median squared
+      #deviation rather than variance.
+      #https://stackoverflow.com/questions/60073531/is-it-appropriate-to-calculate-r-squared-of-robust-regression-using-rlm
+      
+      # Median Squared Deviation Total
+      msdtot <- function(x) {
+        return(median((x - median(x))^2))
+      }
+      # Median Squared Deviation Error (or Residual)
+      msderr <- function(x, x_hat) {
+        return(median((x - x_hat)^2))
+      }
+      msd_res <- msderr(fit$model[,1], fit$fitted.values)
+      msd_tot <- msdtot(fit$model[,1])
+      
+      robustr2 <- (1 - (msd_res / msd_tot))
+      res$stats$r.squared[1] <- robustr2
+      res$stats$r.squaredadj[1] <- robustr2
+    }
   }
   res$stats$AIC[1] <- stats::extractAIC(fit)[2]
   res$stats$VIF[1] <- fmsb::VIF(fit)[1]
