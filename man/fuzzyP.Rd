@@ -4,10 +4,14 @@
 \alias{fuzzyP}
 \title{fuzzyP}
 \usage{
-fuzzyP(datain)
+fuzzyP(datain, studywiseAlpha = 0.05, html = FALSE)
 }
 \arguments{
 \item{datain}{Significance value.}
+
+\item{html}{Boolean parameter for output in html format.}
+
+\item{alpha}{Critical value for alpha.}
 }
 \value{
 A list with the following elements:
@@ -15,6 +19,7 @@ A list with the following elements:
 \item{report}{Rounded p value for use in summary reports.}
 \item{exact}{Exact p value.}
 \item{modifier}{Equals sign unless the p value is less than .001.}
+\item{significance}{Boolean for if the value is less than or equal to the critical alpha.}
 }
 \description{
 Function to properly round p values. Returns several values allowing \cr the user to choose what rounded value is appropriate.
