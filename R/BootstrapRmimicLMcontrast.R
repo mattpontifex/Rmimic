@@ -19,6 +19,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, March 25, 2025
 #' 
 #' @importFrom  dplyr slice_sample
+#' @importFrom stats runif
 #' 
 #'
 #' @examples
@@ -54,7 +55,7 @@ BootstrapRmimicLMcontrast <- function(basefit, fit, repetitions=999, resample_mi
   # loop through analysis
   for (cN in 1:repetitions) {
     # Determine how large a random sample of the original database
-    numberofsamples <- floor(runif(1, min=resample_min, max=resample_max))
+    numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
     
     # populates dataset subsampled from the original sample with replacement
     smp <- dplyr::slice_sample(model.frame(fit), n=numberofsamples, replace=TRUE)
@@ -83,9 +84,12 @@ BootstrapRmimicLMcontrast <- function(basefit, fit, repetitions=999, resample_mi
   }
   
   # collapse across observations and summarize
-  Bootstrapregressionsummary(Bootstrapcollapseregressions(mainregresult))
+  res <- list()
+  res$mainregresult <- mainregresult
+  res$summary <- Bootstrapcollapseregressions(mainregresult)
+  Bootstrapregressionsummary(res$summary)
   
-  return(mainregresult)
+  return(res)
 }
 
 Bootstrapcollapseregressions <- function(mainregresult) {
