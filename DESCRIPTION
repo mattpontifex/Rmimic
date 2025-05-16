@@ -1,8 +1,8 @@
 Package: Rmimic
 Type: Package
 Title: Rmimic: An R package that mimic outputs of popular commercial statistics software packages with effect sizes and confidence intervals
-Version: 1.0.5.4.2
-Date: 2025-03-27
+Version: 1.0.6.0.1
+Date: 2025-05-11
 Authors@R: person("Matthew B.", "Pontifex", email = "pontifex@msu.edu", role = c("aut", "cre"))
 Maintainer: Matthew B. Pontifex <pontifex@msu.edu>
 Description: An R package that mimic outputs of popular commercial statistics software packages.
@@ -15,6 +15,12 @@ Imports:
     lawstat,
     dplyr,
     ez,
+    MASS,
+    htmlTable,
+    miscTools,
+    purrr,
+    scales,
+    data.table,
     Rmisc,
     doBy,
     psychometric,
@@ -39,6 +45,7 @@ Imports:
     psych,
     gmodels,
     epitools,
+    progress,
     utils,
     performance,
     insight,
@@ -54,6 +61,7 @@ Imports:
     gamlss.dist,
     ltm,
     common,
+    mnonr,
     cli,
     questionr,
     tibble
