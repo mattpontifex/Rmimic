@@ -357,10 +357,10 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
     }
     
     # dirty but effective
-    newstats$Mean <- round(round(round(round(newstats$Mean, digits=4), digits=3), digits=2), digits=1)
-    newstats$Median <- round(round(round(round(newstats$Median, digits=4), digits=3), digits=2), digits=1)
-    newstats$SD <- round(round(round(round(newstats$SD, digits=4), digits=3), digits=2), digits=1)
-    newstats$SE <- round(round(round(round(newstats$SE, digits=4), digits=3), digits=2), digits=1)
+    newstats$Mean <- round(round(round(round(as.numeric(newstats$Mean), digits=4), digits=3), digits=2), digits=1)
+    newstats$Median <- round(round(round(round(as.numeric(newstats$Median), digits=4), digits=3), digits=2), digits=1)
+    newstats$SD <- round(round(round(round(as.numeric(newstats$SD), digits=4), digits=3), digits=2), digits=1)
+    newstats$SE <- round(round(round(round(as.numeric(newstats$SE), digits=4), digits=3), digits=2), digits=1)
     
     newstats$Mean <- sprintf('%.1f', newstats$Mean)
     newstats$Median <- sprintf('%.1f', newstats$Median)
