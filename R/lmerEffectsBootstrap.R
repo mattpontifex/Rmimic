@@ -229,6 +229,15 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
                                resample_max, round((resample_max/totalsample)*100, digits=1))
         }
         outstring <- sprintf('%s.', outstring)
+        
+        if (!is.null(subsample)) {
+          if (subsample < 1.0) {
+            outstring <- sprintf('%s For each simulation the the conditional distribution of the outcome variable was informed by', outstring)
+            outstring <- sprintf('%s a subsample of %.1f%% of the original data within each between subjects factor.', outstring, round((subsample)*100, digits=1))
+          }
+        }
+        
+        
       }
       
       results$messageout <- sprintf('%s %s', results$messageout, outstring)
