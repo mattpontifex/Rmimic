@@ -102,7 +102,7 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
       
       temptext <- sprintf('%s, <span style="font-style: italic;">p</span>', temptext)
       pullvalue <- Rmimic::fuzzyP(dataframeout$p[cR], studywiseAlpha=studywiseAlpha, html=TRUE)
-      if ((pullvalue$report == "0.000") | (pullvalue$report == "0.00") | (pullvalue$report == "0.0") | (pullvalue$report == "0")) {
+      if ((pullvalue$report == "0.000") | (pullvalue$report == "0.00") | (pullvalue$report == "0.0") | (pullvalue$report == "0") | (pullvalue$report == "0.")) {
         pullvalue$report <- "0.001"
         pullvalue$modifier <- "&lt;"
       }
@@ -261,7 +261,7 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
         temptext <- sprintf('%s &#61; %s, ', temptext, pullvalue)
       }
       temptext <- sprintf('%s<span style="font-style: italic;">p</span>', temptext)
-      if (outPvalue$report == "0.000") {
+      if ((outPvalue$report == "0.000") | (outPvalue$report == "0.00") | (outPvalue$report == "0.0") | (outPvalue$report == "0") | (outPvalue$report == "0.")) {
         outPvalue$report <- "0.001"
         outPvalue$modifier <- "&lt;"
       }
@@ -407,7 +407,7 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
             }
             
             outPvalue <- Rmimic::fuzzyP(as.numeric(workingdataout$p.value[cR]), studywiseAlpha=studywiseAlpha, html=TRUE)
-            if (outPvalue$report == "0.000") {
+            if ((outPvalue$report == "0.000") | (outPvalue$report == "0.00") | (outPvalue$report == "0.0") | (outPvalue$report == "0") | (outPvalue$report == "0.")) {
               outPvalue$report <- "0.001"
               outPvalue$modifier <- "&lt;"
             }
