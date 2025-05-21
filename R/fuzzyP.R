@@ -52,7 +52,11 @@ fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
       }
       interpret <- checkvalue # rounded to 2 decimal places (if alpha = 0.05)
       if ((interpret > 0) & (interpret < 1)) {
-        currentprecision <- nchar(strsplit(sub('0+$', '', as.character(checkvalue)), ".", fixed = TRUE)[[1]][[2]])
+        currentprecision <- tryCatch({
+          currentprecision <- nchar(strsplit(sub('0+$', '', as.character(checkvalue)), ".", fixed = TRUE)[[1]][[2]])
+        }, error = function(e) {
+          currentprecision <- 2
+        })
       } else {
         currentprecision <- 0
       }

@@ -16,7 +16,17 @@
 #'
 #' @export
 
-lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, subjectid=NULL, between=NULL, targetN=NULL) {
+lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, subjectid=NULL, between=NULL, targetN=NULL, subsample=NULL, subsampleapproach=NULL) {
+  
+  if (!is.null(subsampleapproach)) {
+    if (toupper(subsampleapproach) == toupper("subsamplecase")) {
+      subsampleapproach = "subsamplecase"
+    } else {
+      subsampleapproach = "subsampleparticipant"
+    }
+  } else {
+    subsampleapproach = "subsampleparticipant"
+  }
   
   tempdbs <- stats::model.frame(fit)
   if (length(between) > 0) {
@@ -47,6 +57,35 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
       targetN <- rep_len(targetN[1], length(uniqueBTWL))
     }
   }
+  
+
+  if (!is.null(subsample)) {
+    if (subsample < 1.0) {
+      if (subsampleapproach == 'subsamplecase') {
+        # knock out 
+        subnumberofsamples <- floor(nrow(tempdbs) * subsample)
+        smp <- dplyr::slice_sample(stats::model.frame(fit), n=subnumberofsamples, replace=FALSE)
+        fit <- update(fit, data=smp, evaluate = TRUE)
+      } else {
+        # subsample participants within each between subjects group
+        smp <- data.frame(matrix(NA, nrow=0, ncol=ncol(tempdbs)))
+        colnames(smp) <- colnames(tempdbs)
+        for (cBTW in 1:length(uniqueBTW)) {
+          btwsubtempdbs <- tempdbs[which(tempdbs$newvarnameforBTW == uniqueBTW[cBTW]),]
+          btwuniqueids <- unique(btwsubtempdbs[,subjectid])
+          btwuniqueidsL <- length(btwuniqueids)
+          subuniqeids <- floor(btwuniqueidsL * subsample)
+          selectsamples <- rep_len(TRUE, btwuniqueidsL)
+          selectsamples[sample(1:btwuniqueidsL, btwuniqueidsL-subuniqeids, replace=FALSE)] <- FALSE
+          includedids <- btwuniqueids[which(selectsamples)]
+          btwsmp <- btwsubtempdbs[which(btwsubtempdbs[,subjectid] %in% includedids),]
+          smp <- rbind(smp, btwsmp)
+        }
+        fit <- update(fit, data=smp, evaluate = TRUE)
+      }
+    }
+  }
+  
   # determine how many loops
   reps <- ceiling(max(targetN, na.rm=TRUE) / min(uniqueBTWL, na.rm=TRUE)) * 4 # increase so cases always need to be removed
   for (cReps in 1:reps) {
@@ -101,7 +140,7 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
   mainsmp$newvarnameforBTW <- NULL # remove it
   
   # rerun model on new data
-  newfit <- update(fit, data=mainsmp, evaluate = TRUE)
+  #newfit <- update(fit, data=mainsmp, evaluate = TRUE)
   
-  return(newfit)
+  return(mainsmp)
 }

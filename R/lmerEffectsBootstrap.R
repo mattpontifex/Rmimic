@@ -126,7 +126,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
       }
       if (method == "default") {
         # works the best as it is a wrapper around simulate
-        smp <- lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, inflation=inflation, method = "conditionaldistribution")
+        smp <- lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution")
       }
       
       # rerun model on new data

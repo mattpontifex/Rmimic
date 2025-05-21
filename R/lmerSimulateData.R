@@ -470,8 +470,7 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     }
     numberofsamples <- floor(inflation * uniqueBTWL)
     
-    newfit <- Rmimic::lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples)
-    mastersim_data <- stats::model.frame(newfit)
+    mastersim_data <- Rmimic::lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample)
     
   }
   return(mastersim_data)
