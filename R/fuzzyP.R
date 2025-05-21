@@ -58,12 +58,14 @@ fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
           currentprecision <- 2
         })
       } else {
-        currentprecision <- 0
+        currentprecision <- 1
       }
       if (currentprecision > 5) {
         currentprecision <- 5
       }
-      
+      if (currentprecision == 0) {
+        currentprecision <- 1
+      }
       if (datain > 0.99) {
         report <- "0.9"
         modifier <- equalityparameters[3]
