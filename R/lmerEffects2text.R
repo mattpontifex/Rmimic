@@ -102,7 +102,7 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
       
       temptext <- sprintf('%s, <span style="font-style: italic;">p</span>', temptext)
       pullvalue <- Rmimic::fuzzyP(dataframeout$p[cR], studywiseAlpha=studywiseAlpha, html=TRUE)
-      if (pullvalue$report == "0.000") {
+      if ((pullvalue$report == "0.000") | (pullvalue$report == "0.00") | (pullvalue$report == "0.0") | (pullvalue$report == "0")) {
         pullvalue$report <- "0.001"
         pullvalue$modifier <- "&lt;"
       }

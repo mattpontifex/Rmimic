@@ -123,7 +123,9 @@ fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
   }
   for (cInt in 1:3) {
     if (substr(report, nchar(report), nchar(report)) == "0") {
-      report <- substr(report, 1, nchar(report)-1)
+      if (substr(report, 1, nchar(report)-1) != '0.') {
+        report <- substr(report, 1, nchar(report)-1)
+      }
     }
   }
   
