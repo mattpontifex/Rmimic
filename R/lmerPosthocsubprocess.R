@@ -244,6 +244,27 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
             textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none')))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
             eval(parse(text=textcall))
             posthoctemptestfull <- as.data.frame(posthoctemptestfull)
+            
+            # rank deficiencies and when the estimability package identifies an interaction will result in NA being returned
+            checkindx <- which(is.na(posthoctemptestfull$estimate))
+            if (length(checkindx) > 0) {
+              # not all contrasts were returned
+              
+              # recompute a model with only the effect of interest
+              randomformula <- Reduce(paste, deparse(stats::formula(fit, random.only = TRUE)))
+              randomformula <- stringr::str_split(stringr::str_remove_all(randomformula, ' '), '~')[[1]]
+              fixedformula <- paste(effectofinterest, collapse=sprintf("*"))
+              if (factorsinvolvedL > 1) {
+                fixedformula <- paste(c(fixedformula, currentfactor), collapse=sprintf("*"))
+              }
+              textcall <- sprintf('fixfit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp))', dependentvariable[1], fixedformula, randomformula[2])
+              eval(parse(text=textcall))
+              
+              # now compute the pairwise contrast
+              textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fixfit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none')))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
+              eval(parse(text=textcall))
+              posthoctemptestfull <- as.data.frame(posthoctemptestfull)
+            }
           }, error = function(e) {
             posthoctemptestfull <- NULL
           })
