@@ -65,7 +65,6 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
         # knock out 
         subnumberofsamples <- floor(nrow(tempdbs) * subsample)
         smp <- dplyr::slice_sample(stats::model.frame(fit), n=subnumberofsamples, replace=FALSE)
-        fit <- update(fit, data=smp, evaluate = TRUE)
       } else {
         # subsample participants within each between subjects group
         smp <- data.frame(matrix(NA, nrow=0, ncol=ncol(tempdbs)))
@@ -81,9 +80,16 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
           btwsmp <- btwsubtempdbs[which(btwsubtempdbs[,subjectid] %in% includedids),]
           smp <- rbind(smp, btwsmp)
         }
-        
-        fit <- update(fit, data=smp, evaluate = TRUE)
       }
+      # Some piece of information is not getting updated - resulting in a downstream bug when we do posthoc analyses
+      #fit <- update(fit, data=smp, evaluate = TRUE)
+      
+      fixedformula <- Reduce(paste, deparse(stats::formula(fit, fixed.only = TRUE)))
+      fixedformula <- stringr::str_split(stringr::str_remove_all(fixedformula, ' '), '~')[[1]]
+      randomformula <- Reduce(paste, deparse(stats::formula(fit, random.only = TRUE)))
+      randomformula <- stringr::str_split(stringr::str_remove_all(randomformula, ' '), '~')[[1]]
+      textcall <- sprintf('fit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp))', dependentvariable[1], fixedformula[2], randomformula[2])
+      eval(parse(text=textcall))
     }
   }
   
@@ -144,6 +150,7 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
   #newfit <- update(fit, data=mainsmp, evaluate = TRUE)
   
   # i think the dataframe is carrying forward additional information that is causing a random bug to occur
+  # maybe not - but doesnt hurt to keep
   outputdatalist <- as.list(mainsmp)
   outputdataframe <- as.data.frame(outputdatalist)
   
