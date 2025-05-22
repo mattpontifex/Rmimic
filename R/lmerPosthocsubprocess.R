@@ -25,7 +25,7 @@
 #' @importFrom emmeans emmeans
 #' @importFrom doBy summaryBy
 #' @importFrom MBESS conf.limits.nct
-#' @importFrom stats cor.test formula model.frame
+#' @importFrom stats cor.test formula model.frame complete.cases
 #' @importFrom WRS2 pbcor
 #' 
 #' @export
@@ -383,7 +383,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 subouttable$C2mean[currentContrastLine] <- contrastdata$C2_mean
                 subouttable$C2sd[currentContrastLine] <- contrastdata$C2_sd
                 
-                outPvalue <- fuzzyP(contrastdata$p)
+                outPvalue <- fuzzyP(contrastdata$p, studywiseAlpha=studywiseAlpha)
                 subouttable$significant[currentContrastLine] <- outPvalue$significance
                 
                 # effect size
@@ -410,6 +410,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                       cortestdata[cRCorrtest, 2] <- subworkingdatabase[checkindx, dependentvariable[1]]
                     }
                   }
+                  cortestdata <- cortestdata[stats::complete.cases(cortestdata),]
                   
                   # stupid simple hack for insufficient finite observations
                   for (cRCorrtest in 1:4) {
@@ -419,12 +420,15 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                   }
                   correlationtestresult <- tryCatch({
                     correlationtestresult <- tryCatch({
-                      correlationtest <- stats::cor.test(cortestdata$C1, cortestdata$C2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
-                      correlationtestresult <- correlationtest$estimate[[1]]
-                      
                       # Percentage bend - robust to outlier
                       sR2 <- WRS2::pbcor(cortestdata$C1, cortestdata$C2, beta=0.2, ci=FALSE, alpha=1-confidenceinterval)
                       correlationtestresult <- sR2$cor
+                      if (is.na(correlationtestresult)) {
+                        # if fails to return a result, run standard correlation
+                        correlationtest <- stats::cor.test(cortestdata$C1, cortestdata$C2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
+                        correlationtestresult <- correlationtest$estimate[[1]]
+                      }
+                      correlationtestresult <- correlationtestresult
                     }, error = function(e) {
                       correlationtest <- stats::cor.test(cortestdata$C1, cortestdata$C2, alternative='two.sided', method = "pearson", conf.level = confidenceinterval, use = "complete.obs")
                       correlationtestresult <- correlationtest$estimate[[1]]
