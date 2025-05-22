@@ -81,6 +81,7 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
           btwsmp <- btwsubtempdbs[which(btwsubtempdbs[,subjectid] %in% includedids),]
           smp <- rbind(smp, btwsmp)
         }
+        
         fit <- update(fit, data=smp, evaluate = TRUE)
       }
     }
@@ -142,5 +143,9 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
   # rerun model on new data
   #newfit <- update(fit, data=mainsmp, evaluate = TRUE)
   
-  return(mainsmp)
+  # i think the dataframe is carrying forward additional information that is causing a random bug to occur
+  outputdatalist <- as.list(mainsmp)
+  outputdataframe <- as.data.frame(outputdatalist)
+  
+  return(outputdataframe)
 }
