@@ -100,32 +100,35 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
         }
       }
       
-      temptext <- sprintf('%s, <span style="font-style: italic;">p</span>', temptext)
-      pullvalue <- Rmimic::fuzzyP(dataframeout$p[cR], studywiseAlpha=studywiseAlpha, html=TRUE)
-      if ((pullvalue$report == "0.000") | (pullvalue$report == "0.00") | (pullvalue$report == "0.0") | (pullvalue$report == "0") | (pullvalue$report == "0.")) {
-        pullvalue$report <- "0.001"
-        pullvalue$modifier <- "&lt;"
-      }
-      temptext <- sprintf('%s %s %s', temptext, pullvalue$modifier, pullvalue$report)
       
-      if (significanceconfidence) {
-        if (!is.na(tempdbs$p.value.ci.lower[cR])) {
-          tempfsqlw <- sprintf("%.3f", round(as.numeric(tempdbs$p.value.ci.lower[cR]), digits = 3))
-          if ((tempfsqlw == "-0.000") | (tempfsqlw == "0.000") | (tempfsqlw == "-0.00") | (tempfsqlw == "0.00") | (tempfsqlw == "-0.0") | (tempfsqlw == "0.0")) {
-            #tempfsqlw <- "0.0"
-            #if (pullvalue$modifier == '&lt;') {
-              tempfsqlw <- "&lt; 0.001"
-            #}
+      if (!is.na(tempdbs$p.value[cR])) {
+        temptext <- sprintf('%s, <span style="font-style: italic;">p</span>', temptext)
+        pullvalue <- Rmimic::fuzzyP(dataframeout$p[cR], studywiseAlpha=studywiseAlpha, html=TRUE)
+        if ((pullvalue$report == "0.000") | (pullvalue$report == "0.00") | (pullvalue$report == "0.0") | (pullvalue$report == "0") | (pullvalue$report == "0.")) {
+          pullvalue$report <- "0.001"
+          pullvalue$modifier <- "&lt;"
+        }
+        temptext <- sprintf('%s %s %s', temptext, pullvalue$modifier, pullvalue$report)
+        
+        if (significanceconfidence) {
+          if (!is.na(tempdbs$p.value.ci.lower[cR])) {
+            tempfsqlw <- sprintf("%.3f", round(as.numeric(tempdbs$p.value.ci.lower[cR]), digits = 3))
+            if ((tempfsqlw == "-0.000") | (tempfsqlw == "0.000") | (tempfsqlw == "-0.00") | (tempfsqlw == "0.00") | (tempfsqlw == "-0.0") | (tempfsqlw == "0.0")) {
+              #tempfsqlw <- "0.0"
+              #if (pullvalue$modifier == '&lt;') {
+                tempfsqlw <- "&lt; 0.001"
+              #}
+            }
+            tempfsqup <- sprintf("%.3f", round(as.numeric(tempdbs$p.value.ci.upper[cR]), digits = 3))
+            if ((tempfsqup == "-0.000") | (tempfsqup == "0.000") | (tempfsqup == "-0.00") | (tempfsqup == "0.00") | (tempfsqup == "-0.0") | (tempfsqup == "0.0")) {
+              #tempfsqup <- "0.0"
+              #if (pullvalue$modifier == '&lt;') {
+                tempfsqup <- "&lt; 0.001"
+              #}
+            }
+            temptext <- sprintf('%s [%2.0f%% CI: %s to %s]', temptext,
+                                floor(confidenceinterval*100), tempfsqlw, tempfsqup)
           }
-          tempfsqup <- sprintf("%.3f", round(as.numeric(tempdbs$p.value.ci.upper[cR]), digits = 3))
-          if ((tempfsqup == "-0.000") | (tempfsqup == "0.000") | (tempfsqup == "-0.00") | (tempfsqup == "0.00") | (tempfsqup == "-0.0") | (tempfsqup == "0.0")) {
-            #tempfsqup <- "0.0"
-            #if (pullvalue$modifier == '&lt;') {
-              tempfsqup <- "&lt; 0.001"
-            #}
-          }
-          temptext <- sprintf('%s [%2.0f%% CI: %s to %s]', temptext,
-                              floor(confidenceinterval*100), tempfsqlw, tempfsqup)
         }
       }
       
@@ -137,36 +140,38 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
       dataframeout$fsquared[cR] <- tempfsq
       
       # effect size ci
-      tempfsqlw <- sprintf("%.2f", round(as.numeric(tempdbs$fsquared.ci.lower[cR]), digits = 2))
-      if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
-        tempfsqlw <- "0.0"
-      }
-      tempfsqup <- sprintf("%.2f", round(as.numeric(tempdbs$fsquared.ci.upper[cR]), digits = 2))
-      if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
-        tempfsqup <- "0.0"
-      }
-      if (abs(as.numeric(tempfsqlw)) > abs(as.numeric(tempfsqup))) {
-        # Negative
-        if (outPvalue$significance) {
-          if (tempfsqup == "0.0") {
-            # cant really be significant and zero - likely rounding issue
-            tempfsqup <- "-0.01"
+      if ((!is.na(tempdbs$fsquared.ci.lower[cR])) & (!is.na(tempdbs$fsquared.ci.upper[cR])))  {
+        tempfsqlw <- sprintf("%.2f", round(as.numeric(tempdbs$fsquared.ci.lower[cR]), digits = 2))
+        if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
+          tempfsqlw <- "0.0"
+        }
+        tempfsqup <- sprintf("%.2f", round(as.numeric(tempdbs$fsquared.ci.upper[cR]), digits = 2))
+        if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
+          tempfsqup <- "0.0"
+        }
+        if (abs(as.numeric(tempfsqlw)) > abs(as.numeric(tempfsqup))) {
+          # Negative
+          if (outPvalue$significance) {
+            if (tempfsqup == "0.0") {
+              # cant really be significant and zero - likely rounding issue
+              tempfsqup <- "-0.01"
+            }
+          }
+        } else {
+          # Positive
+          if (outPvalue$significance) {
+            if (tempfsqlw == "0.0") {
+              # cant really be significant and zero - likely rounding issue
+              tempfsqlw <- "0.01"
+            }
           }
         }
-      } else {
-        # Positive
-        if (outPvalue$significance) {
-          if (tempfsqlw == "0.0") {
-            # cant really be significant and zero - likely rounding issue
-            tempfsqlw <- "0.01"
-          }
-        }
-      }
-      dataframeout$fsquaredCI[cR] <- sprintf('%s, %s', tempfsqlw, tempfsqup)
+        dataframeout$fsquaredCI[cR] <- sprintf('%s, %s', tempfsqlw, tempfsqup)
       
-      temptext <- sprintf('%s, <span id="effectsizestatistic"><span style="font-style: italic;">f\u200a\u00b2</span> &#61; %s [%2.0f%% CI: %s to %s]</span>.', temptext,
+        temptext <- sprintf('%s, <span id="effectsizestatistic"><span style="font-style: italic;">f\u200a\u00b2</span> &#61; %s [%2.0f%% CI: %s to %s]</span>.', temptext,
                           dataframeout$fsquared[cR], floor(confidenceinterval*100),
                           tempfsqlw, tempfsqup)
+      }
       dataframeout$textoutput[cR] <- temptext
       
       
@@ -406,81 +411,89 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
               }
             }
             
-            outPvalue <- Rmimic::fuzzyP(as.numeric(workingdataout$p.value[cR]), studywiseAlpha=studywiseAlpha, html=TRUE)
-            if ((outPvalue$report == "0.000") | (outPvalue$report == "0.00") | (outPvalue$report == "0.0") | (outPvalue$report == "0") | (outPvalue$report == "0.")) {
-              outPvalue$report <- "0.001"
-              outPvalue$modifier <- "&lt;"
-            }
-            pullvalue <- sprintf('%s %s', outPvalue$modifier, outPvalue$report)
-            temptext <- sprintf('%s, <span style="font-style: italic;">p</span> %s', temptext, pullvalue)
-            
-            if (significanceconfidence) {
-              if (!is.na(workingdataout$p.conf.int.lower[cR])) {
-                tempfsqlw <- sprintf("%.3f", round(as.numeric(workingdataout$p.conf.int.lower[cR]), digits = 3))
-                if ((tempfsqlw == "-0.000") | (tempfsqlw == "0.000")) {
-                  tempfsqlw <- "0.0"
-                  if (outPvalue$modifier == '&lt;') {
-                    tempfsqlw <- "&lt; 0.001"
+            if (!is.na(workingdataout$p.value[cR])) {
+              outPvalue <- Rmimic::fuzzyP(as.numeric(workingdataout$p.value[cR]), studywiseAlpha=studywiseAlpha, html=TRUE)
+              if ((outPvalue$report == "0.000") | (outPvalue$report == "0.00") | (outPvalue$report == "0.0") | (outPvalue$report == "0") | (outPvalue$report == "0.")) {
+                outPvalue$report <- "0.001"
+                outPvalue$modifier <- "&lt;"
+              }
+              pullvalue <- sprintf('%s %s', outPvalue$modifier, outPvalue$report)
+              temptext <- sprintf('%s, <span style="font-style: italic;">p</span> %s', temptext, pullvalue)
+              
+              if (significanceconfidence) {
+                if (!is.na(workingdataout$p.conf.int.lower[cR])) {
+                  tempfsqlw <- sprintf("%.3f", round(as.numeric(workingdataout$p.conf.int.lower[cR]), digits = 3))
+                  if ((tempfsqlw == "-0.000") | (tempfsqlw == "0.000")) {
+                    tempfsqlw <- "0.0"
+                    if (outPvalue$modifier == '&lt;') {
+                      tempfsqlw <- "&lt; 0.001"
+                    }
                   }
-                }
-                tempfsqup <- sprintf("%.3f", round(as.numeric(workingdataout$p.conf.int.upper[cR]), digits = 3))
-                if ((tempfsqup == "-0.000") | (tempfsqup == "0.000")) {
-                  tempfsqup <- "0.0"
-                  if (outPvalue$modifier == '&lt;') {
-                    tempfsqup <- "&lt; 0.001"
+                  tempfsqup <- sprintf("%.3f", round(as.numeric(workingdataout$p.conf.int.upper[cR]), digits = 3))
+                  if ((tempfsqup == "-0.000") | (tempfsqup == "0.000")) {
+                    tempfsqup <- "0.0"
+                    if (outPvalue$modifier == '&lt;') {
+                      tempfsqup <- "&lt; 0.001"
+                    }
                   }
+                  temptext <- sprintf('%s [%2.0f%% CI: %s to %s]', temptext,
+                                      floor(confidenceinterval*100), tempfsqlw, tempfsqup)
                 }
-                temptext <- sprintf('%s [%2.0f%% CI: %s to %s]', temptext,
-                                    floor(confidenceinterval*100), tempfsqlw, tempfsqup)
               }
             }
             
             # effect size
-            if (!is.na(workingdataout$correlation[cR])) {
-              # within subjects
-              effectsizetext <- sprintf('<span style="font-style: italic;">d<sub class="sub">rm</sub></span>')
-            } else{
-              # between subjects
-              effectsizetext <- sprintf('<span style="font-style: italic;">d<sub class="sub">s</sub></span>')
-            }
-            
-            tempfsq <- sprintf("%.2f", workingdataout$effectsize[cR])
-            if ((tempfsq == "-0.00") | (tempfsq == "0.00")) {
-              tempfsq <- "&lt; 0.01"
-            } else {
-              tempfsq <- sprintf("&#61; %s", tempfsq)
-            }
-            
-            # effect size ci
-            tempfsqlw <- sprintf("%.2f", workingdataout$effectsize.conf.int.lower[cR])
-            if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
-              tempfsqlw <- "0.0"
-            }
-            tempfsqup <- sprintf("%.2f", workingdataout$effectsize.conf.int.upper[cR])
-            if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
-              tempfsqup <- "0.0"
-            }
-            if (abs(as.numeric(tempfsqlw)) > abs(as.numeric(tempfsqup))) {
-              # Negative
-              if (workingdataout$significant[cR]) {
-                if (tempfsqup == "0.0") {
-                  # cant really be significant and zero - likely rounding issue
-                  tempfsqup <- "-0.01"
-                }
+            if (!is.na(workingdataout$effectsize[cR])) {
+              if (!is.na(workingdataout$correlation[cR])) {
+                # within subjects
+                effectsizetext <- sprintf('<span style="font-style: italic;">d<sub class="sub">rm</sub></span>')
+              } else{
+                # between subjects
+                effectsizetext <- sprintf('<span style="font-style: italic;">d<sub class="sub">s</sub></span>')
               }
-            } else {
-              # Positive
-              if (workingdataout$significant[cR]) {
-                if (tempfsqlw == "0.0") {
-                  # cant really be significant and zero - likely rounding issue
-                  tempfsqlw <- "0.01"
-                }
+              
+              tempfsq <- sprintf("%.2f", workingdataout$effectsize[cR])
+              if ((tempfsq == "-0.00") | (tempfsq == "0.00")) {
+                tempfsq <- "&lt; 0.01"
+              } else {
+                tempfsq <- sprintf("&#61; %s", tempfsq)
               }
-            }
-            
-            effectsizetext <- sprintf('%s %s [%2.0f%% CI: %s to %s]', effectsizetext, tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
-            temptext <- sprintf('%s, <span id=\"effectsizestatistic\">%s</span>.', temptext, effectsizetext)
-            
+              
+              # effect size ci
+              if ((!is.na(workingdataout$effectsize.conf.int.lower[cR])) & (!is.na(workingdataout$effectsize.conf.int.upper[cR]))) {
+                tempfsqlw <- sprintf("%.2f", workingdataout$effectsize.conf.int.lower[cR])
+                if ((tempfsqlw == "-0.00") | (tempfsqlw == "0.00")) {
+                  tempfsqlw <- "0.0"
+                }
+                tempfsqup <- sprintf("%.2f", workingdataout$effectsize.conf.int.upper[cR])
+                if ((tempfsqup == "-0.00") | (tempfsqup == "0.00")) {
+                  tempfsqup <- "0.0"
+                }
+                if (abs(as.numeric(tempfsqlw)) > abs(as.numeric(tempfsqup))) {
+                  # Negative
+                  if (workingdataout$significant[cR]) {
+                    if (tempfsqup == "0.0") {
+                      # cant really be significant and zero - likely rounding issue
+                      tempfsqup <- "-0.01"
+                    }
+                  }
+                } else {
+                  # Positive
+                  if (workingdataout$significant[cR]) {
+                    if (tempfsqlw == "0.0") {
+                      # cant really be significant and zero - likely rounding issue
+                      tempfsqlw <- "0.01"
+                    }
+                  }
+                }
+              } else {
+                tempfsqlw <- 'NA'
+                tempfsqup <- 'NA'
+              }
+              
+              effectsizetext <- sprintf('%s %s [%2.0f%% CI: %s to %s]', effectsizetext, tempfsq, floor(confidenceinterval*100), tempfsqlw, tempfsqup)
+              temptext <- sprintf('%s, <span id=\"effectsizestatistic\">%s</span>.', temptext, effectsizetext)
+            }  
             workingdataout$textoutput[cR] <- sprintf('<span>%s</span>', temptext)
           } # for each row of workingdataout
           

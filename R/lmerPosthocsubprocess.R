@@ -265,6 +265,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               eval(parse(text=textcall))
               posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             }
+            posthoctemptestfull <- as.data.frame(posthoctemptestfull)
           }, error = function(e) {
             posthoctemptestfull <- NULL
           })

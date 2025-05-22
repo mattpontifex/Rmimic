@@ -40,6 +40,12 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
   if (!is.null(method)) {
     if (toupper(method) == toupper("covariance")) {
       method = "covariance"
+    } else if (toupper(method) == toupper("parametric")) {
+      method = "covariance"
+      parametric = TRUE
+    } else if (toupper(method) == toupper("nonparametric")) {
+      method = "covariance"
+      parametric = FALSE
     } else if (toupper(method) == toupper("conditionaldistribution")) {
       method = "conditionaldistribution"
     } else {
