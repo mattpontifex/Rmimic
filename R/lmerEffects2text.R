@@ -398,9 +398,17 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
                 dfpullvalue <- 'NA'
               } else {
                 if (is.numeric(dfpullvalue)) {
-                  dfpullvalue <- sprintf('%d', floor(dfpullvalue))
+                  dfpullvalue <- tryCatch({
+                    dfpullvalue <- sprintf('%d', floor(dfpullvalue))
+                  }, error = function(e) {
+                    dfpullvalue <- sprintf('%.0f', floor(dfpullvalue))
+                  })
                 } else {
-                  dfpullvalue <- sprintf('%d', suppressWarnings(suppressMessages(floor(as.numeric(dfpullvalue)))))
+                  dfpullvalue <- tryCatch({
+                    dfpullvalue <- sprintf('%d', suppressWarnings(suppressMessages(floor(as.numeric(dfpullvalue)))))
+                  }, error = function(e) {
+                    dfpullvalue <- sprintf('%.0f', suppressWarnings(suppressMessages(floor(as.numeric(dfpullvalue)))))
+                  })
                 }
               }
               temptext <- sprintf('%s <span style="font-style: italic;">t</span>(%s) %s', temptext, dfpullvalue, pullvalue)

@@ -106,7 +106,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
   if ('posthoc' %in% names(results)) {
     boolposthoc <- TRUE
     # rerun but force all posthocs
-    results <- lmerPosthoc(results, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, posthoccorrection='none', progressbar=FALSE)
+    results <- suppressWarnings(suppressMessages(lmerPosthoc(results, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, posthoccorrection='none', progressbar=FALSE)))
   }
   results$descriptives <- lmerEffects_simpledesc(results) # store these
   
@@ -171,7 +171,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
       
       # rerun model on new data
       newfit <- tryCatch({
-        newfit <- update(results$fit, data=smp, evaluate = TRUE)
+        newfit <- suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE)))
       }, error = function(e) {
         cat(sprintf('lmerEffectsBootstrap - model failure\n'))
         newfit <- NULL
@@ -179,10 +179,10 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
       
       if (!is.null(newfit)) {
         # extract information
-        newresults <- lmerEffects(newfit, dependentvariable=results$dependentvariable, subjectid=results$subjectid, within=results$within, df = results$df, confidenceinterval=results$confidenceinterval, studywiseAlpha=results$studywiseAlpha, suppresstext=TRUE, smp=smp)
+        newresults <- suppressWarnings(suppressMessages(lmerEffects(newfit, dependentvariable=results$dependentvariable, subjectid=results$subjectid, within=results$within, df = results$df, confidenceinterval=results$confidenceinterval, studywiseAlpha=results$studywiseAlpha, suppresstext=TRUE, smp=smp)))
         # compute posthoc if previously run - function should have stored the necessary information
         if (boolposthoc) {
-          newresults <- lmerPosthoc(newresults, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, calltype='subprocess', posthoccorrection='none')
+          newresults <- suppressWarnings(suppressMessages(lmerPosthoc(newresults, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, calltype='subprocess', posthoccorrection='none')))
         }
         newresults$descriptives <- lmerEffects_simpledesc(newresults) # store these
         
@@ -208,10 +208,15 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
     }
     
     # summarize
-    results <- resmergeboot(results, resstore, average=average, reporteddata=reporteddata)
+    results <- tryCatch({
+      results <- resmergeboot(results, resstore, average=average, reporteddata=reporteddata)
+    }, error = function(e) {
+      cat(sprintf('lmerEffectsBootstrap - summarize failure\n'))
+      results <- NULL
+    })
     
     # obtain text outputs
-    if (reporteddata == 'actual') {
+    if ((reporteddata == 'actual') | (reporteddata == 'raw')) {
       subtag <- 'raw'
     } else {
       if (method == "resample") {
@@ -220,7 +225,13 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
         subtag <- 'simulated'
       }
     }
-    results <- lmerEffects2text(results, subtag=subtag, testconfidence=TRUE, significanceconfidence=TRUE)
+    
+    results <- tryCatch({
+      results <- lmerEffects2text(results, subtag=subtag, testconfidence=TRUE, significanceconfidence=TRUE)
+    }, error = function(e) {
+      cat(sprintf('lmerEffectsBootstrap - lmerEffects2text failure\n'))
+      results <- NULL
+    })
     
     # see if posthoc adjustments are needed
     if (boolposthoc) {
