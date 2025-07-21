@@ -122,8 +122,11 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
   
   # i think the dataframe is carrying forward additional information that is causing a random bug to occur
   # maybe not - but doesnt hurt to keep
-  outputdatalist <- as.list(smp)
-  outputdataframe <- as.data.frame(outputdatalist)
+  outputdataframe <- data.frame(matrix(NA, nrow=nrow(smp), ncol=ncol(smp)))
+  colnames(outputdataframe) <- colnames(smp)
+  for (cC in 1:ncol(smp)) {
+    outputdataframe[,cC] <- unlist(smp[,cC])
+  }
   
   return(outputdataframe)
 }

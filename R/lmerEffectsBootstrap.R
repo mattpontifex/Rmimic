@@ -4,7 +4,7 @@
 #'
 #' @param results List containing output from lmerEffects
 #' @param repetitions Numeric entry indicating the number of repetitions to perform
-#' @param method String entry indicating the approach. Default simulates data by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters using the simulate function. Resample performs data resampling with replacement from the existing dataset. Parametric simulates data from a multivariate normal distribution using the MASS::mvrnorm function. Nonparametric simulates data from a multivariate nonnormal distribution using the mnonr::unonr function.
+#' @param method String entry indicating the approach. Default simulates data by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters using the simulate function. This keeps the data around the original mean and standard deviation, thus as sample size increases the effect size will also increase. Resample performs data resampling with replacement from the existing dataset. Parametric simulates data from a multivariate normal distribution using the MASS::mvrnorm function. This keeps the effect size the same as it allows the group variation to increase with larger samples. Nonparametric simulates data from a multivariate nonnormal distribution using the mnonr::unonr function. This keeps the effect size the same as it allows the group variation to increase with larger samples.
 #' @param subsample Numeric entry 0 to 1 indicating what percentage of the data to use for informing the parametric simulation. Ignored for method resample.
 #' @param inflation Numeric entry indicating how many times the original sample to simulate too. Ignored for method resample.
 #' @param resample_min Numeric entry indicating the minimum number of samples to include (with replacement). Default keeps the total samples the same. Ignored for method parametric.
@@ -35,7 +35,45 @@
 #'
 #' @export
 
-lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.8, inflation=1.0, method='default', average='median', reporteddata='simulated', progressbar=TRUE) {
+lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', average='median', reporteddata='simulated', progressbar=TRUE) {
+  
+  
+  resresearch <- function(resstore, target) {
+    # internal function to obtain target data from list
+    # returns a merged data frame if the target is a data frame
+    # returns a list if the target is a list
+    
+    outlist <- list()
+    outtable <- NULL
+    booldf <- FALSE
+    availablenames <- names(resstore)
+    for (cAN in 1:length(availablenames)) {
+      textcall <- sprintf('tempelement <- resstore$%s$%s', availablenames[cAN], target)
+      eval(parse(text=textcall))
+      
+      if (is.data.frame(tempelement)) {
+        booldf <- TRUE
+        if (is.null(outtable)) {
+          outtable <- tempelement
+        } else {
+          outtable <- rbind(outtable, tempelement)
+        }
+      } else {
+        # store it
+        textcall <- sprintf('outlist$repetition%d <- tempelement', cAN)
+        eval(parse(text=textcall))
+      }
+    }
+    if (booldf) {
+      return(outtable)
+    } else {
+      return(outlist)
+    }
+  }
+  
+  
+  
+  
   
   # debug
   debug <- FALSE
@@ -117,16 +155,18 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
         smp <- dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE)
       }
       if (method == "parametric") {
-        # generally works and looks right but effects come and go
-        smp <- lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance")
+        # Useful for growing the sample 
+        # keeps the exact same effect size by allowing the group variation to increase with larger samples
+        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance")
       }
       if (method == "nonparametric") {
-        # generally works but sometimes odd results
-        smp <- lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance")
+        # Useful for growing the sample 
+        # keeps the exact same effect size by allowing the group variation to increase with larger samples
+        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance")
       }
       if (method == "default") {
-        # works the best as it is a wrapper around simulate
-        smp <- lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution")
+        # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
+        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution")
       }
       
       # rerun model on new data
@@ -168,7 +208,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
     }
     
     # summarize
-    results <- resmerge(results, resstore, average=average, reporteddata=reporteddata)
+    results <- resmergeboot(results, resstore, average=average, reporteddata=reporteddata)
     
     # obtain text outputs
     if (reporteddata == 'actual') {
@@ -249,7 +289,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
 }
 
 
-resmerge <- function(results, resstore, average='median', reporteddata='actual') {
+resmergeboot <- function(results, resstore, average='median', reporteddata='actual') {
   
   newstats <- results$stats
   newstats$textoutput <- NA
@@ -350,6 +390,9 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
         textcall <- sprintf('distributiontable[csR,] <- c(%s)', tempdbs$DistributionData[csR])
         eval(parse(text=textcall))
       }
+      for (cC in 1:ncol(distributiontable)) {
+        distributiontable[,cC] <- as.numeric(distributiontable[,cC])
+      }
       if (average == 'median') {
         newstats$DistributionData[cR] <- paste(miscTools::colMedians(distributiontable, na.rm=TRUE), collapse = ",")
       } else {
@@ -401,6 +444,19 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
         newstats$significant <- NA
         for (cR in 1:nrow(newstats)) {
           tempdbs <- newresults[which(newresults$idtag == newstats$idtag[cR] & newresults$hold == newstats$hold[cR]),]
+          if (nrow(tempdbs) == 0) {
+            # data simulation likely swapped position of c1 and c2
+            tempvect <- stringr::str_split(newstats$idtag[cR], "-")[[1]]
+            newtempvect <- tempvect
+            newtempvect[length(tempvect)] <- tempvect[length(tempvect)-2]
+            newtempvect[length(tempvect)-2] <- tempvect[length(tempvect)]
+            newstats$idtag[cR] <- paste0(newtempvect, collapse="-")
+            c1name <- newstats$C1name
+            c2name <- newstats$C2name
+            newstats$C1name <- c2name
+            newstats$C2name <- c1name
+            tempdbs <- newresults[which(newresults$idtag == newstats$idtag[cR] & newresults$hold == newstats$hold[cR]),]
+          }
           colsofinterest <- c("df", "t.ratio", "p.value", "effectsize", "effectsize.conf.int.lower", "effectsize.conf.int.upper", "correlation")
           for (cC in 1:length(colsofinterest)) {
             if (average == 'median') {
@@ -415,26 +471,52 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
           newstats$significant[cR] <- outPvalue$significance
           
           # additional confidence intervals
-          civals <- suppressWarnings(Rmisc::CI(as.numeric(tempdbs$t.ratio), ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-          newstats$t.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
-          newstats$t.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
-          if (newstats$t.conf.int.lower[cR] > newstats$t.ratio[cR]) {
-            newstats$t.conf.int.lower[cR] <- newstats$t.ratio[cR]
-          }
-          if (newstats$t.conf.int.upper[cR] < newstats$t.ratio[cR]) {
-            newstats$t.conf.int.upper[cR] <- newstats$t.ratio[cR]
+          tempvectone <- as.numeric(tempdbs$t.ratio)
+          tempvectone <- tempvectone[which(!is.na(tempvectone))]
+          if (length(tempvectone) > 0) {
+            civals <- suppressWarnings(Rmisc::CI(tempvectone, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
+            newstats$t.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
+            newstats$t.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
+            if (!is.na(newstats$t.conf.int.lower[cR])) {
+              if (newstats$t.conf.int.lower[cR] > newstats$t.ratio[cR]) {
+                newstats$t.conf.int.lower[cR] <- newstats$t.ratio[cR]
+              }
+            }
+            if (!is.na(newstats$t.conf.int.upper[cR])) {
+              if (newstats$t.conf.int.upper[cR] < newstats$t.ratio[cR]) {
+                newstats$t.conf.int.upper[cR] <- newstats$t.ratio[cR]
+              }
+            }
+          } else {
+            newstats$t.conf.int.lower[cR] <- NA
+            newstats$t.conf.int.upper[cR] <- NA
           }
           
-          civals <- suppressWarnings(Rmisc::CI(as.numeric(tempdbs$p.value), ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-          newstats$p.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
-          if (newstats$p.conf.int.lower[cR] < 0) {newstats$p.conf.int.lower[cR] <- 0}
-          newstats$p.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
-          if (newstats$p.conf.int.upper[cR] < 0) {newstats$p.conf.int.upper[cR] <- 0}
-          if (newstats$p.conf.int.lower[cR] > newstats$p.value[cR]) {
-            newstats$p.conf.int.lower[cR] <- newstats$p.value[cR]
-          }
-          if (newstats$p.conf.int.upper[cR] < newstats$p.value[cR]) {
-            newstats$p.conf.int.upper[cR] <- newstats$p.value[cR]
+          tempvectone <- as.numeric(tempdbs$p.value)
+          tempvectone <- tempvectone[which(!is.na(tempvectone))]
+          if (length(tempvectone) > 0) {
+            civals <- suppressWarnings(Rmisc::CI(tempvectone, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
+            newstats$p.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
+            if (!is.na(newstats$p.conf.int.lower[cR])) {
+              if (newstats$p.conf.int.lower[cR] < 0) {newstats$p.conf.int.lower[cR] <- 0}
+            }
+            newstats$p.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
+            if (!is.na(newstats$p.conf.int.upper[cR])) {
+              if (newstats$p.conf.int.upper[cR] < 0) {newstats$p.conf.int.upper[cR] <- 0}
+            }
+            if (!is.na(newstats$p.conf.int.lower[cR])) {
+              if (newstats$p.conf.int.lower[cR] > newstats$p.value[cR]) {
+                newstats$p.conf.int.lower[cR] <- newstats$p.value[cR]
+              }
+            }
+            if (!is.na(newstats$p.conf.int.upper[cR])) {
+              if (newstats$p.conf.int.upper[cR] < newstats$p.value[cR]) {
+                newstats$p.conf.int.upper[cR] <- newstats$p.value[cR]
+              }
+            }
+          } else {
+            newstats$p.conf.int.lower[cR] <- NA
+            newstats$p.conf.int.upper[cR] <- NA
           }
           
           if (reporteddata != 'actual') {
@@ -452,7 +534,7 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
       } else {
         
         # recursive call
-        newstats <- resmerge(newstats, newresults, average=average, reporteddata=reporteddata)
+        newstats <- resmergeboot(newstats, newresults, average=average, reporteddata=reporteddata)
         
       }
       
@@ -468,37 +550,6 @@ resmerge <- function(results, resstore, average='median', reporteddata='actual')
 
 
 
-resresearch <- function(resstore, target) {
-  # internal function to obtain target data from list
-  # returns a merged data frame if the target is a data frame
-  # returns a list if the target is a list
-  
-  outlist <- list()
-  outtable <- NULL
-  booldf <- FALSE
-  availablenames <- names(resstore)
-  for (cAN in 1:length(availablenames)) {
-    textcall <- sprintf('tempelement <- resstore$%s$%s', availablenames[cAN], target)
-    eval(parse(text=textcall))
-    
-    if (is.data.frame(tempelement)) {
-      booldf <- TRUE
-      if (is.null(outtable)) {
-        outtable <- tempelement
-      } else {
-        outtable <- rbind(outtable, tempelement)
-      }
-    } else {
-      # store it
-      textcall <- sprintf('outlist$repetition%d <- tempelement', cAN)
-      eval(parse(text=textcall))
-    }
-  }
-  if (booldf) {
-    return(outtable)
-  } else {
-    return(outlist)
-  }
-}
+
 
 

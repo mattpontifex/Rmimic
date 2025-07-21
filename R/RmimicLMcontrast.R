@@ -420,7 +420,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
   
   # interpret modelcheck
   for (cR in 1:nrow(res$modelcheck)) {
-    outPvalue <- Rmimic::fuzzyP(as.numeric(res$modelcheck$p.value[cR]))
+    outPvalue <- fuzzyP(as.numeric(res$modelcheck$p.value[cR]))
     if (outPvalue$interpret <= studywiseAlpha) {
       res$modelcheck$decision[cR] <- 'Unacceptable.'
     } else {
@@ -466,7 +466,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
     }
     temptext <- sprintf('%s%s, p', temptext, pullvalue)
     # P val
-    outPvalue <- Rmimic::fuzzyP(as.numeric(res$changestats$p.value[cR]))
+    outPvalue <- fuzzyP(as.numeric(res$changestats$p.value[cR]))
     temptext <- sprintf('%s %s %s,', temptext, outPvalue$modifier, outPvalue$report)
     rm(outPvalue)
     # effect size
@@ -561,7 +561,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outstring = sprintf("%s, %s", outstring, pullvalue)
       outputdataframe$DFn[cR] <- outstring
       
-      outPvalue <- Rmimic::fuzzyP(as.double(outputdataframe[cR,5]))
+      outPvalue <- fuzzyP(as.double(outputdataframe[cR,5]))
       if (outPvalue$modifier == "=") {
         pullvalue <- outPvalue$report
       } else {
@@ -600,7 +600,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       names(outputdataframe) <- c('Model', 'Using', 'df', 'Chisq', 'p', 'decision')
       outputdataframe[,4] <- sprintf('%0.1f', round(outputdataframe[,4], digits=1))
       for (cR in 1:nrow(outputdataframe)) {
-        outPvalue <- Rmimic::fuzzyP(as.double(outputdataframe[cR,5]))
+        outPvalue <- fuzzyP(as.double(outputdataframe[cR,5]))
         if (outPvalue$modifier == "=") {
           pullvalue <- outPvalue$report
         } else {
@@ -666,7 +666,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outstring = sprintf("%s to %s]", outstring, pullvalue)
       outputdataframe$fsquared[cR] <- outstring
       
-      outPvalue <- Rmimic::fuzzyP(as.double(outputdataframe$p.value[cR]))
+      outPvalue <- fuzzyP(as.double(outputdataframe$p.value[cR]))
       if (outPvalue$modifier == "=") {
         pullvalue <- outPvalue$report
       } else {
@@ -715,7 +715,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outstring = sprintf("%s to %s]", outstring, pullvalue)
       outputdataframe$B[cR] <- outstring
       
-      outPvalue <- Rmimic::fuzzyP(as.double(outputdataframe$p.value[cR]))
+      outPvalue <- fuzzyP(as.double(outputdataframe$p.value[cR]))
       if (outPvalue$modifier == "=") {
         pullvalue <- outPvalue$report
       } else {
@@ -787,7 +787,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
       outtextstring <- sprintf("%s the inclusion of a constant", outtextstring)
     }    
       
-    temppval <- Rmimic::fuzzyP(as.numeric(res$stats$p.value[1]))
+    temppval <- fuzzyP(as.numeric(res$stats$p.value[1]))
     outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
     if (temppval$interpret <= studywiseAlpha) {
       outtextstring <- sprintf("%s explained a statistically significant", outtextstring)
@@ -850,7 +850,7 @@ RmimicLMcontrast <- function(fit, altfit, confidenceinterval=0.95, studywiseAlph
         }
       }
       
-      temppval <- Rmimic::fuzzyP(as.numeric(res$changestats$p.value[2]))
+      temppval <- fuzzyP(as.numeric(res$changestats$p.value[2]))
       outval <- paste(temppval$modifier,temppval$interpret,sep = " ")
       if (temppval$interpret <= studywiseAlpha) {
         outtextstring <- sprintf("%s explained a statistically significant", outtextstring)

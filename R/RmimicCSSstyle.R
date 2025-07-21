@@ -40,7 +40,7 @@ RmimicCSSstyle <- function() {
   }
   
   html {
-    scroll-padding-top: 75px; <-- replace with height of your position: fixed navbar
+    scroll-padding-top: 75px; 
   }
 
   body {

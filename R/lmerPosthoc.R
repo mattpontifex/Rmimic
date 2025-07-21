@@ -230,7 +230,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
       if (!('significance' %in% colnames(workingdbs))) {
         workingdbs$significance <- NA
         for (cRsig in 1:nrow(workingdbs)) {
-          workingdbs$significance[cRsig] <- Rmimic::fuzzyP(workingdbs$p.value[cRsig], studywiseAlpha)$significance
+          workingdbs$significance[cRsig] <- fuzzyP(workingdbs$p.value[cRsig], studywiseAlpha)$significance
         }
       }
       
@@ -268,7 +268,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
         # see if the effect is with a covariate
         factorsinvolved <- unlist(strsplit(as.character(workingdbs$Effect[currentAnovaLine]),"[:]"))
         if (!is.null(covariates)) {
-          if (covariates %in% factorsinvolved) {
+          if (any(covariates %in% factorsinvolved)) {
             # if the interaction is with a covariate then skip
             if (length(factorsinvolved) > 1) {
               workingdbs$decompose[currentAnovaLine] <- FALSE
@@ -304,7 +304,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
         
         if (workingdbs$decompose[currentAnovaLine]) {
           # obtain breakdowns
-          tempresult <- Rmimic::lmerPosthocsubprocess(results$fit, results$dependentvariable, results$subjectid, workingdbs$Effect[currentAnovaLine], within=within, between=between, covariates=covariates, planned=subplanned, df=emmeansdf, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit, progressbar=progressbar)
+          tempresult <- lmerPosthocsubprocess(results$fit, results$dependentvariable, results$subjectid, workingdbs$Effect[currentAnovaLine], within=within, between=between, covariates=covariates, planned=subplanned, df=emmeansdf, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit, progressbar=progressbar)
           
           if (length(names(tempresult)) > 0) {
             # store results
@@ -332,7 +332,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     # perform posthoc correction
     if (!is.null(posthoccorrection)) {
       if ((tolower(posthoccorrection) != 'false') | (tolower(posthoccorrection) != 'none')) {
-        results <- Rmimic::lmerPosthocCorrection(results, method=posthoccorrection, studywiseAlpha=studywiseAlpha, FDRC=0.05)
+        results <- lmerPosthocCorrection(results, method=posthoccorrection, studywiseAlpha=studywiseAlpha, FDRC=0.05)
       }
     }
   }

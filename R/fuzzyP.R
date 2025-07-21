@@ -122,9 +122,11 @@ fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
     significance <- TRUE
   }
   for (cInt in 1:3) {
-    if (substr(report, nchar(report), nchar(report)) == "0") {
-      if (substr(report, 1, nchar(report)-1) != '0.') {
-        report <- substr(report, 1, nchar(report)-1)
+    if (!is.na(report)) {
+      if (substr(report, nchar(report), nchar(report)) == "0") {
+        if (substr(report, 1, nchar(report)-1) != '0.') {
+          report <- substr(report, 1, nchar(report)-1)
+        }
       }
     }
   }
@@ -135,6 +137,18 @@ fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
   res$exact <- datain
   res$modifier <- modifier
   res$significance <- significance
+  
+  # hold over data checks
+  if (!is.na(res$report)) {
+    if ((res$report == "0.000") | (res$report == "0.00") | (res$report == "0.0") | (res$report == "0") | (res$report == "0.")) {
+      res$report <- "0.001"
+      res$modifier <- equalityparameters[1]
+    }
+    if ((res$report == '1') | (res$report == '1.') | (res$report == '1.0') | (res$report == '1.00') | (res$report == '1.000')) {
+      res$report <- "0.99"
+      res$modifier <- equalityparameters[3]
+    }
+  }
   
   return(res)
 }

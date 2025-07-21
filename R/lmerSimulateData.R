@@ -49,10 +49,10 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     } else if (toupper(method) == toupper("conditionaldistribution")) {
       method = "conditionaldistribution"
     } else {
-      method = "conditionaldistribution"
+      method = "covariance"
     }
   } else {
-    method = "conditionaldistribution"
+    method = "covariance"
   }
   
   if (method == "covariance") {
@@ -199,6 +199,8 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
         # stupid simple hack for insufficient observations
         outmatrix <- rbind(rbind(outmatrix, outmatrix), outmatrix)
         tempsigma <- stats::cov(outmatrix, use="pairwise.complete.obs")
+        
+        
       } else {
         tempmeans <- mean(outmatrix, na.rm=TRUE)
         # stupid simple hack for insufficient observations
@@ -476,7 +478,7 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     }
     numberofsamples <- floor(inflation * uniqueBTWL)
     
-    mastersim_data <- Rmimic::lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample)
+    mastersim_data <- lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample)
     
   }
   return(mastersim_data)
