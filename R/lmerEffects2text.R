@@ -390,10 +390,20 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
             } else {
               pullvalue <- sprintf('&#61; %s', pullvalue)
             }
-            if (is.infinite(workingdataout$df[cR])) {
+            if (suppressWarnings(suppressMessages(is.infinite(workingdataout$df[cR])))) {
               temptext <- sprintf('%s <span style="font-style: italic;">t</span>(&infin;) %s', temptext, pullvalue)
             } else {
-              temptext <- sprintf('%s <span style="font-style: italic;">t</span>(%d) %s', temptext, floor(workingdataout$df[cR]), pullvalue)
+              dfpullvalue <- workingdataout$df[cR]
+              if (is.na(dfpullvalue)) {
+                dfpullvalue <- 'NA'
+              } else {
+                if (is.numeric(dfpullvalue)) {
+                  dfpullvalue <- sprintf('%d', floor(dfpullvalue))
+                } else {
+                  dfpullvalue <- sprintf('%d', suppressWarnings(suppressMessages(floor(as.numeric(dfpullvalue)))))
+                }
+              }
+              temptext <- sprintf('%s <span style="font-style: italic;">t</span>(%s) %s', temptext, dfpullvalue, pullvalue)
             }
             
             if (testconfidence) {
