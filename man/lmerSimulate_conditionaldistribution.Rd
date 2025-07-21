@@ -9,7 +9,8 @@ lmerSimulate_conditionaldistribution(
   dependentvariable = NULL,
   subjectid = NULL,
   between = NULL,
-  targetN = NULL
+  targetN = NULL,
+  subsample = NULL
 )
 }
 \arguments{

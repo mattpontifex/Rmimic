@@ -9,7 +9,7 @@ lmerEffectsBootstrap(
   repetitions,
   resample_min = NULL,
   resample_max = NULL,
-  subsample = 0.8,
+  subsample = 0.96,
   inflation = 1,
   method = "default",
   average = "median",
@@ -30,7 +30,7 @@ lmerEffectsBootstrap(
 
 \item{inflation}{Numeric entry indicating how many times the original sample to simulate too. Ignored for method resample.}
 
-\item{method}{String entry indicating the approach. Default simulates data by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters using the simulate function. Resample performs data resampling with replacement from the existing dataset. Parametric simulates data from a multivariate normal distribution using the MASS::mvrnorm function. Nonparametric simulates data from a multivariate nonnormal distribution using the mnonr::unonr function.}
+\item{method}{String entry indicating the approach. Default simulates data by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters using the simulate function. This keeps the data around the original mean and standard deviation, thus as sample size increases the effect size will also increase. Resample performs data resampling with replacement from the existing dataset. Parametric simulates data from a multivariate normal distribution using the MASS::mvrnorm function. This keeps the effect size the same as it allows the group variation to increase with larger samples. Nonparametric simulates data from a multivariate nonnormal distribution using the mnonr::unonr function. This keeps the effect size the same as it allows the group variation to increase with larger samples.}
 
 \item{average}{text parameter to indicate how the results should be collapsed. Default is using the median. Other options is mean.}
 
