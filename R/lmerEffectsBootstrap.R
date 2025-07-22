@@ -21,6 +21,7 @@
 #' @importFrom Rmisc CI
 #' @importFrom miscTools colMedians
 #' @importFrom stats model.frame
+#' @importFrom progressor progressor
 #' 
 #' @examples
 #' \dontrun{
@@ -124,8 +125,13 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
   listofoutputsfromlmerEffects <- c('fit', 'stats', 'randomstats', 'rsquared')
   if (all(listofoutputsfromlmerEffects %in% names(results))) {
     
+    # Enable progress handler
+    library(progressr)
+    handlers("txtprogressbar")  
+    p <- progressor(along = 1:repetitions)
+    
     # kick simulations to a subprocess for multiprocessing
-    resstore <- lmerEffectsBootstrap_subprocess(results, repetitions, resample_min, resample_max, subsample, inflation, method, boolposthoc)
+    resstore <- lmerEffectsBootstrap_subprocess(results, repetitions, resample_min, resample_max, subsample, inflation, method, boolposthoc, p)
     
     # summarize
     results2 <- tryCatch({

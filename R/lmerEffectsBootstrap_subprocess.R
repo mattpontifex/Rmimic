@@ -18,12 +18,12 @@
 #' @importFrom future plan
 #' @importFrom future.apply future_lapply
 #' @importFrom dplyr slice_sample
-#' @importFrom progressor with_progress progressor
+#' @importFrom progressor with_progress
 #' @importFrom stats runif model.frame
 #'
 #' @export
 
-lmerEffectsBootstrap_subprocess <- function(results, repetitions, resample_min, resample_max, subsample, inflation, method, boolposthoc) {
+lmerEffectsBootstrap_subprocess <- function(results, repetitions, resample_min, resample_max, subsample, inflation, method, boolposthoc, p) {
   
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method, boolposthoc) {
@@ -90,19 +90,15 @@ lmerEffectsBootstrap_subprocess <- function(results, repetitions, resample_min, 
   
   library(future)
   library(future.apply)
-  library(progressr)
+  handlers(global = TRUE)
   
   # Set up parallel plan
   plan(multisession, workers = availableCores() - 1)
-  
-  # Enable progress handler
-  handlers("txtprogressbar")  
   
   resstore <- list()
   
   # Wrap the call in `with_progress()`
   resstore <- with_progress({
-    p <- progressor(along = 1:repetitions)
     future_lapply(1:repetitions, function(i) {
       result <- run_one(results, resample_min, resample_max, subsample, inflation, method, boolposthoc)
       p()
