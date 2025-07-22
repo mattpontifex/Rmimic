@@ -18,11 +18,9 @@
 #'
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 1, 2025
 #'
-#' @importFrom dplyr slice_sample
-#' @importFrom progress progress_bar
 #' @importFrom Rmisc CI
 #' @importFrom miscTools colMedians
-#' @importFrom stats runif model.frame
+#' @importFrom stats model.frame
 #' 
 #' @examples
 #' \dontrun{
@@ -35,8 +33,7 @@
 #'
 #' @export
 
-lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', average='median', reporteddata='simulated', progressbar=TRUE) {
-  
+lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', average='median', reporteddata='simulated') {
   
   resresearch <- function(resstore, target) {
     # internal function to obtain target data from list
@@ -46,9 +43,8 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
     outlist <- list()
     outtable <- NULL
     booldf <- FALSE
-    availablenames <- names(resstore)
-    for (cAN in 1:length(availablenames)) {
-      textcall <- sprintf('tempelement <- resstore$%s$%s', availablenames[cAN], target)
+    for (cAN in 1:length(resstore)) {
+      textcall <- sprintf('tempelement <- resstore[[%d]]$%s', cAN, target)
       eval(parse(text=textcall))
       
       if (is.data.frame(tempelement)) {
@@ -70,8 +66,6 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
       return(outlist)
     }
   }
-  
-  
   
   
   
@@ -106,7 +100,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
   if ('posthoc' %in% names(results)) {
     boolposthoc <- TRUE
     # rerun but force all posthocs
-    results <- suppressWarnings(suppressMessages(lmerPosthoc(results, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, posthoccorrection='none', progressbar=FALSE)))
+    results <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(results, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, posthoccorrection='none', progressbar=FALSE))))
   }
   results$descriptives <- lmerEffects_simpledesc(results) # store these
   
@@ -130,94 +124,18 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
   listofoutputsfromlmerEffects <- c('fit', 'stats', 'randomstats', 'rsquared')
   if (all(listofoutputsfromlmerEffects %in% names(results))) {
     
-    if (progressbar) {
-      # establish progress
-      #cat(sprintf('lmerEffectsBootstrap() beginning processing '))
-      countticks <- 0
-      stepcounts <- 10
-      checkins <- floor(seq(0, repetitions, length.out = stepcounts+1))
-      pb <- progress::progress_bar$new(total = stepcounts,
-                                       format = " lmerEffectsBootstrap() processing [:bar] :percent eta: :eta",
-                                       clear = TRUE, width= 120)
-      pb$tick(0)
-    }
-    
-    workingres <- NULL
-    
-    resstore <- list()
-    
-    # loop through analysis
-    for (cN in 1:repetitions) {
-      # populates dataset subsampled from the original sample with replacement
-      if (method == "resample") {
-        # Determine how large a random sample
-        numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
-        smp <- dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE)
-      }
-      if (method == "parametric") {
-        # Useful for growing the sample 
-        # keeps the exact same effect size by allowing the group variation to increase with larger samples
-        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance")
-      }
-      if (method == "nonparametric") {
-        # Useful for growing the sample 
-        # keeps the exact same effect size by allowing the group variation to increase with larger samples
-        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance")
-      }
-      if (method == "default") {
-        # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
-        smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution")
-      }
-      
-      # rerun model on new data
-      newfit <- tryCatch({
-        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
-      }, error = function(e) {
-        cat(sprintf('lmerEffectsBootstrap - model failure\n'))
-        newfit <- NULL
-      })
-      
-      if (!is.null(newfit)) {
-        # extract information
-        newresults <- suppressWarnings(suppressMessages(lmerEffects(newfit, dependentvariable=results$dependentvariable, subjectid=results$subjectid, within=results$within, df = results$df, confidenceinterval=results$confidenceinterval, studywiseAlpha=results$studywiseAlpha, suppresstext=TRUE, smp=smp)))
-        # compute posthoc if previously run - function should have stored the necessary information
-        if (boolposthoc) {
-          newresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(newresults, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, calltype='subprocess', posthoccorrection='none'))))
-        }
-        newresults$descriptives <- lmerEffects_simpledesc(newresults) # store these
-        
-        # remove model
-        newresults$fit <- NULL
-        
-        # store it
-        textcall <- sprintf('resstore$repetition%d <- newresults', cN)
-        eval(parse(text=textcall))
-        
-      }
-      if (progressbar) {
-        # update progress
-        if (cN %in% checkins) {
-        #  cat(sprintf('.'))
-          pb$tick()
-          countticks <- countticks + 1
-        }
-      }
-    }
-    if (progressbar) {
-      #cat(sprintf('\n'))
-      if (countticks < stepcounts) {
-        pb$tick(stepcounts)
-      }
-    }
+    # kick simulations to a subprocess for multiprocessing
+    resstore <- lmerEffectsBootstrap_subprocess(results, repetitions, resample_min, resample_max, subsample, inflation, method, boolposthoc)
     
     # summarize
-    results <- tryCatch({
-      results <- resmergeboot(results, resstore, average=average, reporteddata=reporteddata)
+    results2 <- tryCatch({
+      results2 <- resmergeboot(results, resstore, average=average, reporteddata=reporteddata)
     }, error = function(e) {
       cat(sprintf('lmerEffectsBootstrap - summarize failure\n'))
-      results <- NULL
+      results2 <- NULL
     })
     
+    results <- results2
     # obtain text outputs
     if ((reporteddata == 'actual') | (reporteddata == 'raw')) {
       subtag <- 'raw'
