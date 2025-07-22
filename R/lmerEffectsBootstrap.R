@@ -171,7 +171,7 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
       
       # rerun model on new data
       newfit <- tryCatch({
-        newfit <- suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE)))
+        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
       }, error = function(e) {
         cat(sprintf('lmerEffectsBootstrap - model failure\n'))
         newfit <- NULL
@@ -182,9 +182,12 @@ lmerEffectsBootstrap <- function(results, repetitions, resample_min=NULL, resamp
         newresults <- suppressWarnings(suppressMessages(lmerEffects(newfit, dependentvariable=results$dependentvariable, subjectid=results$subjectid, within=results$within, df = results$df, confidenceinterval=results$confidenceinterval, studywiseAlpha=results$studywiseAlpha, suppresstext=TRUE, smp=smp)))
         # compute posthoc if previously run - function should have stored the necessary information
         if (boolposthoc) {
-          newresults <- suppressWarnings(suppressMessages(lmerPosthoc(newresults, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, calltype='subprocess', posthoccorrection='none')))
+          newresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(newresults, between=results$between, within=results$within, covariates=results$covariates, planned=results$stats$Effect, posthoclimit=results$posthoclimit, calltype='subprocess', posthoccorrection='none'))))
         }
         newresults$descriptives <- lmerEffects_simpledesc(newresults) # store these
+        
+        # remove model
+        newresults$fit <- NULL
         
         # store it
         textcall <- sprintf('resstore$repetition%d <- newresults', cN)
