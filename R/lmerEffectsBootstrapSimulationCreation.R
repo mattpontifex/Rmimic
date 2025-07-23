@@ -85,9 +85,9 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   
-  library(future)
-  library(future.apply)
-  library(progressr)
+  invisible(suppressWarnings(library(future)))
+  invisible(suppressWarnings(library(future.apply)))
+  invisible(suppressWarnings(library(progressr)))
   
   
   
