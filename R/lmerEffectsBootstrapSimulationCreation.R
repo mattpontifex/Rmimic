@@ -173,14 +173,6 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   # check final result
   Sys.sleep(1) # to make sure files are written
   
-  file_list <- list.files(tmpdir, pattern = "^result_.*\\.RData$")
-  if (length(file_list) > max_files) {
-    # created too many files
-    numtoremove <- length(file_list) - max_files
-    files_to_delete <- file.path(tmpdir, sample(file_list, numtoremove, replace=FALSE))
-    unlink(files_to_delete)
-  }
-  
   # include some tags to pass along information
   results$futuretag <- list()
   results$futuretag$repetitions <- max_files

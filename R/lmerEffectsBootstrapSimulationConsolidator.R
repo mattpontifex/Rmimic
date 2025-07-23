@@ -44,10 +44,14 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   
   # load data from files
   file_list <- list.files(results$futuretag$tmpdir, pattern = "^result_.*\\.RData$")
-  resstore <- vector("list", length(file_list))
+  file_listL <- length(file_list)
+  if (file_listL > results$futuretag$repetitions) {
+    file_listL <- results$futuretag$repetitions
+  }
+  resstore <- vector("list", file_listL)
   resstore <- with_progress({
-    p <- progressor(along = 1:length(file_list))
-    for (i in seq_along(file_list)) {
+    p <- progressor(along = 1:file_listL)
+    for (i in 1:file_listL) {
       load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
       resstore[[i]] <- result
       p()
