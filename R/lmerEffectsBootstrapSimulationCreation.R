@@ -145,8 +145,8 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   # Enable progress handler
   #handlers("txtprogressbar") 
-  progressr::handlers(list(
-    progressr::handler_progress(
+  handlers(list(
+    handler_progress(
       format   = "lmerEffectsBootstrapSimulationCreation() [:bar] :percent :eta",
       width    = 120,
       complete = "="
@@ -154,10 +154,10 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   ))
   
   # Loop and track
-  captureout <- progressr::with_progress({
-    p <- progressr::progressor(along = 1:repetitions)
+  captureout <- with_progress({
+    p <- progressor(along = 1:repetitions)
     
-    future.apply::future_lapply(1:repetitions, function(i) {
+    future_lapply(1:repetitions, function(i) {
       # Check how many result files exist
       file_list <- list.files(tmpdir, pattern = "^result_.*\\.RData$")
       
