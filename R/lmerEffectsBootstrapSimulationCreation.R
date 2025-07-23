@@ -35,32 +35,47 @@
 
 lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', tmpdir=NULL) {
   
+  quietly_run <- function(expr) {
+    invisible(
+      suppressPackageStartupMessages(
+        suppressWarnings(
+          suppressMessages(
+            capture.output(
+              expr,
+              file = NULL
+            )
+          )
+        )
+      )
+    )
+  }
+  
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method, boolposthoc) {
     # populates dataset subsampled from the original sample with replacement
     if (method == "resample") {
       # Determine how large a random sample
       numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
-      smp <- invisible(suppressWarnings(suppressMessages(dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE))))
+      smp <- quietly_run(dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE))
     }
     if (method == "parametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
+      smp <- quietly_run(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))
     }
     if (method == "nonparametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
+      smp <- quietly_run(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))
     }
     if (method == "default") {
       # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
+      smp <- quietly_run(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))
     }
     
     # rerun model on new data
     newfit <- tryCatch({
-      newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
+      newfit <- quietly_run(update(results$fit, data=smp, evaluate = TRUE))
     }, error = function(e) {
       cat(sprintf('lmerEffectsBootstrap - model failure\n'))
       newfit <- NULL
