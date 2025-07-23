@@ -34,6 +34,7 @@
 #' @export
 
 lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', tmpdir=NULL) {
+  options(warn = -1)
   
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method, boolposthoc) {

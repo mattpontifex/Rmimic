@@ -14,6 +14,7 @@
 #' @importFrom Rmisc CI
 #' @importFrom miscTools colMedians
 #' @importFrom stats model.frame
+#' @importFrom progressr progressor with_progress
 #' 
 #' @examples
 #' \dontrun{
@@ -29,13 +30,29 @@
 
 lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median', reporteddata='simulated') {
   
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
+  
+  # Enable progress handler
+  #handlers("txtprogressbar") 
+  handlers(list(
+    handler_progress(
+      format   = "lmerEffectsBootstrapSimulationConsolidator() [:bar] :percent :eta",
+      width    = 120,
+      complete = "="
+    )
+  ))
+  
   # load data from files
   file_list <- list.files(results$futuretag$tmpdir, pattern = "^result_.*\\.RData$")
   resstore <- vector("list", length(file_list))
-  for (i in seq_along(file_list)) {
-    load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
-    resstore[[i]] <- result
-  }
+  resstore <- with_progress({
+    p <- progressor(along = 1:length(file_list))
+    for (i in seq_along(file_list)) {
+      load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
+      resstore[[i]] <- result
+      p()
+    }
+  })
 
   Sys.sleep(1) # to make sure files are read in
   
