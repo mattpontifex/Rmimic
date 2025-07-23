@@ -37,13 +37,11 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   quietly_run <- function(expr) {
     invisible(
-      suppressPackageStartupMessages(
-        suppressWarnings(
-          suppressMessages(
-            capture.output(
-              expr,
-              file = NULL
-            )
+      suppressWarnings(
+        suppressMessages(
+          capture.output(
+            expr,
+            file = NULL
           )
         )
       )
