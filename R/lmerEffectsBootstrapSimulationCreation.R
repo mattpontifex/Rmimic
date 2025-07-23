@@ -17,7 +17,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, July 23, 2025
 #'
 #' @importFrom stats model.frame runif
-#' @importFrom progressor progressor with_progress
+#' @importFrom progressr progressor with_progress
 #' @importFrom future plan
 #' @importFrom future.apply future_lapply
 #' @importFrom dplyr slice_sample
@@ -41,21 +41,21 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
     if (method == "resample") {
       # Determine how large a random sample
       numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
-      smp <- dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE)
+      smp <- invisible(suppressWarnings(suppressMessages(dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE))))
     }
     if (method == "parametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance")
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
     }
     if (method == "nonparametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance")
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
     }
     if (method == "default") {
       # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
-      smp <- Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution")
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
     }
     
     # rerun model on new data
@@ -85,9 +85,9 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   
-  invisible(suppressWarnings(library(future)))
-  invisible(suppressWarnings(library(future.apply)))
-  invisible(suppressWarnings(library(progressr)))
+  #invisible(suppressWarnings(library(future)))
+  #invisible(suppressWarnings(library(future.apply)))
+  #invisible(suppressWarnings(library(progressr)))
   
   
   
@@ -128,7 +128,7 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   # Set up parallel plan
-  plan(multisession, workers = availableCores() - 1)
+  future::plan(future::multisession, workers = future::availableCores() - 1)
   
   # Parameters
   max_files <- repetitions
@@ -142,8 +142,8 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   # Enable progress handler
   #handlers("txtprogressbar") 
-  handlers(list(
-    handler_progress(
+  progressr::handlers(list(
+    progressr::handler_progress(
       format   = "lmerEffectsBootstrapSimulationCreation() [:bar] :percent :eta",
       width    = 120,
       complete = "="
@@ -151,10 +151,10 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   ))
   
   # Loop and track
-  captureout <- with_progress({
-    p <- progressor(along = 1:repetitions)
+  captureout <- progressr::with_progress({
+    p <- progressr::progressor(along = 1:repetitions)
     
-    future_lapply(1:repetitions, function(i) {
+    future.apply::future_lapply(1:repetitions, function(i) {
       # Check how many result files exist
       file_list <- list.files(tmpdir, pattern = "^result_.*\\.RData$")
       
