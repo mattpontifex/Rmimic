@@ -92,8 +92,6 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   
-  
-  
   totalsample <- nrow(stats::model.frame(results$fit))
   if (is.null(resample_min)) {
     resample_min <- nrow(stats::model.frame(results$fit))
@@ -131,7 +129,7 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   # Set up parallel plan
-  future::plan(future::multisession, workers = future::availableCores() - 1)
+  plan(multisession, workers = availableCores() - 1)
   
   # Parameters
   max_files <- repetitions
