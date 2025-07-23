@@ -87,7 +87,7 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
     
     outstring <- sprintf('Unstandardized effects were computed based upon bootstrapped analyses with')
     if (results$futuretag$method == "resample") {
-      outstring <- sprintf('%s %d resamples', outstring, results$futuretag$repetitions)
+      outstring <- sprintf('%s %d resamples', outstring, file_listL)
       if (!((results$futuretag$resample_min == nrow(stats::model.frame(results$fit))) & (results$futuretag$resample_max == nrow(stats::model.frame(results$fit))))) {
         outstring <- sprintf('%s allowing the total number of cases to vary from %d (%.1f%%) to %d (%.1f%%)',
                              outstring, results$futuretag$resample_min, round((results$futuretag$resample_min/results$futuretag$totalsample)*100, digits=1),
@@ -97,9 +97,9 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
     }
     if ((results$futuretag$method == "parametric") | (results$futuretag$method == "nonparametric")) {
       if (results$futuretag$method == "parametric") {
-        outstring <- sprintf('%s %d datasets simulated from a multivariate normal distribution using the MASS mvrnorm function (Venables &#38; Ripley, 2002).', outstring, results$futuretag$repetitions)
+        outstring <- sprintf('%s %d datasets simulated from a multivariate normal distribution using the MASS mvrnorm function (Venables &#38; Ripley, 2002).', outstring, file_listL)
       } else {
-        outstring <- sprintf('%s %d datasets simulated from a multivariate non-normal distribution using the mnonr unonr function (Qu &#38; Zhang, 2020).', outstring, results$futuretag$repetitions)
+        outstring <- sprintf('%s %d datasets simulated from a multivariate non-normal distribution using the mnonr unonr function (Qu &#38; Zhang, 2020).', outstring, file_listL)
       }
       outstring <- sprintf('%s For each simulation the covariance matrix was informed by', outstring)
       if (results$futuretag$subsample < 1.0) {
@@ -114,7 +114,7 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
       }
     }
     if (results$futuretag$method == "default") {
-      outstring <- sprintf('%s %d datasets simulated by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters', outstring, repetitions)
+      outstring <- sprintf('%s %d datasets simulated by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters', outstring, file_listL)
       
       if (!((results$futuretag$resample_min == nrow(stats::model.frame(results$fit))) & (results$futuretag$resample_max == nrow(stats::model.frame(results$fit))))) {
         outstring <- sprintf('%s allowing the total number of cases to vary from %d (%.1f%%) to %d (%.1f%%) of the original dataset (with replacement)',
