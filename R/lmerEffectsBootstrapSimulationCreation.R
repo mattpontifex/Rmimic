@@ -35,11 +35,6 @@
 
 lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', tmpdir=NULL) {
   
-  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future)))))
-  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future.apply)))))
-  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
-  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(mice)))))
-  
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method, boolposthoc) {
     # populates dataset subsampled from the original sample with replacement
@@ -89,8 +84,9 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   
-  
-  
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future)))))
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future.apply)))))
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
   
   totalsample <- nrow(stats::model.frame(results$fit))
   if (is.null(resample_min)) {
@@ -154,8 +150,12 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   # Loop and track
   captureout <- with_progress({
     p <- progressor(along = 1:repetitions)
-    
     future_lapply(1:repetitions, function(i) {
+      invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(mice)))))
+      invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future)))))
+      invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future.apply)))))
+      invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
+      
       # Check how many result files exist
       file_list <- list.files(tmpdir, pattern = "^result_.*\\.RData$")
       
