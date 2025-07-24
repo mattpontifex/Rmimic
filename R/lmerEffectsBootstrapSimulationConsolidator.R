@@ -32,6 +32,52 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   
   invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
   
+  # with large numbers of files, we end up with a memory issue
+  # one solution is a disk-based approach
+  
+  # create folder to hold models
+  tmpdir <- file.path(results$futuretag$tmpdir, sprintf('modelsummary_%s', paste(sample(c(0:9, letters, LETTERS), 10, replace=TRUE), collapse="")))
+  dir.create(tmpdir, showWarnings = FALSE)
+  
+  # create list of outputs
+  find_tables <- function(x, prefix = "") {
+    find_tables_results <- character()
+    if (is.list(x)) {
+      for (name in names(x)) {
+        current_name <- if (prefix == "") name else paste0(prefix, "$", name)
+        element <- x[[name]]
+        if (is.data.frame(element)) {
+          find_tables_results <- c(find_tables_results, current_name)
+        } else if (is.list(element)) {
+          find_tables_results <- c(find_tables_results, find_tables(element, current_name))
+        }
+      }
+    } else if (is.data.frame(x)) {
+      find_tables_results <- c(find_tables_results, prefix)
+    }
+    return(find_tables_results)
+  }
+  elementsofinterest <- c('stats', 'randomstats', 'rsquared', 'descriptives', 'numparticipants')
+  if ('posthoc' %in% names(results)) {
+    tempvect <- find_tables(results$posthoc)
+    tempvect <- paste0("posthoc$", tempvect)
+    elementsofinterest <- c(elementsofinterest, tempvect)
+  }
+  tablelookupdirectory <- data.frame('Real' = elementsofinterest)
+  
+  generate_unique_strings <- function(n, string_length = 20, pool = c(0:9, letters, LETTERS)) {
+    unique_strings <- character()
+    while (length(unique_strings) < n) {
+      needed <- n - length(unique_strings)
+      new_strings <- replicate(needed, paste(sample(pool, string_length, replace = TRUE), collapse = ""))
+      unique_strings <- unique(c(unique_strings, new_strings))
+    }
+    unique_strings <- paste0(unique_strings, ".RData")
+    return(unique_strings)
+  }
+  tablelookupdirectory$Arbitrary <- generate_unique_strings(length(elementsofinterest))
+  tablelookupdirectory$first_write <- TRUE
+  
   # Enable progress handler
   #handlers("txtprogressbar") 
   handlers(list(
@@ -42,27 +88,363 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
     )
   ))
   
-  # load data from files
   file_list <- list.files(results$futuretag$tmpdir, pattern = "^result_.*\\.RData$")
   file_listL <- length(file_list)
   if (file_listL > results$futuretag$repetitions) {
     file_listL <- results$futuretag$repetitions
   }
-  resstore <- vector("list", file_listL)
-  resstore <- with_progress({
+  
+  # load data from files
+  resstoreplaceholder <- with_progress({
     p <- progressor(along = 1:file_listL)
     for (i in 1:file_listL) {
-      load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
-      resstore[[i]] <- result
+      smp <- tryCatch({
+        load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
+        # loop through output
+        for (cE in 1:nrow(tablelookupdirectory)) {
+          textcall <- sprintf('datain <- result$%s', tablelookupdirectory$Real[cE])
+          eval(parse(text=textcall))
+          
+          if (!is.data.frame(datain)) {
+            datain <- data.frame(datain)
+            if (tablelookupdirectory$Real[cE] == 'numparticipants') {
+              colnames(datain) <- c('numparticipants')
+            }
+          }
+          if (tablelookupdirectory$first_write[cE]) {
+            save(datain, file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
+            tablelookupdirectory$first_write[cE] <- FALSE
+            rm(datain)
+          } else {
+            datainnew <- datain
+            load(file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
+            datain <- rbind(datain, datainnew)
+            save(datain, file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
+            rm(datain, datainnew)
+          }
+        }
+        rm(result); gc()
+        smp <- TRUE
+      }, error = function(e) {
+        cat(sprintf('lmerEffectsBootstrap - summary failure\n'))
+        smp <- FALSE
+      })
       p()
     }
   })
-
+  
   Sys.sleep(1) # to make sure files are read in
   
   # summarize
-  results <- resmergebootforlmerEffectsBootstrapSimulationConsolidator(results, resstore, average=average, reporteddata=reporteddata)
+  tablelookupdirectory$Summarized <- FALSE
+  for (cE in 1:nrow(tablelookupdirectory)) {
+    load(file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE]))) # load datain
+    
+    if (tablelookupdirectory$Real[cE] == 'numparticipants') {
+      results$meanofparticipants <- mean(unlist(datain$numparticipants, recursive=TRUE), na.rm=TRUE)
+      results$medianofparticipants <- median(unlist(datain$numparticipants, recursive=TRUE), na.rm=TRUE)
+      results$minofparticipants <- min(unlist(datain$numparticipants, recursive=TRUE), na.rm=TRUE)
+      results$maxofparticipants <- max(unlist(datain$numparticipants, recursive=TRUE), na.rm=TRUE)
+      tablelookupdirectory$Summarized[cE] <- TRUE
+      
+    } else if (tablelookupdirectory$Real[cE] == 'descriptives') {
+      # descriptives
+      textcall <- sprintf('newstats <- results$%s', tablelookupdirectory$Real[cE])
+      eval(parse(text=textcall))
+      
+      for (cR in 1:nrow(newstats)) {
+        tempdbs <- datain[which(datain$Group == newstats$Group[cR]),]
+        colsofinterest <- c("N", "Missing", "Mean", "Median", "SD", "SE")
+        for (cC in 1:length(colsofinterest)) {
+          tempvect <- as.numeric(unlist(tempdbs[,colsofinterest[cC]]))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          if (average == 'median') {
+            newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
+          } else {
+            newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+          }
+        }
+        distributiontable <- data.frame(matrix(NA, nrow=nrow(tempdbs), ncol=64))
+        for (csR in 1:nrow(tempdbs)) {
+          textcall <- sprintf('distributiontable[csR,] <- c(%s)', tempdbs$DistributionData[csR])
+          eval(parse(text=textcall))
+        }
+        for (cC in 1:ncol(distributiontable)) {
+          distributiontable[,cC] <- as.numeric(distributiontable[,cC])
+        }
+        if (average == 'median') {
+          newstats$DistributionData[cR] <- paste(miscTools::colMedians(distributiontable, na.rm=TRUE), collapse = ",")
+        } else {
+          newstats$DistributionData[cR] <- paste(colMeans(distributiontable, na.rm=TRUE), collapse = ",")
+        }
+        decisionindx <- which(tempdbs$DistributionDecision == "Normal")
+        if (length(decisionindx) > 0) {
+          if ((length(decisionindx) / nrow(tempdbs)) >= 0.6) {
+            newstats$DistributionDecision[cR] <- "Normal"
+          } else {
+            newstats$DistributionDecision[cR] <- "Not Normal"
+          }
+        }
+      }
+      
+      # dirty but effective
+      newstats$Mean <- round(round(round(round(as.numeric(newstats$Mean), digits=4), digits=3), digits=2), digits=1)
+      newstats$Median <- round(round(round(round(as.numeric(newstats$Median), digits=4), digits=3), digits=2), digits=1)
+      newstats$SD <- round(round(round(round(as.numeric(newstats$SD), digits=4), digits=3), digits=2), digits=1)
+      newstats$SE <- round(round(round(round(as.numeric(newstats$SE), digits=4), digits=3), digits=2), digits=1)
+      
+      newstats$Mean <- sprintf('%.1f', newstats$Mean)
+      newstats$Median <- sprintf('%.1f', newstats$Median)
+      newstats$SD <- sprintf('%.1f', newstats$SD)
+      newstats$SE <- sprintf('%.1f', newstats$SE)
+      
+      results$descriptives <- newstats
+      tablelookupdirectory$Summarized[cE] <- TRUE
+      rm(newstats)
+      
+    } else if ((all(c('SSn', 'SSd', 'F.value') %in% colnames(datain))) | (all(c('LogLikelihood', 'LRT') %in% colnames(datain))) | (all(c('portion', 'ci.lower', 'ci.upper') %in% colnames(datain)))) {
+      # fixed, random, r2
+      textcall <- sprintf('newstats <- results$%s', tablelookupdirectory$Real[cE])
+      eval(parse(text=textcall))
+      
+      # clear to avoid confusion
+      if ('textoutput' %in% colnames(newstats)) {
+        newstats$textoutput <- NA
+      }
+      if ('significance' %in% colnames(newstats)) {
+        newstats$significance <- NA
+      }
+      if ('F.value' %in% colnames(newstats)) {
+        newstats$F.value.ci.lower <- NA
+        newstats$F.value.ci.upper <- NA
+      }
+      if ('p.value' %in% colnames(newstats)) {
+        newstats$p.value.ci.lower <- NA
+        newstats$p.value.ci.upper <- NA
+      }
+      
+      for (cR in 1:nrow(newstats)) {
+        if ((all(c('SSn', 'SSd', 'F.value') %in% colnames(datain))) | (all(c('LogLikelihood', 'LRT') %in% colnames(datain)))) {
+          tempdbs <- datain[which(datain$Effect == newstats$Effect[cR]),]
+        } else if (all(c('portion', 'ci.lower', 'ci.upper') %in% colnames(datain))) {
+          tempdbs <- datain[which(datain$portion == newstats$portion[cR]),]
+        }
+        colsofinterest <- c("DFn", "DFd", "SSn", "SSd", "SSe", "F.value", "DF", "LogLikelihood", "LRT", "p.value", "partialetasquared", "fsquared","fsquared.ci.lower", "fsquared.ci.upper", "effects")
+        for (cC in 1:length(colsofinterest)) {
+          if (colsofinterest[cC] %in% colnames(tempdbs)) {
+            tempvect <- as.numeric(unlist(tempdbs[,colsofinterest[cC]]))
+            tempvect <- tempvect[which(!is.na(tempvect))]
+            if (average == 'median') {
+              newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
+            } else {
+              newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+            }
+          }
+        }
+        
+        # significance test
+        if (all(c('p.value','significance') %in% colnames(newstats))) {
+          outPvalue <- fuzzyP(newstats$p.value[cR], studywiseAlpha=results$studywiseAlpha, html=TRUE)
+          newstats$significance[cR] <- outPvalue$significance
+        }
+        
+        # additional confidence intervals
+        if (all(c('F.value') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'F.value']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$F.value[cR]) {ci_boot[1] < newstats$F.value[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$F.value[cR]) {ci_boot[2] < newstats$F.value[cR]} 
+          }
+          newstats$F.value.ci.lower[cR] <- ci_boot[1]
+          newstats$F.value.ci.upper[cR] <- ci_boot[2]
+        }
+        if (all(c('p.value') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'p.value']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$p.value[cR]) {ci_boot[1] < newstats$p.value[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$p.value[cR]) {ci_boot[2] < newstats$p.value[cR]} 
+          }
+          newstats$p.value.ci.lower[cR] <- ci_boot[1]
+          newstats$p.value.ci.upper[cR] <- ci_boot[2]
+        }
+        if (all(c('ci.lower', 'ci.upper') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'effects']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$effects[cR]) {ci_boot[1] < newstats$effects[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$effects[cR]) {ci_boot[2] < newstats$effects[cR]} 
+          }
+          newstats$ci.lower[cR] <- ci_boot[1]
+          newstats$ci.upper[cR] <- ci_boot[2]
+        }
+      }
+      # put data back
+      textcall <- sprintf('results$%s <- newstats', tablelookupdirectory$Real[cE])
+      eval(parse(text=textcall))
+      rm(newstats)
+      tablelookupdirectory$Summarized[cE] <- TRUE
+      
+    } else if (all(c('contrast','df', 't.ratio', 'p.value', 'correlation') %in% colnames(datain))) {
+      # posthoc
+      textcall <- sprintf('newstats <- results$%s', tablelookupdirectory$Real[cE])
+      eval(parse(text=textcall))
+      
+      # clear to avoid confusion
+      if ('textoutput' %in% colnames(newstats)) {
+        newstats$textoutput <- NA
+      }
+      if ('significant' %in% colnames(newstats)) {
+        newstats$significant <- NA
+      }
+      if ('t.ratio' %in% colnames(newstats)) {
+        newstats$t.conf.int.lower <- NA
+        newstats$t.conf.int.upper <- NA
+      }
+      if ('p.value' %in% colnames(newstats)) {
+        newstats$p.conf.int.lower <- NA
+        newstats$p.conf.int.upper <- NA
+      }
+      
+      for (cR in 1:nrow(newstats)) {
+        tempdbs <- datain[which(datain$idtag == newstats$idtag[cR] & datain$hold == newstats$hold[cR]),]
+        if (nrow(tempdbs) == 0) {
+          # data simulation likely swapped position of c1 and c2
+          tempvect <- stringr::str_split(newstats$idtag[cR], "-")[[1]]
+          newtempvect <- tempvect
+          newtempvect[length(tempvect)] <- tempvect[length(tempvect)-2]
+          newtempvect[length(tempvect)-2] <- tempvect[length(tempvect)]
+          newstats$idtag[cR] <- paste0(newtempvect, collapse="-")
+          c1name <- newstats$C1name
+          c2name <- newstats$C2name
+          newstats$C1name <- c2name
+          newstats$C2name <- c1name
+          
+          c1n <- newstats$C1n
+          c2n <- newstats$C2n
+          newstats$C1n <- c2n
+          newstats$C2n <- c1n
+          
+          c1n <- newstats$C1mean
+          c2n <- newstats$C2mean
+          newstats$C1mean <- c2n
+          newstats$C2mean <- c1n
+          
+          c1n <- newstats$C1sd
+          c2n <- newstats$C2sd
+          newstats$C1sd <- c2n
+          newstats$C2sd <- c1n
+          
+          tempdbs <- datain[which(datain$idtag == newstats$idtag[cR] & datain$hold == newstats$hold[cR]),]
+        }
+        colsofinterest <- c("df", "t.ratio", "p.value", "effectsize", "correlation")
+        for (cC in 1:length(colsofinterest)) {
+          if (colsofinterest[cC] %in% colnames(tempdbs)) {
+            tempvect <- as.numeric(unlist(tempdbs[,colsofinterest[cC]]))
+            tempvect <- tempvect[which(!is.na(tempvect))]
+            if (average == 'median') {
+              newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
+            } else {
+              newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+            }
+          }
+        }
+        
+        # significance test
+        if (all(c('p.value','significant') %in% colnames(newstats))) {
+          outPvalue <- fuzzyP(newstats$p.value[cR], studywiseAlpha=results$studywiseAlpha, html=TRUE)
+          newstats$significant[cR] <- outPvalue$significance
+        }
+        
+        # additional confidence intervals
+        if (all(c('effectsize') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'effectsize']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$effectsize[cR]) {ci_boot[1] < newstats$effectsize[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$effectsize[cR]) {ci_boot[2] < newstats$effectsize[cR]} 
+          }
+          newstats$effectsize.conf.int.lower[cR] <- ci_boot[1]
+          newstats$effectsize.conf.int.upper[cR] <- ci_boot[2]
+        }
+        if (all(c('t.ratio') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'t.ratio']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$t.ratio[cR]) {ci_boot[1] < newstats$t.ratio[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$t.ratio[cR]) {ci_boot[2] < newstats$t.ratio[cR]} 
+          }
+          newstats$t.conf.int.lower[cR] <- ci_boot[1]
+          newstats$t.conf.int.upper[cR] <- ci_boot[2]
+        }
+        if (all(c('p.value') %in% colnames(newstats))) {
+          tempvect <- as.numeric(unlist(tempdbs[,'p.value']))
+          tempvect <- tempvect[which(!is.na(tempvect))]
+          ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[1] < 0) {ci_boot[1] <- 0}
+            if (ci_boot[1] > newstats$p.value[cR]) {ci_boot[1] < newstats$p.value[cR]} 
+          }
+          if (!is.na(ci_boot[1])) {
+            if (ci_boot[2] < 0) {ci_boot[2] <- 0}
+            if (ci_boot[2] < newstats$p.value[cR]) {ci_boot[2] < newstats$p.value[cR]} 
+          }
+          newstats$p.conf.int.lower[cR] <- ci_boot[1]
+          newstats$p.conf.int.upper[cR] <- ci_boot[2]
+        }
+        
+        if (reporteddata != 'actual') {
+          colsofinterest <- c("C1n", "C1mean", "C1sd", "C2n", "C2mean", "C2sd")
+          for (cC in 1:length(colsofinterest)) {
+            tempvect <- as.numeric(unlist(tempdbs[,colsofinterest[cC]]))
+            tempvect <- tempvect[which(!is.na(tempvect))]
+            if (average == 'median') {
+              newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
+            } else {
+              newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+            }
+          }  
+        }
+        
+      }
+      # put data back
+      textcall <- sprintf('results$%s <- newstats', tablelookupdirectory$Real[cE])
+      eval(parse(text=textcall))
+      rm(newstats)
+      tablelookupdirectory$Summarized[cE] <- TRUE
+    } 
+    rm(datain); gc()
+  }
   
+  # remove folder
+  unlink(tmpdir, recursive = TRUE)
+
   # obtain text outputs
   if ((reporteddata == 'actual') | (reporteddata == 'raw')) {
     subtag <- 'raw'
@@ -140,299 +522,5 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   
   return(results)
 }
-
-
-resmergebootforlmerEffectsBootstrapSimulationConsolidator <- function(results, resstore, average='median', reporteddata='actual') {
-  
-  newstats <- results$stats
-  newstats$textoutput <- NA
-  newstats$significance <- NA
-  newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target='stats') # should return a table
-  # fixed effects
-  for (cR in 1:nrow(newstats)) {
-    tempdbs <- newresults[which(newresults$Effect == newstats$Effect[cR]),]
-    colsofinterest <- c("DFn", "DFd", "SSn", "SSd", "SSe", "F.value", "p.value", "partialetasquared", "fsquared","fsquared.ci.lower", "fsquared.ci.upper")
-    for (cC in 1:length(colsofinterest)) {
-      if (average == 'median') {
-        newstats[cR,colsofinterest[cC]] <- median(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      } else {
-        newstats[cR,colsofinterest[cC]] <- mean(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      }
-    }
-    
-    # significance test
-    outPvalue <- fuzzyP(newstats$p.value[cR], studywiseAlpha=results$studywiseAlpha, html=TRUE)
-    newstats$significance[cR] <- outPvalue$significance
-    
-    # additional confidence intervals
-    civals <- suppressWarnings(Rmisc::CI(tempdbs$F.value, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-    newstats$F.value.ci.lower[cR] <- civals[which(names(civals) == 'lower')]
-    newstats$F.value.ci.upper[cR] <- civals[which(names(civals) == 'upper')]
-    
-    civals <- suppressWarnings(Rmisc::CI(tempdbs$p.value, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-    newstats$p.value.ci.lower[cR] <- civals[which(names(civals) == 'lower')]
-    if (newstats$p.value.ci.lower[cR] < 0) {newstats$p.value.ci.lower[cR] <- 0}
-    newstats$p.value.ci.upper[cR] <- civals[which(names(civals) == 'upper')]
-    if (newstats$p.value.ci.upper[cR] < 0) {newstats$p.value.ci.upper[cR] <- 0}
-  }
-  results$stats <- newstats # swap out
-  
-  # random effects
-  newstats <- results$randomstats
-  newstats$textoutput <- NA
-  newstats$significance <- NA
-  newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target='randomstats') # should return a table
-  # create empty variables
-  newstats$p.value.ci.lower <- NA
-  newstats$p.value.ci.upper <- NA
-  for (cR in 1:nrow(newstats)) {
-    tempdbs <- newresults[which(newresults$Effect == newstats$Effect[cR]),]
-    colsofinterest <- c("DF", "LogLikelihood", "LRT", "p.value")
-    for (cC in 1:length(colsofinterest)) {
-      if (average == 'median') {
-        newstats[cR,colsofinterest[cC]] <- median(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      } else {
-        newstats[cR,colsofinterest[cC]] <- mean(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      }
-    }
-    # significance test
-    outPvalue <- fuzzyP(newstats$p.value[cR], studywiseAlpha=results$studywiseAlpha, html=TRUE)
-    newstats$significance[cR] <- outPvalue$significance
-    
-    civals <- suppressWarnings(Rmisc::CI(tempdbs$p.value, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-    newstats$p.value.ci.lower[cR] <- civals[which(names(civals) == 'lower')]
-    if (newstats$p.value.ci.lower[cR] < 0) {newstats$p.value.ci.lower[cR] <- 0}
-    newstats$p.value.ci.upper[cR] <- civals[which(names(civals) == 'upper')]
-    if (newstats$p.value.ci.upper[cR] < 0) {newstats$p.value.ci.upper[cR] <- 0}
-  }
-  results$randomstats <- newstats
-  
-  # rsquared
-  newstats <- results$rsquared
-  newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target='rsquared') # should return a table
-  for (cR in 1:nrow(newstats)) {
-    tempdbs <- newresults[which(newresults$portion == newstats$portion[cR]),]
-    colsofinterest <- c("effects", "ci.lower", "ci.upper")
-    for (cC in 1:length(colsofinterest)) {
-      if (average == 'median') {
-        newstats[cR,colsofinterest[cC]] <- median(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      } else {
-        newstats[cR,colsofinterest[cC]] <- mean(tempdbs[,colsofinterest[cC]], na.rm=TRUE)
-      }
-    }
-  }
-  results$rsquared <- newstats
-  
-  # descriptives
-  if ('descriptives' %in% names(results)) {
-    newstats <- results$descriptives
-    newstats$DistributionData <- NA
-    newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target='descriptives') # should return a table
-    for (cR in 1:nrow(newstats)) {
-      tempdbs <- newresults[which(newresults$Group == newstats$Group[cR]),]
-      colsofinterest <- c("N", "Missing", "Mean", "Median", "SD", "SE")
-      for (cC in 1:length(colsofinterest)) {
-        if (average == 'median') {
-          newstats[cR,colsofinterest[cC]] <- median(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-        } else {
-          newstats[cR,colsofinterest[cC]] <- mean(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-        }
-      }
-      distributiontable <- data.frame(matrix(NA, nrow=nrow(tempdbs), ncol=64))
-      for (csR in 1:nrow(tempdbs)) {
-        textcall <- sprintf('distributiontable[csR,] <- c(%s)', tempdbs$DistributionData[csR])
-        eval(parse(text=textcall))
-      }
-      for (cC in 1:ncol(distributiontable)) {
-        distributiontable[,cC] <- as.numeric(distributiontable[,cC])
-      }
-      if (average == 'median') {
-        newstats$DistributionData[cR] <- paste(miscTools::colMedians(distributiontable, na.rm=TRUE), collapse = ",")
-      } else {
-        newstats$DistributionData[cR] <- paste(colMeans(distributiontable, na.rm=TRUE), collapse = ",")
-      }
-      decisionindx <- which(tempdbs$DistributionDecision == "Normal")
-      if (length(decisionindx) > 0) {
-        if ((length(decisionindx) / nrow(tempdbs)) >= 0.6) {
-          newstats$DistributionDecision[cR] <- "Normal"
-        } else {
-          newstats$DistributionDecision[cR] <- "Not Normal"
-        }
-      }
-    }
-    
-    # dirty but effective
-    newstats$Mean <- round(round(round(round(as.numeric(newstats$Mean), digits=4), digits=3), digits=2), digits=1)
-    newstats$Median <- round(round(round(round(as.numeric(newstats$Median), digits=4), digits=3), digits=2), digits=1)
-    newstats$SD <- round(round(round(round(as.numeric(newstats$SD), digits=4), digits=3), digits=2), digits=1)
-    newstats$SE <- round(round(round(round(as.numeric(newstats$SE), digits=4), digits=3), digits=2), digits=1)
-    
-    newstats$Mean <- sprintf('%.1f', newstats$Mean)
-    newstats$Median <- sprintf('%.1f', newstats$Median)
-    newstats$SD <- sprintf('%.1f', newstats$SD)
-    newstats$SE <- sprintf('%.1f', newstats$SE)
-    
-    results$descriptives <- newstats
-  }
-  
-  # subjects
-  newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target='numparticipants') # should return a table
-  results$meanofparticipants <- mean(unlist(newresults, recursive=TRUE), na.rm=TRUE)
-  results$medianofparticipants <- median(unlist(newresults, recursive=TRUE), na.rm=TRUE)
-  
-  # posthoc tests
-  if ('posthoc' %in% names(results)) {
-    
-    uniquenames <- unique(names(results$posthoc))
-    for (cUN in 1:length(uniquenames)) {
-      
-      # get new element
-      newresults <- resresearchforlmerEffectsBootstrapSimulationConsolidator(resstore, target=sprintf('posthoc$%s', uniquenames[cUN]))
-      textcall <- sprintf("newstats <- results$posthoc$%s", uniquenames[cUN])
-      eval(parse(text=textcall))
-      
-      if (is.data.frame(newresults)) {
-        # element is a table
-        newstats$textoutput <- NA
-        newstats$significant <- NA
-        for (cR in 1:nrow(newstats)) {
-          tempdbs <- newresults[which(newresults$idtag == newstats$idtag[cR] & newresults$hold == newstats$hold[cR]),]
-          if (nrow(tempdbs) == 0) {
-            # data simulation likely swapped position of c1 and c2
-            tempvect <- stringr::str_split(newstats$idtag[cR], "-")[[1]]
-            newtempvect <- tempvect
-            newtempvect[length(tempvect)] <- tempvect[length(tempvect)-2]
-            newtempvect[length(tempvect)-2] <- tempvect[length(tempvect)]
-            newstats$idtag[cR] <- paste0(newtempvect, collapse="-")
-            c1name <- newstats$C1name
-            c2name <- newstats$C2name
-            newstats$C1name <- c2name
-            newstats$C2name <- c1name
-            tempdbs <- newresults[which(newresults$idtag == newstats$idtag[cR] & newresults$hold == newstats$hold[cR]),]
-          }
-          colsofinterest <- c("df", "t.ratio", "p.value", "effectsize", "effectsize.conf.int.lower", "effectsize.conf.int.upper", "correlation")
-          for (cC in 1:length(colsofinterest)) {
-            if (average == 'median') {
-              newstats[cR,colsofinterest[cC]] <- median(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-            } else {
-              newstats[cR,colsofinterest[cC]] <- mean(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-            }
-          }
-          
-          # significance test
-          outPvalue <- fuzzyP(newstats$p.value[cR], studywiseAlpha=results$studywiseAlpha, html=TRUE)
-          newstats$significant[cR] <- outPvalue$significance
-          
-          # additional confidence intervals
-          tempvectone <- as.numeric(tempdbs$t.ratio)
-          tempvectone <- tempvectone[which(!is.na(tempvectone))]
-          if (length(tempvectone) > 0) {
-            civals <- suppressWarnings(Rmisc::CI(tempvectone, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-            newstats$t.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
-            newstats$t.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
-            if (!is.na(newstats$t.conf.int.lower[cR])) {
-              if (newstats$t.conf.int.lower[cR] > newstats$t.ratio[cR]) {
-                newstats$t.conf.int.lower[cR] <- newstats$t.ratio[cR]
-              }
-            }
-            if (!is.na(newstats$t.conf.int.upper[cR])) {
-              if (newstats$t.conf.int.upper[cR] < newstats$t.ratio[cR]) {
-                newstats$t.conf.int.upper[cR] <- newstats$t.ratio[cR]
-              }
-            }
-          } else {
-            newstats$t.conf.int.lower[cR] <- NA
-            newstats$t.conf.int.upper[cR] <- NA
-          }
-          
-          tempvectone <- as.numeric(tempdbs$p.value)
-          tempvectone <- tempvectone[which(!is.na(tempvectone))]
-          if (length(tempvectone) > 0) {
-            civals <- suppressWarnings(Rmisc::CI(tempvectone, ci = (results$confidenceinterval-results$studywiseAlpha))) # one sided
-            newstats$p.conf.int.lower[cR] <- civals[which(names(civals) == 'lower')]
-            if (!is.na(newstats$p.conf.int.lower[cR])) {
-              if (newstats$p.conf.int.lower[cR] < 0) {newstats$p.conf.int.lower[cR] <- 0}
-            }
-            newstats$p.conf.int.upper[cR] <- civals[which(names(civals) == 'upper')]
-            if (!is.na(newstats$p.conf.int.upper[cR])) {
-              if (newstats$p.conf.int.upper[cR] < 0) {newstats$p.conf.int.upper[cR] <- 0}
-            }
-            if (!is.na(newstats$p.conf.int.lower[cR])) {
-              if (newstats$p.conf.int.lower[cR] > newstats$p.value[cR]) {
-                newstats$p.conf.int.lower[cR] <- newstats$p.value[cR]
-              }
-            }
-            if (!is.na(newstats$p.conf.int.upper[cR])) {
-              if (newstats$p.conf.int.upper[cR] < newstats$p.value[cR]) {
-                newstats$p.conf.int.upper[cR] <- newstats$p.value[cR]
-              }
-            }
-          } else {
-            newstats$p.conf.int.lower[cR] <- NA
-            newstats$p.conf.int.upper[cR] <- NA
-          }
-          
-          if (reporteddata != 'actual') {
-            colsofinterest <- c("C1n", "C1mean", "C1sd", "C2n", "C2mean", "C2sd")
-            for (cC in 1:length(colsofinterest)) {
-              if (average == 'median') {
-                newstats[cR,colsofinterest[cC]] <- median(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-              } else {
-                newstats[cR,colsofinterest[cC]] <- mean(as.numeric(tempdbs[,colsofinterest[cC]]), na.rm=TRUE)
-              }
-            }  
-          }
-        }
-        
-      } else {
-        # recursive call
-        newstats <- resmergebootforlmerEffectsBootstrapSimulationConsolidator(newstats, newresults, average=average, reporteddata=reporteddata)
-      }
-      
-      # put element back
-      textcall <- sprintf("results$posthoc$%s <- newstats", uniquenames[cUN])
-      eval(parse(text=textcall))
-      
-    } # CUN
-  } #has posthocs
-  
-  return(results)
-}
-
-
-resresearchforlmerEffectsBootstrapSimulationConsolidator <- function(resstore, target) {
-  # function to obtain target data from list
-  # returns a merged data frame if the target is a data frame
-  # returns a list if the target is a list
-  
-  outlist <- list()
-  outtable <- NULL
-  booldf <- FALSE
-  for (cAN in 1:length(resstore)) {
-    textcall <- sprintf('tempelement <- resstore[[%d]]$%s', cAN, target)
-    eval(parse(text=textcall))
-    
-    if (is.data.frame(tempelement)) {
-      booldf <- TRUE
-      if (is.null(outtable)) {
-        outtable <- tempelement
-      } else {
-        outtable <- rbind(outtable, tempelement)
-      }
-    } else {
-      # store it
-      textcall <- sprintf('outlist$repetition%d <- tempelement', cAN)
-      eval(parse(text=textcall))
-    }
-  }
-  if (booldf) {
-    return(outtable)
-  } else {
-    return(outlist)
-  }
-}
-
-
-
 
 
