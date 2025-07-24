@@ -97,7 +97,6 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   if (file_listL > results$futuretag$repetitions) {
     file_listL <- results$futuretag$repetitions
   }
-  file_listL <- 100
   
   # Set up parallel plan
   plan(multisession, workers = availableCores() - 1)
