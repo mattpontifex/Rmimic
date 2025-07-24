@@ -15,6 +15,8 @@
 #' @importFrom miscTools colMedians
 #' @importFrom stats model.frame
 #' @importFrom progressr progressor with_progress
+#' @importFrom data.table fwrite
+#' @importFrom readr read_csv
 #' 
 #' @examples
 #' \dontrun{
@@ -29,7 +31,9 @@
 #' @export
 
 lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median', reporteddata='simulated') {
-  
+  options(warn = -1)
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future)))))
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(future.apply)))))
   invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
   
   # with large numbers of files, we end up with a memory issue
@@ -72,7 +76,7 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
       new_strings <- replicate(needed, paste(sample(pool, string_length, replace = TRUE), collapse = ""))
       unique_strings <- unique(c(unique_strings, new_strings))
     }
-    unique_strings <- paste0(unique_strings, ".RData")
+    unique_strings <- paste0(unique_strings, ".csv")
     return(unique_strings)
   }
   tablelookupdirectory$Arbitrary <- generate_unique_strings(length(elementsofinterest))
@@ -93,44 +97,51 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   if (file_listL > results$futuretag$repetitions) {
     file_listL <- results$futuretag$repetitions
   }
+  file_listL <- 100
+  
+  # Set up parallel plan
+  plan(multisession, workers = availableCores() - 1)
+  
+  # Split tablelookupdirectory into row chunks
+  n_workers <- (availableCores() - 1)
+  chunk_indices <- split(seq_len(nrow(tablelookupdirectory)), 
+                         cut(seq_len(nrow(tablelookupdirectory)), n_workers, labels = FALSE))
   
   # load data from files
   resstoreplaceholder <- with_progress({
-    p <- progressor(along = 1:file_listL)
-    for (i in 1:file_listL) {
-      smp <- tryCatch({
-        load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
-        # loop through output
-        for (cE in 1:nrow(tablelookupdirectory)) {
-          textcall <- sprintf('datain <- result$%s', tablelookupdirectory$Real[cE])
-          eval(parse(text=textcall))
-          
-          if (!is.data.frame(datain)) {
-            datain <- data.frame(datain)
-            if (tablelookupdirectory$Real[cE] == 'numparticipants') {
-              colnames(datain) <- c('numparticipants')
+    total_steps <- file_listL * nrow(tablelookupdirectory)
+    p <- progressor(along = 1:total_steps)
+    future_lapply(seq_along(chunk_indices), function(chunk_id) {
+      chunk_rows <- chunk_indices[[chunk_id]]
+      sub_lookup <- tablelookupdirectory[chunk_rows, ]
+    
+      # Each worker processes all files, but only their chunk of tablelookupdirectory
+      for (i in 1:file_listL) {
+        smp <- tryCatch({
+          load(file.path(results$futuretag$tmpdir, file_list[i]))  # loads `result`
+          for (cE in seq_len(nrow(sub_lookup))) {
+            textcall <- sprintf('datain <- result$%s', sub_lookup$Real[cE])
+            eval(parse(text=textcall))
+            
+            if (!is.data.frame(datain)) {
+              datain <- data.frame(datain)
+              if (sub_lookup$Real[cE] == 'numparticipants') {
+                colnames(datain) <- c('numparticipants')
+              }
             }
-          }
-          if (tablelookupdirectory$first_write[cE]) {
-            save(datain, file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
-            tablelookupdirectory$first_write[cE] <- FALSE
+            data.table::fwrite(datain, file.path(tmpdir, sprintf(sub_lookup$Arbitrary[cE])), append = !sub_lookup$first_write[cE])
+            if (sub_lookup$first_write[cE]) {sub_lookup$first_write[cE] <- FALSE}
             rm(datain)
-          } else {
-            datainnew <- datain
-            load(file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
-            datain <- rbind(datain, datainnew)
-            save(datain, file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])))
-            rm(datain, datainnew)
+            p()
           }
-        }
-        rm(result); gc()
-        smp <- TRUE
-      }, error = function(e) {
-        cat(sprintf('lmerEffectsBootstrap - summary failure\n'))
-        smp <- FALSE
-      })
-      p()
-    }
+          rm(result); gc()
+          smp <- TRUE
+        }, error = function(e) {
+          cat(sprintf('lmerEffectsBootstrap - summary failure\n'))
+          smp <- FALSE
+        })
+      }
+    }, future.seed = TRUE)
   })
   
   Sys.sleep(1) # to make sure files are read in
@@ -138,7 +149,8 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   # summarize
   tablelookupdirectory$Summarized <- FALSE
   for (cE in 1:nrow(tablelookupdirectory)) {
-    load(file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE]))) # load datain
+    #load(file = file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE]))) # load datain
+    datain <- readr::read_csv(file.path(tmpdir, sprintf(tablelookupdirectory$Arbitrary[cE])), show_col_types = FALSE)
     
     if (tablelookupdirectory$Real[cE] == 'numparticipants') {
       results$meanofparticipants <- mean(unlist(datain$numparticipants, recursive=TRUE), na.rm=TRUE)
