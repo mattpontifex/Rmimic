@@ -39,30 +39,26 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method, boolposthoc) {
     # populates dataset subsampled from the original sample with replacement
-    smp <- tryCatch({
-      if (method == "resample") {
-        # Determine how large a random sample
-        numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
-        smp <- invisible(suppressWarnings(suppressMessages(dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE))))
-      }
-      if (method == "parametric") {
-        # Useful for growing the sample 
-        # keeps the exact same effect size by allowing the group variation to increase with larger samples
-        smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
-      }
-      if (method == "nonparametric") {
-        # Useful for growing the sample 
-        # keeps the exact same effect size by allowing the group variation to increase with larger samples
-        smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
-      }
-      if (method == "default") {
-        # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
-        smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
-      }
-    }, error = function(e) {
-      cat(sprintf('lmerEffectsBootstrap - sim failure\n'))
-      smp <- NULL
-    })
+    smp <- NULL
+    if (method == "resample") {
+      # Determine how large a random sample
+      numberofsamples <- floor(stats::runif(1, min=resample_min, max=resample_max))
+      smp <- invisible(suppressWarnings(suppressMessages(dplyr::slice_sample(stats::model.frame(results$fit), n=numberofsamples, replace=TRUE))))
+    }
+    if (method == "parametric") {
+      # Useful for growing the sample 
+      # keeps the exact same effect size by allowing the group variation to increase with larger samples
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
+    }
+    if (method == "nonparametric") {
+      # Useful for growing the sample 
+      # keeps the exact same effect size by allowing the group variation to increase with larger samples
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
+    }
+    if (method == "default") {
+      # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
+      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
+    }
     
     if (!is.null(smp)) {
       # rerun model on new data
@@ -135,7 +131,11 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
   
   
   # Set up parallel plan
-  plan(multisession, workers = availableCores() - 1)
+  n_workers <- (availableCores() - 1)
+  if (n_workers > 124) {
+    n_workers <- 124
+  }
+  plan(multisession, workers = n_workers)
   
   # Parameters
   max_files <- repetitions
@@ -172,10 +172,15 @@ lmerEffectsBootstrapSimulationCreation <- function(results, repetitions, resampl
         file_list <- list.files(tmpdir, pattern = "^result_.*\\.RData$")
         
         if (length(file_list) < max_files) {
-          result <- run_one(results, resample_min, resample_max, subsample, inflation, method, boolposthoc)
-          if (!is.null(result)) {
-            save(result, file = tempfile(pattern = "result_", tmpdir = tmpdir, fileext = ".RData"))
-          }
+          smp <- tryCatch({
+            result <- run_one(results, resample_min, resample_max, subsample, inflation, method, boolposthoc)
+            if (!is.null(result)) {
+              save(result, file = tempfile(pattern = "result_", tmpdir = tmpdir, fileext = ".RData"))
+            }
+            smp <- NULL
+          }, error = function(e) {
+            smp <- NULL
+          })
         }
         p()
       }, future.seed = TRUE)

@@ -103,6 +103,12 @@ lmerEffectsBootstrapSimulationConsolidator <- function(results, average='median'
   
   # Split tablelookupdirectory into row chunks
   n_workers <- (availableCores() - 1)
+  if (n_workers > 124) {
+    n_workers <- 124
+  }
+  if (n_workers > nrow(tablelookupdirectory)) {
+    n_workers <- nrow(tablelookupdirectory)
+  }
   chunk_indices <- split(seq_len(nrow(tablelookupdirectory)), 
                          cut(seq_len(nrow(tablelookupdirectory)), n_workers, labels = FALSE))
   
