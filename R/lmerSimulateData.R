@@ -27,11 +27,11 @@
 #' @importFrom stringr str_split
 #' @importFrom mnonr mardia unonr
 #' @importFrom stats model.frame formula cov runif
-#' @importFrom data.table as.data.table
+#' @importFrom data.table as.data.table data.table
 #'
 #' @export
 
-lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=NULL, subjectid=NULL, subsample=NULL, inflation=NULL, parametric=TRUE, method=NULL) {
+lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=NULL, subjectid=NULL, subsample=NULL, inflation=NULL, parametric=TRUE, method=NULL, screen=c(0.10, 0.90), constrain=NULL, verbose=FALSE) {
   
   # Each repetition of the function would create a new simulated dataset
   # this approach should downweight any individual subject
@@ -55,19 +55,31 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     method = "covariance"
   }
   
+  if (!is.null(constrain)) {
+    if (toupper(constrain) == toupper("FALSE")) {
+      constrain = FALSE
+    } else if (toupper(constrain) == toupper("both")) {
+      constrain = 'both'
+    } else if (toupper(constrain) == toupper("upper")) {
+      constrain = 'upper'
+    } else if (toupper(constrain) == toupper("lower")) {
+      constrain = 'lower'
+    }
+  } else {
+    constrain = 'both'
+  }
+  
   if (method == "covariance") {
     # the dataset would be simulated based upon the covariance matrix of a subsample of data
     # covariance matrix is unique for each between subject level
     # random effects not including the participant id are considered as between subjects levels
     # covariance matrix is common for all within subject levels reflecting the inherent relationship of these levels
     
-    # no longer using this approach but keeping the code
-    # Extract model components
-    #fixef_vals <- lme4::fixef(fit) # Fixed effects
-    #ranef_vals <- lme4::ranef(fit) # Random effects
-    #sigma_eps <- stats::sigma(fit)                # Residual SD
-    tempdbs <- stats::model.frame(fit)
-    subject_ids <- unique(tempdbs[,subjectid])
+    if (verbose) {cat(sprintf('lmerSimulateData(): method: covariance\n'))}
+    
+    
+    tempdbs <- data.table::as.data.table(stats::model.frame(fit))
+    subject_ids <- unique(tempdbs[[subjectid]])
     randomfactor <- colnames(tempdbs)  
     randomfactor <- randomfactor[!(randomfactor %in% dependentvariable)]
     if (!is.null(within)) {
@@ -81,22 +93,21 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     
     # Define number of subjects and observations per subject
     n_subjects <- length(subject_ids)
-    #simplesubjectstats <- psych::statsBy(tempdbs, subjectid)
-    #n_obs_per_subject <- mean(simplesubjectstats$n, na.rm=TRUE)  
-    #sd_n_obs_per_subject <- sd(simplesubjectstats$n, na.rm=TRUE) + 0.01
     
     # for each between subjects factor
     checknames <- colnames(tempdbs) # treat everything as between
     checknames <- checknames[which(checknames != dependentvariable)] # remove DV
     checknames <- checknames[which(checknames != subjectid)] # remove subjectID
     if (!is.null(within)) {
-      tempdbs$newvarnameforWT <- do.call(paste, c(tempdbs[within], sep="_by_"))
+      #tempdbs$newvarnameforWT <- do.call(paste, c(tempdbs[within], sep="_by_"))
+      tempdbs[, newvarnameforWT := do.call(paste, c(.SD, sep = "_by_")), .SDcols = within]
       checknames <- checknames[which(!(checknames %in% within))] # remove within
     } else {
       tempdbs$newvarnameforWT <- 'one'
     }
     if (length(between) > 0) {
-      tempdbs$newvarnameforBTW <- do.call(paste, c(tempdbs[between], sep="_by_"))
+      #tempdbs$newvarnameforBTW <- do.call(paste, c(tempdbs[between], sep="_by_"))
+      tempdbs[, newvarnameforBTW := do.call(paste, c(.SD, sep = "_by_")), .SDcols = between]
       checknames <- checknames[which(!(checknames %in% between))] # remove between
     } else {
       tempdbs$newvarnameforBTW <- 'one'
@@ -108,7 +119,10 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
         inflation <- 1.0
       }
     }
-      
+    
+    dataminval <- tempdbs[, min(get(dependentvariable), na.rm = TRUE)]
+    datamaxval <- tempdbs[, max(get(dependentvariable), na.rm = TRUE)]
+    
     mastertempdbs <- tempdbs
     
     # apply random effects
@@ -118,75 +132,63 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     randomformula <- stringr::str_split(randomformula, "\\+|\\*|\\/")[[1]]
     randomformula <- randomformula[which(randomformula != '')]
     
+    if (verbose) {cat(sprintf('lmerSimulateData(): looping through each between subjects variable\n'))}
     
-    # create output database
-    mastersim_data <- data.frame(matrix(NA, nrow=0, ncol=ncol(tempdbs)))
-    colnames(mastersim_data) <- colnames(tempdbs)
-    
+    BTWsimlist <- vector("list", length(uniqueBTW)) # Pre-allocate a list to store each iteration's result
     for (cBTW in 1:length(uniqueBTW)) {
-      checkdata <- tempdbs[which(tempdbs$newvarnameforBTW == uniqueBTW[cBTW]),]
+      
+      checkdata <- tempdbs[newvarnameforBTW == uniqueBTW[cBTW]]
       uniqueWT <- unique(checkdata$newvarnameforWT)
-      uniqueIDs <- unique(checkdata[,subjectid])
+      uniqueIDs <- unique(checkdata[[subjectid]])
       numberofsamples <- floor(length(uniqueIDs))
       if (!is.null(inflation)) {
         numberofsamples <- floor(numberofsamples * inflation)
       }
       
-      # create table for correlation matrix
-      outmatrix <- data.frame(matrix(NA, nrow=length(uniqueIDs), ncol=length(uniqueWT)))
-      colnames(outmatrix) <- uniqueWT
-      outvarmatrix <- data.frame(matrix(NA, nrow=length(uniqueIDs), ncol=length(uniqueWT)))
-      colnames(outvarmatrix) <- uniqueWT
-      samplecount <- c()
-      for (cP in 1:length(uniqueIDs)) {
-        subsamplecount <- c()
-        for (cWT in 1:length(uniqueWT)) {
-          checkidx <- which(checkdata$newvarnameforWT == uniqueWT[cWT] & checkdata[,subjectid] == uniqueIDs[cP])
-          if (length(checkidx) > 0) {
-            tempout <- checkdata[checkidx, dependentvariable]
-            outmatrix[cP, cWT] <- mean(tempout, na.rm=TRUE)
-            subsamplecount <- c(subsamplecount, length(tempout))
-            outvarmatrix[cP, cWT] <- sd(tempout, na.rm=TRUE)
-          }
-        }
-        samplecount <- c(samplecount, mean(subsamplecount, na.rm=TRUE))
-      }
+      if (verbose) {cat(sprintf('lmerSimulateData(): creating covariance matrix for between subjects factor\n'))}
       
-      # if there is only a single sample the sd would have failed
-      if (unique(samplecount) == 1) {
-        for (cWT in 1:length(uniqueWT)) {
-          checkidx <- which(checkdata$newvarnameforWT == uniqueWT[cWT])
-          if (length(checkidx) > 0) {
-            tempout <- checkdata[checkidx, dependentvariable]
-            outvarmatrix[, cWT] <- sd(tempout, na.rm=TRUE)
-          }
-        }
-      }
+      # create table for correlation matrix - aggregate by subjectid and newvarnameforWT
+      agg <- checkdata[, .(
+                         meanDV = mean(get(dependentvariable), na.rm = TRUE),
+                         sdDV   = sd(get(dependentvariable), na.rm = TRUE),
+                         nDV    = .N
+                       ), by = .(subject = get(subjectid), newvar = newvarnameforWT)
+      ]
+      outmatrix    <- data.table::dcast(agg, subject ~ newvar, value.var = "meanDV")
+      outvarmatrix <- data.table::dcast(agg, subject ~ newvar, value.var = "sdDV")
+      nmat         <- data.table::dcast(agg, subject ~ newvar, value.var = "nDV")
+      outmatrix    <- as.matrix(outmatrix[, -1, with=FALSE])
+      outvarmatrix <- as.matrix(outvarmatrix[, -1, with=FALSE])
+      nmat         <- as.matrix(nmat[, -1, with=FALSE])
+      samplecount <- rowMeans(nmat, na.rm = TRUE) # Compute samplecount (mean number of observations per subject)
       
       # transform to variance
       outvarmatrix <- outvarmatrix^2
-      for (cWT in 1:length(uniqueWT)) {
-        tempvect <- outvarmatrix[,cWT]
-        tempvectlimits <- quantile(tempvect, c(.10, .90), na.rm=TRUE)
-        outvarmatrix[which(tempvect < tempvectlimits[1]),cWT] <- NA
-        outvarmatrix[which(tempvect > tempvectlimits[2]),cWT] <- NA
-      }
+      limits <- apply(outvarmatrix, 2, quantile, probs = screen, na.rm = TRUE)
+      lower <- matrix(rep(limits[1, ], each = nrow(outvarmatrix)), nrow = nrow(outvarmatrix))
+      upper <- matrix(rep(limits[2, ], each = nrow(outvarmatrix)), nrow = nrow(outvarmatrix))
+      outvarmatrix[outvarmatrix < lower | outvarmatrix > upper] <- NA
       
       if (!is.null(subsample)) {
-        if (nrow(outmatrix) > 10) {
-          if ((0.0 <= subsample) & (subsample <= 1.0)) {
-            subsample <- 0.8
-          }
-          subnumberofsamples <- floor(nrow(outmatrix) * subsample)
+        if (is.numeric(subsample) && (subsample > 0) && (subsample < 1)) {
+          subsample_fraction <- subsample
         } else {
-          subnumberofsamples <- nrow(outmatrix) - 1
+          subsample_fraction <- 1  # No subsample
         }
-       # knock out 
-        selectsamples <- rep_len(TRUE, nrow(outmatrix))
-        selectsamples[sample(1:nrow(outmatrix), nrow(outmatrix)-subnumberofsamples, replace=FALSE)] <- FALSE
-        outmatrix <- outmatrix[selectsamples,]
-        outvarmatrix <- outvarmatrix[selectsamples,]
+        n <- nrow(outmatrix)
+        if (n > 10) {
+          subnumberofsamples <- floor(n * subsample_fraction)
+        } else {
+          subnumberofsamples <- n - 1
+        }
+        # Randomly select rows to keep
+        if (subnumberofsamples < n) {
+          keep_idx <- sample(n, subnumberofsamples, replace = FALSE)
+          outmatrix    <- outmatrix[keep_idx, , drop = FALSE]
+          outvarmatrix <- outvarmatrix[keep_idx, , drop = FALSE]
+        }
       }
+      
       if (length(uniqueWT) > 1) {
         tempsds <- colMeans(outvarmatrix, na.rm=TRUE)
       } else {
@@ -196,79 +198,115 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
       # grab the means and prevent an issue
       if (length(uniqueWT) > 1) {
         tempmeans <- colMeans(outmatrix, na.rm=TRUE)
-        # stupid simple hack for insufficient observations
-        outmatrix <- rbind(rbind(outmatrix, outmatrix), outmatrix)
-        tempsigma <- stats::cov(outmatrix, use="pairwise.complete.obs")
-        
-        
+        tempsigma <- tryCatch(
+          {stats::cov(outmatrix, use = "pairwise.complete.obs")},
+          error = function(e) {
+            # stupid simple hack for insufficient observations
+            outmatrix <- rbind(rbind(outmatrix, outmatrix), outmatrix)
+            tempsigma <- stats::cov(outmatrix, use="pairwise.complete.obs")
+          }
+        )
       } else {
         tempmeans <- mean(outmatrix, na.rm=TRUE)
-        # stupid simple hack for insufficient observations
-        outmatrix <- rbind(rbind(outmatrix, outmatrix), outmatrix)
         tempsigma <- matrix(c(tempsds,1),1,1)
       }
       
       multiplecasespersubject <- mean(samplecount, na.rm=TRUE, trim=0.25)
+      simlist <- vector("list", multiplecasespersubject) # Pre-allocate a list to store each iteration's result
       for (cMCpS in 1:multiplecasespersubject) {
+        if (verbose) {cat(sprintf('lmerSimulateData(): simulating multivariate data for case %d\n', cMCpS))}
         if (length(uniqueWT) > 1) {
+          
           # Simulate Multivariate Data
           if (parametric) {
-            withindata <- MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma)
+            withindata <- invisible(suppressMessages(suppressWarnings(MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma))))
           } else {
-            skewkurtcheck <- mnonr::mardia(outmatrix)
+            skewkurtcheck <- invisible(mnonr::mardia(outmatrix))
             skewkurtcheckuni <- data.table::as.data.table(skewkurtcheck$univariate)
             rownames(skewkurtcheckuni) <- rownames(skewkurtcheck$univariate)
-            withindata <- suppressWarnings(mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=unlist(skewkurtcheckuni[1,]), kurtosis = unlist(skewkurtcheckuni[3,])))
+            withindata <- invisible(suppressWarnings(mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=unlist(skewkurtcheckuni[1,]), kurtosis = unlist(skewkurtcheckuni[3,]))))
             colnames(withindata) <- colnames(outmatrix)
           }
+          withindata <- data.table::as.data.table(withindata)
+          
           # unpack data
-          for (cWT in 1:length(uniqueWT)) {
-            submastersim_data <- data.frame(matrix(NA, nrow=numberofsamples, ncol=ncol(tempdbs)))
-            colnames(submastersim_data) <- colnames(tempdbs)
-            submastersim_data[,dependentvariable] <- withindata[,cWT]
-            submastersim_data$newvarnameforBTW <- uniqueBTW[cBTW]
-            submastersim_data$newvarnameforWT <- uniqueWT[cWT]
-            submastersim_data[,subjectid] <- sprintf('IDCode_%s_%d', uniqueBTW[cBTW], seq(1:numberofsamples)) # generic ID
-            # merge database
-            mastersim_data <- rbind(mastersim_data, submastersim_data)
+          dt_long <- data.table::data.table(
+            newvarnameforWT = rep(uniqueWT, each = numberofsamples),
+            newvarnameforBTW = rep(uniqueBTW[cBTW], numberofsamples * length(uniqueWT)),
+            subjectid = sprintf('IDCode_%s_%d', uniqueBTW[cBTW], rep(seq_len(numberofsamples), times = length(uniqueWT)))
+          )
+          data.table::setnames(dt_long, "subjectid", subjectid)
+          dt_long[, (dependentvariable) := unlist(withindata, use.names = FALSE)]
+          
+          # Add missing columns as NA to match tempdbs
+          missing_cols <- setdiff(colnames(tempdbs), colnames(dt_long))
+          if (length(missing_cols) > 0) {
+            dt_long[, (missing_cols) := NA]
           }
+          data.table::setcolorder(dt_long, colnames(tempdbs))
+          simlist[[cMCpS]] <- dt_long  # Store in list
+          
         } else {
           # Simulate Univariate Data
           if (parametric) {
-            withindata <- MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma)
+            withindata <- invisible(suppressMessages(suppressWarnings(MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma))))
           } else {
-            withindata <- mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=NULL, kurtosis = NULL)
+            withindata <- invisible(suppressMessages(suppressWarnings(mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=NULL, kurtosis = NULL))))
             colnames(withindata) <- colnames(outmatrix)
           }
-          submastersim_data <- data.frame(matrix(NA, nrow=numberofsamples, ncol=ncol(tempdbs)))
-          colnames(submastersim_data) <- colnames(tempdbs)
-          submastersim_data[,dependentvariable] <- withindata[,1]
-          submastersim_data$newvarnameforBTW <- uniqueBTW[cBTW]
-          submastersim_data$newvarnameforWT <- uniqueWT[1]
-          submastersim_data[,subjectid] <- sprintf('IDCode_%s_%d', uniqueBTW[cBTW], seq(1:numberofsamples)) # generic ID
-          # merge database
-          mastersim_data <- rbind(mastersim_data, submastersim_data)
+          withindata <- data.table::as.data.table(withindata)
+          
+          # unpack data
+          dt_long <- data.table::data.table(
+            newvarnameforWT = rep(uniqueWT, each = numberofsamples),
+            newvarnameforBTW = rep(uniqueBTW[cBTW], numberofsamples * length(uniqueWT)),
+            subjectid = sprintf('IDCode_%s_%d', uniqueBTW[cBTW], rep(seq_len(numberofsamples), times = length(uniqueWT)))
+          )
+          data.table::setnames(dt_long, "subjectid", subjectid)
+          dt_long[, (dependentvariable) := unlist(withindata, use.names = FALSE)]
+          
+          # Add missing columns as NA to match tempdbs
+          missing_cols <- setdiff(colnames(tempdbs), colnames(dt_long))
+          if (length(missing_cols) > 0) {
+            dt_long[, (missing_cols) := NA]
+          }
+          data.table::setcolorder(dt_long, colnames(tempdbs))
+          simlist[[cMCpS]] <- dt_long  # Store in list
         }
       } # cases per subject
+      BTWsimlist[[cBTW]] <- data.table::rbindlist(simlist, use.names = TRUE, fill = TRUE)
+      
     } # between subjects
+    mastersim_data <- data.table::rbindlist(BTWsimlist, use.names = TRUE, fill = TRUE)
     
     # decode
     if (length(between) > 0) {
-      tempvect <- stringr::str_split(mastersim_data$newvarnameforBTW, '_by_')
-      for (cN in 1:length(between)) {
-        mastersim_data[,between[cN]] <- sapply(tempvect, function(x) { x[[cN]] })
-      }
+      mastersim_data[, (between) := data.table::tstrsplit(newvarnameforBTW, '_by_')]
+    }
+    if (!is.null(within)) {
+      mastersim_data[, (within) := data.table::tstrsplit(newvarnameforWT, '_by_')]
     }
     
-    if (!is.null(within)) {
-      tempvect <- stringr::str_split(mastersim_data$newvarnameforWT, '_by_')
-      for (cN in 1:length(within)) {
-        mastersim_data[,within[cN]] <- sapply(tempvect, function(x) { x[[cN]] })
-      }
+    # constrain data to observed values
+    if ((constrain == 'lower') | (constrain == 'both')) {
+      mastersim_data[get(dependentvariable) < dataminval, (dependentvariable) := dataminval]
+    }
+    if ((constrain == 'upper') | (constrain == 'both')) {
+      mastersim_data[get(dependentvariable) > datamaxval, (dependentvariable) := datamaxval]
     }
     
     # restore unadjusted original data - just in case
     tempdbs <- mastertempdbs
+    
+    # Apply original precision
+    try({
+      vals <- tempdbs[[dependentvariable]]
+      vals <- vals[!is.na(vals)]
+      get_decimals <- function(x) {ifelse(is.na(x), 0, nchar(sub("^\\d+\\.?|0+$", "", formatC(x, digits=20, format="f")))) }
+      mastersim_data[, (dependentvariable) := round(get(dependentvariable), digits = max(get_decimals(vals)))]
+    }, silent = TRUE)
+    
+    
     
     # populate other variables
     remainingfactors <- randomfactor
@@ -276,166 +314,33 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     if (length(remainingfactors) > 0) {
       for (cRF in 1:length(remainingfactors)) {
         # does this factor ever vary within a participant
-        withinfactorRF <- FALSE
-        for (cUNs in 1:length(subject_ids)) {
-          checkdata <- tempdbs[which(tempdbs[,subjectid] == subject_ids[cUNs]),]
-          if (length(unique(checkdata[,remainingfactors[cRF]])) > 1) {
-            withinfactorRF <- TRUE
-          }
-        }
+        withinfactorRF <- tempdbs[, .(n_unique = data.table::uniqueN(get(remainingfactors[cRF]))), by = subjectid][, any(n_unique > 1)]
         
         if (!(withinfactorRF)) {
           # between subjects factor
           
-          # determine allocation ratio
-          tempcal <- sprintf("subworkingdatabase <- doBy::summaryBy(%s ~ %s + %s, FUN=c(mean), data=tempdbs, keep.names=TRUE)", dependentvariable[1], subjectid[1], remainingfactors[cRF])
-          suppressWarnings(eval(parse(text=tempcal)))
+          subworkingdatabase <- tempdbs[, .(N = .N), by = c(subjectid, remainingfactors[cRF])]
+          uniqueRF <- unique(subworkingdatabase[[remainingfactors[cRF]]])
           
-          uniqueRF <- unique(subworkingdatabase[,remainingfactors[cRF]])
-          allocratio <- rep_len(NA, length(uniqueRF))
-          for (cBTW in 1:length(uniqueRF)) {
-            checkdata <- subworkingdatabase[which(subworkingdatabase[,remainingfactors[cRF]] == uniqueRF[cBTW]),]
-            allocratio[cBTW] <- nrow(checkdata) / nrow(subworkingdatabase)
-          }
+          # allocation ratio per group level
+          alloc_counts <- subworkingdatabase[, .(N = .N), by = eval(remainingfactors[cRF])]
+          alloc_counts[, ratio := N / sum(N)]
+          alloc_counts[, N := NULL]  # remove count, keep ratio
+          totaloutsubjects <- data.table::uniqueN(mastersim_data[[subjectid]])
+          alloc_counts[, n_subjects := round(ratio * totaloutsubjects)]
+          diff <- totaloutsubjects - sum(alloc_counts$n_subjects)
+          if (diff != 0) alloc_counts$n_subjects[1] <- alloc_counts$n_subjects[1] + diff
+          allocdistr <- unlist(mapply(rep, alloc_counts[[remainingfactors[cRF]]], alloc_counts$n_subjects))
+          allocdistr <- sample(allocdistr)  # shuffle
+          uniqueoutsubjects <- unique(mastersim_data[[subjectid]])
           
-          # each participant can only be 1
-          totaloutsubjects <- length(unique(mastersim_data[,subjectid]))
-          allocratio <- round(allocratio * totaloutsubjects, digits=0)
-          if (sum(allocratio) < totaloutsubjects) {
-            allocratio[1] <- allocratio[1] + 1
-          }
-          if (sum(allocratio) > totaloutsubjects) {
-            allocratio[1] <- allocratio[1] - 1
-          }
-          # generate vector
-          allocdistr <- c()
-          for (cBTW in 1:length(uniqueRF)) {
-            suballocdistr <- rep_len(sprintf('%s', uniqueRF[cBTW]), allocratio[cBTW])
-            allocdistr <- c(allocdistr, suballocdistr)
-          }
-          allocdistr <- sample(allocdistr) # randomize
-          
-          uniqueoutsubjects <- unique(mastersim_data[,subjectid])
-          for (cUNs in 1:length(uniqueoutsubjects)) {
-            mastersim_data[which(mastersim_data[,subjectid] == uniqueoutsubjects[cUNs]), remainingfactors[cRF]] <- allocdistr[cUNs]
-          }
+          dt_alloc <- data.table::data.table(subid = uniqueoutsubjects, allocdistr = allocdistr)
+          data.table::setnames(dt_alloc, "subid", subjectid)
+          data.table::setnames(dt_alloc, "allocdistr", remainingfactors[cRF])
+          idx <- match(mastersim_data[[subjectid]], dt_alloc[[subjectid]])
+          mastersim_data[, (remainingfactors[cRF]) := dt_alloc[[remainingfactors[cRF]]][idx]]
         } # is a between subjects factor
       } # each remaining factor
-    }
-    
-    applyrandomeffects <- FALSE
-    # when not adding random - consistently best result
-    #covariance: 100.0000%
-    #original fixed: 13.1107% vs simmed: 14.4532%
-    #original random: 27.7306% vs simmed: 28.0639%
-    
-    # when adding only random variances
-    #covariance: 97.0000%
-    #original fixed: 13.1107% vs simmed: 11.4930%
-    #original random: 27.7306% vs simmed: 19.9025%
-    
-    # when adding only random means
-    #covariance: 99.0000%
-    #original fixed: 13.1107% vs simmed: 11.7508%
-    #original random: 27.7306% vs simmed: 40.2483%
-    
-    # when adding both random variance and means
-    #covariance: 93.0000%
-    #original fixed: 13.1107% vs simmed: 9.9768%
-    #original random: 27.7306% vs simmed: 32.4383%
-    if (applyrandomeffects) {
-      # apply random effects in
-      for (cRF in 1:length(randomformula)) {
-        tempstr <- stringr::str_replace_all(stringr::str_split(randomformula[cRF], "[|]")[[1]], '[(]|[)]', "")
-        tempstr <- tempstr[which(tempstr != "1")]  
-        tempdbs$newvarnameforRF <- do.call(paste, c(tempdbs[tempstr], sep="_by_"))
-        mastersim_data$newvarnameforRF <- do.call(paste, c(mastersim_data[tempstr], sep="_by_"))
-        
-        uniqueRF <- unique(tempdbs$newvarnameforRF) 
-        uniqueRFmaster <- unique(mastersim_data$newvarnameforRF) 
-        if (length(uniqueRF) < 4) {
-          # reflects a discrete factor
-          
-          for (cBTW in 1:length(uniqueRF)) {
-            checkdata <- tempdbs[which(tempdbs$newvarnameforRF == uniqueRF[cBTW]),]
-            # compute unique additional standard deviation
-            tempsds <- sd(checkdata[,dependentvariable], na.rm=TRUE) - sd(tempdbs[,dependentvariable], na.rm=TRUE)
-            # transform to variance
-            tempsds <- tempsds^2
-            # compute intercept as difference from overall mean
-            tempmeans <- mean(checkdata[,dependentvariable], na.rm=TRUE) - mean(tempdbs[,dependentvariable], na.rm=TRUE)
-            # mimic covariance matrix
-            tempsigma <- matrix(c(tempsds,1),1,1)
-            #tempmeans <- tempmeans * 0
-            
-            checkdataout <- mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]),]
-            numberofsamples <- nrow(checkdataout)
-            
-            # Simulate Univariate Data
-            if (parametric) {
-              withindata <- MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma)
-              withindata <- unlist(as.list(withindata))
-            } else {
-              withindata <- mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=NULL, kurtosis = NULL)
-              withindata <- unlist(as.list(withindata))
-            }
-            
-            # add the random effect in - only handles random intercepts - not slopes
-            tempvect <- mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]), dependentvariable]
-            mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]),dependentvariable] <- tempvect + withindata
-            
-          } #
-        } else {
-          # likely reflects some distribution of values
-          potentialmeans <- c()
-          potentialvariances <- c()
-          
-          # find the distribution
-          for (cBTW in 1:length(uniqueRF)) {
-            checkdata <- tempdbs[which(tempdbs$newvarnameforRF == uniqueRF[cBTW]),]
-            # compute unique additional standard deviation
-            tempsds <- sd(checkdata[,dependentvariable], na.rm=TRUE) - sd(tempdbs[,dependentvariable], na.rm=TRUE)
-            # transform to variance
-            tempsds <- tempsds^2
-            # compute intercept as difference from overall mean
-            tempmeans <- mean(checkdata[,dependentvariable], na.rm=TRUE) - mean(tempdbs[,dependentvariable], na.rm=TRUE)
-            
-            potentialmeans <- c(potentialmeans, tempmeans)
-            potentialvariances <- c(potentialvariances, tempsds)
-          }
-          # generate limits based upon the original data
-          potentialmeanlimits <- quantile(potentialmeans, c(.10, .90), na.rm=TRUE)
-          #potentialmeanlimits <- c(min(potentialmeans, na.rm=TRUE), max(potentialmeans, na.rm=TRUE))
-          potentialvariancelimits <- quantile(potentialvariances, c(.10, .90), na.rm=TRUE)
-          #potentialvariancelimits <- c(min(potentialvariances, na.rm=TRUE), max(potentialvariances, na.rm=TRUE))
-          
-          for (cBTW in 1:length(uniqueRFmaster)) {
-            # randomly generate a value from the potentials - all values are equally likely
-            tempmeans <- stats::runif(1, potentialmeanlimits[1], potentialmeanlimits[2]+0.0001)
-            tempsds <- stats::runif(1, potentialvariancelimits[1], potentialvariancelimits[2]+0.0001)
-            #tempmeans <- tempmeans * 0
-            
-            # mimic covariance matrix
-            tempsigma <- matrix(tempsds[1], nrow=1, ncol=1)
-            checkdataout <- mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]),]
-            numberofsamples <- nrow(checkdataout)
-            
-            # Simulate Univariate Data
-            if (parametric) {
-              withindata <- MASS::mvrnorm(numberofsamples, tempmeans, Sigma = tempsigma)
-              withindata <- unlist(as.list(withindata))
-            } else {
-              withindata <- suppressWarnings(mnonr::unonr(n=numberofsamples, mu=tempmeans, Sigma = tempsigma, skewness=NULL, kurtosis = NULL))
-              withindata <- unlist(as.list(withindata))
-            }
-            
-            # add the random effect in - only handles random intercepts - not slopes
-            tempvect <- mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]), dependentvariable]
-            mastersim_data[which(mastersim_data$newvarnameforRF == uniqueRFmaster[cBTW]), dependentvariable] <- tempvect + withindata
-            
-          } # each factor in master
-        } # number of factor levels
-      } # each random element
     }
     
      # remove decode
@@ -445,7 +350,10 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
      
     # return same order
     tempdbs <- stats::model.frame(fit)
-    mastersim_data <- mastersim_data[,colnames(tempdbs)]
+    data.table::setcolorder(mastersim_data, colnames(tempdbs))
+    mastersim_data <- mastersim_data[, .SD, .SDcols = colnames(tempdbs)]
+    mastersim_data <- as.data.frame(mastersim_data)
+    
   } else {
     #method = "conditionaldistribution"
     
