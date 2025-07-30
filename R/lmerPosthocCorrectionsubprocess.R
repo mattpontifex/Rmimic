@@ -23,8 +23,7 @@ lmerPosthocCorrectionsubprocess <- function(results) {
     uniquenames <- names(results$posthoc)
     for (cUN in 1:length(uniquenames)) {
       
-      textcall <- sprintf("tempelement <- results$posthoc$%s", uniquenames[cUN])
-      eval(parse(text=textcall))
+      tempelement <- results$posthoc[[uniquenames[cUN]]]
       
       if (is.data.frame(tempelement)) {
         

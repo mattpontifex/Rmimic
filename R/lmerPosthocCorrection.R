@@ -142,7 +142,7 @@ lmerPosthocCorrection <- function(results, method=NULL, studywiseAlpha=NULL, FDR
       FDRC <- 0.05
     }
     # get posthoclinkmatrix
-    results <- Rmimic::lmerPosthocCorrectionsubprocess(results)
+    results <- lmerPosthocCorrectionsubprocess(results)
     
     if (nrow(results$posthoclinkmatrix) > 0) {
       temp <- results$posthoclinkmatrix[order(results$posthoclinkmatrix$p.value),]
