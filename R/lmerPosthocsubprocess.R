@@ -152,7 +152,8 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
           for (cD in 1:length(currentfactorlevelsinvolved)) {
             # subset data
             subworkingdatabase <- tempdbs
-            subworkingdatabase <- subworkingdatabase[which(subworkingdatabase[,currentfactor[1]] == currentfactorlevelsinvolved[cD]),]
+            subworkingdatabase <- data.table::as.data.table(subworkingdatabase)
+            subworkingdatabase <- subworkingdatabase[get(currentfactor[1]) == currentfactorlevelsinvolved[cD]]
             
             currentfactorlevelstring <- currentfactorlevelsinvolved[cD]
             # see if factor is just a number
@@ -162,41 +163,35 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
             decompconst <- sprintf('When %s is %s', currentfactor[1], currentfactorlevelstring)
             
             # validate if random factors can be included
-            randomformula <- Reduce(paste, deparse(stats::formula(fit, random.only = TRUE)))
-            randomformula <- stringr::str_split(stringr::str_remove_all(randomformula, ' '), '~')[[1]][2]
-            randomformula <- stringr::str_split(randomformula, '[+]')[[1]]
-            for (cRF in 1:length(randomformula)) {
-              # This regex captures words composed of letters, digits, and underscores
-              variables_in_formula <- unlist(regmatches(randomformula[cRF], gregexpr("\\b\\w+\\b", randomformula[cRF])))
-              tempvect <- intersect(variables_in_formula, colnames(subworkingdatabase))
-              boolpass <- rep_len(TRUE, length(tempvect))
-              for (cRFtemp in 1:length(tempvect)) {
-                if (length(unique(subworkingdatabase[,tempvect[cRFtemp]])) < 2) {
-                  boolpass[cRFtemp] <- FALSE
+            rf_str <- Reduce(paste, deparse(stats::formula(fit, random.only = TRUE)))
+            rf_terms <- stringr::str_split(stringr::str_remove_all(rf_str, " "), "~")[[1]][2]
+            random_terms <- trimws(unlist(strsplit(rf_terms, "\\+")))
+            keep_terms <- character(0)
+            for (term in random_terms) {
+              # Extract variable names
+              vars <- unlist(regmatches(term, gregexpr("\\b\\w+\\b", term)))
+              # Only keep variables that are columns in the data
+              valid_vars <- intersect(vars, colnames(subworkingdatabase))
+              # Vectorized unique count check
+              uniq_counts <- sapply(valid_vars, function(v) data.table::uniqueN(subworkingdatabase[[v]]))
+              # For all variables in term, must have at least 2 levels
+              if (all(uniq_counts > 1)) {
+                keep_terms <- c(keep_terms, term)
+              } else {
+                # Try replacing bad variables with 1 and clean up
+                fixed_term <- term
+                for (v in valid_vars[uniq_counts <= 1]) {
+                  fixed_term <- stringr::str_replace_all(fixed_term, v, "1")
+                  fixed_term <- stringr::str_replace_all(fixed_term, ":1|1:", "")
                 }
-              }
-              if (!all(boolpass)) {
-                # insufficient levels for this random factor to remain
-                boolresolved <- FALSE
-                
-                # can you put a constant in but keep the factor
-                potentialswitch <- stringr::str_replace_all(randomformula[cRF], tempvect[which(!boolpass)], '1')
-                potentialswitch <- stringr::str_replace_all(potentialswitch, ':1', '')
-                potentialswitch <- stringr::str_replace_all(potentialswitch, '1:', '')
-                if (!(potentialswitch %in% randomformula)) {
-                  if (!(potentialswitch == '(1|1)')) {
-                    randomformula[cRF] <- potentialswitch
-                    boolresolved <- TRUE
-                  }
+                # If after replacement it's not trivial, keep it
+                if (!fixed_term %in% keep_terms && fixed_term != "(1|1)" && fixed_term != "") {
+                  keep_terms <- c(keep_terms, fixed_term)
                 }
-                # if not resolved just remove it
-                if (!boolresolved) {
-                  randomformula[cRF] <- ""
-                }
+                # Otherwise, discard the term
               }
             }
-            randomformula <- randomformula[which(randomformula != '')]
-            randomformula <- paste(randomformula, collapse='+')
+            randomformula <- paste(keep_terms[keep_terms != ""], collapse = " + ")
             
             if (factorsinvolvedL > 1) {
               fixedformula <- paste(otherfactorsinvolved, collapse=sprintf("*")) # since this is an interaction decomposition
@@ -216,8 +211,8 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
             # run the anova on the factor of interest using the subsetted data
             smp <- subworkingdatabase
             subfit <- tryCatch({
-              textcall <- sprintf('subfit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp))', dependentvariable[1], fixedformula, randomformula)
-              subfit <- eval(parse(text=textcall))
+              model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula))
+              subfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))
             }, error = function(e) {
               cat(sprintf('\nThis error is usually the result of too many random factors specified for the interaction.\nUnable to run decomposition anova with the formula: %s ~ %s + %s\n', dependentvariable[1], fixedformula, randomformula))
               subfit <- NULL
@@ -230,20 +225,19 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               
               # need to output subresults to res
               if (length(names(subresults)) > 0) {
-                textcall <- sprintf("res$ANOVA_%s <- subresults", factortag)
-                eval(parse(text=textcall))
+                res[[sprintf("ANOVA_%s", factortag)]] <- subresults
               }
             } # submodel
           } # each factor level involved
         } else {
           # compute all pairwise contrasts
           posthoctemptestfull <- tryCatch({
-            hold <- ''
+            emm_formula <- as.formula(paste("~", paste(effectofinterest, collapse = "*")))
             if (factorsinvolvedL > 1) {
-              hold <- sprintf("by = '%s', ", currentfactor)
+              posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))
+            } else {
+              posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))
             }
-            textcall <- sprintf("posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none'))))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
-            eval(parse(text=textcall))
             posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             
             # rank deficiencies and when the estimability package identifies an interaction will result in NA being returned
@@ -258,12 +252,16 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               if (factorsinvolvedL > 1) {
                 fixedformula <- paste(c(fixedformula, currentfactor), collapse=sprintf("*"))
               }
-              textcall <- sprintf('fixfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp)))', dependentvariable[1], fixedformula, randomformula[2])
-              eval(parse(text=textcall))
+              
+              model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula[2]))
+              fixfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))
               
               # now compute the pairwise contrast
-              textcall <- sprintf("posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fixfit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none'))))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
-              eval(parse(text=textcall))
+              if (factorsinvolvedL > 1) {
+                posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))
+              } else {
+                posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))
+              }
               posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             }
             posthoctemptestfull <- as.data.frame(posthoctemptestfull)
@@ -469,8 +467,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
           
           # need to output table to res
           if (nrow(outtable) > 0) {
-            textcall <- sprintf("res$Posthoc_%s <- outtable", factortag)
-            eval(parse(text=textcall))
+            res[[sprintf("Posthoc_%s", factortag)]] <- outtable
           }
         } # no anova required
         

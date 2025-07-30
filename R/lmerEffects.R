@@ -218,12 +218,12 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   if (sum(boolcheckfactors) < length(colnames(tempdbs))) {
     # refit model
     fit <- tryCatch({
-      textcall <- sprintf('fit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s, data = tempdbs))', Reduce(paste, deparse(stats::formula(fit))))
-      fit <- eval(parse(text=textcall))
+      model_formula <- as.formula(Reduce(paste, deparse(stats::formula(fit))))
+      fit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = tempdbs)))
     }, error = function(e) {
       cat(sprintf('\n\nlmerEffects() Warning: the specified model includes numeric factor(s). Numeric factor levels may result in errors.\n'))
-      textcall <- sprintf('fit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s, data = tempdbs))', Reduce(paste, deparse(stats::formula(fit))))
-      fit <- eval(parse(text=textcall))
+      model_formula <- as.formula(Reduce(paste, deparse(stats::formula(fit))))
+      fit <- lmerTest::lmer(formula = model_formula, data = tempdbs)
     })
   }
   
@@ -298,9 +298,9 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   # Compute ANOVA table for model
   as <- tryCatch({
     if (toupper(df) == toupper("Shattertwaite")) {
-      as <- data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3)))
+      as <- invisible(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3))))
     } else {
-      as <- data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3, ddf = "Kenward-Roger")))
+      as <- invisible(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3, ddf = "Kenward-Roger"))))
     }
   }, error = function(e) {
     as <- NULL
@@ -342,7 +342,7 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
       for (cT in 1:nrow(dataframeout)) {
         if (!is.na(dataframeout$partialetasquared[cT])) {
           tempvect <- tryCatch({
-            temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$partialetasquared[cT], numparticipants, length(unlist(strsplit(as.character(dataframeout$Effect[cT]),"[:]"))), level = confidenceinterval)))
+            temp <- invisible(pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(dataframeout$partialetasquared[cT], numparticipants, length(unlist(strsplit(as.character(dataframeout$Effect[cT]),"[:]"))), level = confidenceinterval))))
           }, error = function(e) {
             tempvect <- NULL
           })
@@ -368,12 +368,12 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   # lmerTest::ranova tries to access data from the parent environment rather than data through the call
   # bootstrap function can pass data through smp 
   as <- tryCatch({
-    as <- data.frame(lmerTest::ranova(fit))
+    as <- invisible(data.frame(lmerTest::ranova(fit)))
   }, error = function(e) {
     # oldschool approach
     tempdbs <- stats::model.frame(fit) # pull data out
-    fit <- update(fit, data=tempdbs, evaluate = TRUE) # tell model to update itself with the old data
-    as <- data.frame(lmerTest::ranova(fit)) # magically this function works again
+    fit <- invisible(update(fit, data=tempdbs, evaluate = TRUE)) # tell model to update itself with the old data
+    as <- invisible(data.frame(lmerTest::ranova(fit))) # magically this function works again
   })
   if (!is.null(as)) {
     as <- as[2:nrow(as),]
@@ -398,7 +398,7 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   colnames(dataframeout) <- c('portion', 'effects', 'ci.lower', 'ci.upper')
   dataframeout$portion <- c('Fixed', 'Random', 'Model')  
   as <- tryCatch({
-    as <- suppressWarnings(MuMIn::r.squaredGLMM(fit))
+    as <- invisible(suppressWarnings(MuMIn::r.squaredGLMM(fit)))
   }, error = function(e) {
     as <- NULL
     stop('Unable to compute the MuMIn::r.squaredGLMM(fit) for this model. Please verify that the model is correct.')
@@ -411,7 +411,7 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     ciUpper <- rep_len(NA, length(as))
     for (cT in 1:length(as)) {
       temp <- tryCatch({
-        temp <- pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(as[cT], numparticipants, numfactors, level=confidenceinterval)))
+        temp <- invisible(pkgcond::suppress_conditions(suppressWarnings(psychometric::CI.Rsq(as[cT], numparticipants, numfactors, level=confidenceinterval))))
       }, error = function(e) {
         temp <- NULL
       })

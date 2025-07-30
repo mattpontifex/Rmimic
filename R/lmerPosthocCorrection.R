@@ -58,8 +58,9 @@ lmerPosthocCorrection <- function(results, method=NULL, studywiseAlpha=NULL, FDR
       uniquenames <- names(results$posthoc)
       for (cUN in 1:length(uniquenames)) {
   
-        textcall <- sprintf("tempelement <- results$posthoc$%s", uniquenames[cUN])
-        eval(parse(text=textcall))
+        #textcall <- sprintf("tempelement <- results$posthoc$%s", uniquenames[cUN])
+        #eval(parse(text=textcall))
+        tempelement <- results$posthoc[[uniquenames[cUN]]]
         
         if (is.data.frame(tempelement)) {
           # element is a table
@@ -122,12 +123,14 @@ lmerPosthocCorrection <- function(results, method=NULL, studywiseAlpha=NULL, FDR
         } else {
           # element is a structure
           # recursive call
-          tempelement <- Rmimic::lmerPosthocCorrection(tempelement, method=method, studywiseAlpha=studywiseAlpha)
+          tempelement <- lmerPosthocCorrection(tempelement, method=method, studywiseAlpha=studywiseAlpha)
         }
         
         # put it back
-        textcall <- sprintf("results$posthoc$%s <- tempelement", uniquenames[cUN])
-        eval(parse(text=textcall))
+        #textcall <- sprintf("results$posthoc$%s <- tempelement", uniquenames[cUN])
+        #eval(parse(text=textcall))
+        results$posthoc[[uniquenames[cUN]]] <- tempelement
+        
       }
     }
   }
@@ -155,13 +158,16 @@ lmerPosthocCorrection <- function(results, method=NULL, studywiseAlpha=NULL, FDR
             # get text
             templocation <- temp$location[rank]
             temprow <- temp$row[rank]
-            funcal <- sprintf('tempinterlocation <- results$posthoc$%s$textoutput[%d]',templocation,temprow)
-            suppressWarnings(eval(parse(text=funcal)))
+            #funcal <- sprintf('tempinterlocation <- results$posthoc$%s$textoutput[%d]',templocation,temprow)
+            #suppressWarnings(eval(parse(text=funcal)))
+            tempinterlocation <- results$posthoc[[sprintf('%s$textoutput[%d]',templocation,temprow)]]
+            
             # ammend text with warning
             tempinterlocation <- sprintf('%s <span class="posthoccorrection">However, that difference did not remain significant following false discovery rate control %s.</span>', tempinterlocation, criticalphrase)
             # put it back
-            funcal <- sprintf('results$posthoc$%s$textoutput[%d] <- tempinterlocation',templocation,temprow)
-            suppressWarnings(eval(parse(text=funcal)))
+            #funcal <- sprintf('results$posthoc$%s$textoutput[%d] <- tempinterlocation',templocation,temprow)
+            #suppressWarnings(eval(parse(text=funcal)))
+            results$posthoc[[sprintf('%s$textoutput[%d]',templocation,temprow)]] <- tempinterlocation
           }
         }
       }

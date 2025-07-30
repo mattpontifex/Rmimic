@@ -357,8 +357,9 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
     outputnames <- names(tempdbs)
     for (cOutputNames in 1:length(outputnames)) {
       workingdataout <- NULL
-      textcall <- sprintf("workingdataout <- tempdbs$%s", outputnames[cOutputNames])
-      eval(parse(text=textcall))
+      #textcall <- sprintf("workingdataout <- tempdbs$%s", outputnames[cOutputNames])
+      #eval(parse(text=textcall))
+      workingdataout <- tempdbs[[outputnames[cOutputNames]]]
       if (!is.null(workingdataout)) {
         if (is.data.frame(workingdataout)) {
           # posthoc tests
@@ -516,8 +517,9 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
           } # for each row of workingdataout
           
           # put data back in
-          textcall <- sprintf("res$posthoc$%s$textoutput <- workingdataout$textoutput", outputnames[cOutputNames])
-          eval(parse(text=textcall))
+          #textcall <- sprintf("res$posthoc$%s$textoutput <- workingdataout$textoutput", outputnames[cOutputNames])
+          #eval(parse(text=textcall))
+          res$posthoc[[sprintf("%s$textoutput", outputnames[cOutputNames])]] <- workingdataout$textoutput
           
           # see if we need to get fancy
           if (nrow(workingdataout) == 1) {
@@ -544,8 +546,9 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
           workingdataout <- lmerEffects2text(workingdataout, tag=tag, subtag=subtag, testconfidence=testconfidence, significanceconfidence=significanceconfidence)
           
           # put it back
-          textcall <- sprintf("res$posthoc$%s <- workingdataout", outputnames[cOutputNames])
-          eval(parse(text=textcall))
+          #textcall <- sprintf("res$posthoc$%s <- workingdataout", outputnames[cOutputNames])
+          #eval(parse(text=textcall))
+          res$posthoc[[outputnames[cOutputNames]]] <- workingdataout
         }
       }
     }
