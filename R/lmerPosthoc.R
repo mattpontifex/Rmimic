@@ -71,7 +71,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   if (!all(listofoutputsfromlmerEffects %in% names(results))) {
     # try running lmerEffects
     results <- tryCatch({
-      results <- Rmimic::lmerEffects(results, dependentvariable=dependentvariable, subjectid=subjectid, within=within, df=df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=NULL)
+      results <- lmerEffects(results, dependentvariable=dependentvariable, subjectid=subjectid, within=within, df=df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=NULL)
     }, error = function(e) {
       results <- NULL
     })
@@ -309,13 +309,10 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
           if (length(names(tempresult)) > 0) {
             # store results
             if ('posthoc' %in% names(results)) {
-              outputnames <- names(tempresult)
-              for (cOutputNames in 1:length(outputnames)) {
-                textcall <- sprintf("results$posthoc$%s <- tempresult$%s", outputnames[cOutputNames], outputnames[cOutputNames])
-                eval(parse(text=textcall))
-              }
+              results$posthoc[names(tempresult)] <- tempresult
             } else {
-              results$posthoc <- tempresult
+              results$posthoc <- list()
+              results$posthoc[names(tempresult)] <- tempresult
             }
           }
         }
