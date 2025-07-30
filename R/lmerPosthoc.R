@@ -309,10 +309,10 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
           if (length(names(tempresult)) > 0) {
             # store results
             if ('posthoc' %in% names(results)) {
-              results$posthoc[[names(tempresult)] <- tempresult
+              results$posthoc[[names(tempresult)]] <- tempresult
             } else {
               results$posthoc <- list()
-              results$posthoc[[names(tempresult)] <- tempresult
+              results$posthoc[[names(tempresult)]] <- tempresult
             }
           }
         }
