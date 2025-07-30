@@ -13,6 +13,7 @@
 #' @author Matthew B. Pontifex, \email{pontifex@@msu.edu}, May 13, 2025
 #' 
 #' @importFrom stats model.frame simulate
+#' @importFrom data.table data.table as.data.table
 #'
 #' @export
 
@@ -53,80 +54,63 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
     if (subsample < 1.0) {
       
       # subsample participants within each between subjects group
-      smp <- data.frame(matrix(NA, nrow=0, ncol=ncol(tempdbs)))
-      colnames(smp) <- colnames(tempdbs)
-      for (cBTW in 1:length(uniqueBTW)) {
-        btwsubtempdbs <- tempdbs[which(tempdbs$newvarnameforBTW == uniqueBTW[cBTW]),]
-        btwuniqueids <- unique(btwsubtempdbs[,subjectid])
+      tempdbs <- data.table::as.data.table(tempdbs)
+      smplist <- vector("list", length(uniqueBTW))
+      for (cBTW in seq_along(uniqueBTW)) {
+        btwsubtempdbs <- tempdbs[newvarnameforBTW == uniqueBTW[cBTW]]
+        btwuniqueids <- unique(btwsubtempdbs[[subjectid]])
         btwuniqueidsL <- length(btwuniqueids)
         subuniqeids <- floor(btwuniqueidsL * subsample)
-        selectsamples <- rep_len(TRUE, btwuniqueidsL)
-        selectsamples[sample(1:btwuniqueidsL, btwuniqueidsL-subuniqeids, replace=FALSE)] <- FALSE
-        includedids <- btwuniqueids[which(selectsamples)]
-        btwsmp <- btwsubtempdbs[which(btwsubtempdbs[,subjectid] %in% includedids),]
-        smp <- rbind(smp, btwsmp)
+        includedids <- sample(btwuniqueids, subuniqeids)
+        btwsmp <- btwsubtempdbs[btwsubtempdbs[[subjectid]] %in% includedids]
+        smplist[[cBTW]] <- btwsmp
       }
-        
-      # Some piece of information is not getting updated - resulting in a downstream bug when we do posthoc analyses
-      fit <- update(fit, data=smp, evaluate = TRUE)
+      smp <- data.table::rbindlist(smplist, use.names = TRUE, fill = TRUE)
       
-      #fixedformula <- Reduce(paste, deparse(stats::formula(fit, fixed.only = TRUE)))
-      #fixedformula <- stringr::str_split(stringr::str_remove_all(fixedformula, ' '), '~')[[1]]
-      #randomformula <- Reduce(paste, deparse(stats::formula(fit, random.only = TRUE)))
-      #randomformula <- stringr::str_split(stringr::str_remove_all(randomformula, ' '), '~')[[1]]
-      #textcall <- sprintf('fit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp))', dependentvariable[1], fixedformula[2], randomformula[2])
-      #eval(parse(text=textcall))
+      fit <- update(fit, data=smp, evaluate = TRUE)
     }
   }
   
   # determine how many loops
-  reps <- ceiling(max(targetN, na.rm=TRUE) / min(uniqueBTWL, na.rm=TRUE)) * 4 # increase so cases always need to be removed
-  for (cReps in 1:reps) {
-    smp <- stats::model.frame(fit)
-    gg <- stats::simulate(fit,1)
-    smp[,dependentvariable] <- gg[,1] # swap data in
-    smp[,subjectid] <- paste(sprintf('IDCode_%d_', cReps), smp[,subjectid], sep='')  # generic ID
-    
-    if (is.null(mainsmp)) {
-      mainsmp <- smp
-    } else {
-      mainsmp <- rbind(mainsmp, smp)
-    }
+  reps <- ceiling(max(targetN, na.rm=TRUE) / min(uniqueBTWL, na.rm=TRUE)) * 2 # increase so cases always need to be removed
+  
+  simlist <- vector("list", reps)
+  for (cReps in seq_len(reps)) {
+    smp <- data.table::as.data.table(stats::model.frame(fit))
+    gg <- stats::simulate(fit, 1)
+    smp[, (dependentvariable) := gg[[1]] ]
+    smp[, (subjectid) := paste(sprintf('IDCode_%d_', cReps), get(subjectid), sep='')] # generic ID
+    simlist[[cReps]] <- smp
   }
+  mainsmp <- data.table::rbindlist(simlist)
   
   # check totals
   if (length(between) > 0) {
-    mainsmp$newvarnameforBTW <- do.call(paste, c(mainsmp[between], sep="_by_"))
+    mainsmp[, newvarnameforBTW := do.call(paste, c(.SD, sep = "_by_")), .SDcols = between]
   } else {
-    mainsmp$newvarnameforBTW <- 'one'
+    mainsmp[, newvarnameforBTW := "one"]
   }
   
   # remove excess participants - there should always be excess based upon the approach
-  smp <- data.frame(matrix(NA, nrow=0, ncol=ncol(mainsmp)))
-  colnames(smp) <- colnames(mainsmp)
-  for (cBTW in 1:length(uniqueBTW)) {
-    # remove the needed number of cases
-    btwsubtempdbs <- mainsmp[which(mainsmp$newvarnameforBTW == uniqueBTW[cBTW]),]
-    btwuniqueids <- unique(btwsubtempdbs[,subjectid])
-    btwuniqueidsL <- length(btwuniqueids)
-    selectsamples <- rep_len(TRUE, btwuniqueidsL)
-    selectsamples[sample(1:btwuniqueidsL, btwuniqueidsL-targetN[cBTW], replace=FALSE)] <- FALSE
-    includedids <- btwuniqueids[which(selectsamples)]
-    btwsmp <- btwsubtempdbs[which(btwsubtempdbs[,subjectid] %in% includedids),]
-    smp <- rbind(smp, btwsmp)
+  mainsmp <- data.table::as.data.table(mainsmp)
+  smplist <- vector("list", length(uniqueBTW))
+  for (cBTW in seq_along(uniqueBTW)) {
+    N <- targetN[cBTW]
+    btwsubtempdbs <- mainsmp[newvarnameforBTW == uniqueBTW[cBTW]]
+    btwuniqueids <- unique(btwsubtempdbs[[subjectid]])
+    
+    includedids <- sample(btwuniqueids, N)
+    btwsmp <- btwsubtempdbs[get(subjectid) %in% includedids]
+    smplist[[cBTW]] <- btwsmp
   }
-  smp$newvarnameforBTW <- NULL # remove it
+  smp <- data.table::rbindlist(smplist, use.names = TRUE)
+  smp[, newvarnameforBTW := NULL]  # Remove column
   
-  # rerun model on new data
-  #newfit <- update(fit, data=smp, evaluate = TRUE)
+  # return same order
+  tempdbs <- stats::model.frame(fit)
+  data.table::setcolorder(smp, colnames(tempdbs))
+  smp <- smp[, .SD, .SDcols = colnames(tempdbs)]
+  smp <- as.data.frame(smp)
   
-  # i think the dataframe is carrying forward additional information that is causing a random bug to occur
-  # maybe not - but doesnt hurt to keep
-  outputdataframe <- data.frame(matrix(NA, nrow=nrow(smp), ncol=ncol(smp)))
-  colnames(outputdataframe) <- colnames(smp)
-  for (cC in 1:ncol(smp)) {
-    outputdataframe[,cC] <- unlist(smp[,cC])
-  }
-  
-  return(outputdataframe)
+  return(smp)
 }

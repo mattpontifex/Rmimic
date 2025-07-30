@@ -386,7 +386,21 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     }
     numberofsamples <- floor(inflation * uniqueBTWL)
     
-    mastersim_data <- lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample)
+    tempdbs <- data.table::as.data.table(tempdbs)
+    dataminval <- tempdbs[, min(get(dependentvariable), na.rm = TRUE)]
+    datamaxval <- tempdbs[, max(get(dependentvariable), na.rm = TRUE)]
+    
+    mastersim_data <- invisible(lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample))
+    
+    # constrain data to observed values
+    mastersim_data <- data.table::as.data.table(mastersim_data)
+    if ((constrain == 'lower') | (constrain == 'both')) {
+      mastersim_data[get(dependentvariable) < dataminval, (dependentvariable) := dataminval]
+    }
+    if ((constrain == 'upper') | (constrain == 'both')) {
+      mastersim_data[get(dependentvariable) > datamaxval, (dependentvariable) := datamaxval]
+    }
+    mastersim_data <- as.data.frame(mastersim_data)
     
   }
   return(mastersim_data)
