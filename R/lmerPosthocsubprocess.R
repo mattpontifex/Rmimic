@@ -27,6 +27,7 @@
 #' @importFrom MBESS conf.limits.nct
 #' @importFrom stats cor.test formula model.frame complete.cases
 #' @importFrom WRS2 pbcor
+#' @importFrom data.table data.table as.data.table
 #' 
 #' @export
 
@@ -241,7 +242,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
             if (factorsinvolvedL > 1) {
               hold <- sprintf("by = '%s', ", currentfactor)
             }
-            textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none')))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
+            textcall <- sprintf("posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none'))))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
             eval(parse(text=textcall))
             posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             
@@ -257,11 +258,11 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               if (factorsinvolvedL > 1) {
                 fixedformula <- paste(c(fixedformula, currentfactor), collapse=sprintf("*"))
               }
-              textcall <- sprintf('fixfit <- pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp))', dependentvariable[1], fixedformula, randomformula[2])
+              textcall <- sprintf('fixfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = %s ~ %s + %s, data = smp)))', dependentvariable[1], fixedformula, randomformula[2])
               eval(parse(text=textcall))
               
               # now compute the pairwise contrast
-              textcall <- sprintf("posthoctemptestfull <- pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fixfit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none')))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
+              textcall <- sprintf("posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fixfit, ~ %s, adjust = 'none', mode='%s'), %sadjust='none'))))", paste(effectofinterest, collapse=sprintf("*")), emmeansdf, hold)
               eval(parse(text=textcall))
               posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             }
@@ -302,13 +303,15 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               subouttable$decomp <- decomptext
               subouttable$hold <- decompconst
               
+              
               # hold current factor level constant and subset
               for (currentContrastLine in 1:nrow(posthoctemptestsub)) {
                 
                 # restrict data to only the constant
                 subworkingdatabase <- tempdbs
+                subworkingdatabase <- data.table::as.data.table(subworkingdatabase)
                 if (factorsinvolvedL > 1) {
-                  subworkingdatabase <- subworkingdatabase[which(subworkingdatabase[,currentfactor[1]] == posthoctemptestsub[currentContrastLine,2]),]
+                  subworkingdatabase <- subworkingdatabase[get(currentfactor[1]) == posthoctemptestsub[currentContrastLine, 2]]
                 } else {
                   otherfactorsinvolved <- currentfactor[1]
                 }
@@ -321,32 +324,37 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 checkname1 <- contrastlevels[1]
                 checkname2 <- contrastlevels[2]
                 # if factor levels are numbers rather than strings an error can occur
-                checkC <- length(which(subworkingdatabase[,otherfactorsinvolved[1]] == contrastlevels[1])) + length(which(subworkingdatabase[,otherfactorsinvolved[1]] == contrastlevels[2]))
+                checkC <- subworkingdatabase[get(otherfactorsinvolved[1]) %in% contrastlevels, .N]
                 if (checkC == 0) {
                   #warning('lmerPosthoc(): the factor %s appears to be a numeric column rather than string.\n')
                   checkname1 <- stringr::str_split(contrastlevels[1], factorsinvolved)[[1]][2]
                   checkname2 <- stringr::str_split(contrastlevels[2], factorsinvolved)[[1]][2]
                 }
                 
-                tempvect <- subworkingdatabase[which(subworkingdatabase[,otherfactorsinvolved[1]] == checkname1), dependentvariable[1]]
-                tempvectunique <- subworkingdatabase[which(subworkingdatabase[,otherfactorsinvolved[1]] == checkname1), subjectid[1]]
-                tempvect <- tempvect[which(!is.na(tempvect))]
-                contrastdata$C1_n <- length(tempvect)
-                contrastdata$C1_uniquen <- length(unique(tempvectunique))
-                contrastdata$C1_mean <- mean(tempvect, na.rm=TRUE)
-                contrastdata$C1_sd <- sd(tempvect, na.rm=TRUE)
+                
+                tempdt1 <- subworkingdatabase[get(otherfactorsinvolved[1]) == checkname1]
+                tempvect1 <- tempdt1[[dependentvariable[1]]]
+                tempvectunique1 <- tempdt1[[subjectid[1]]]
+                tempvect1 <- tempvect1[!is.na(tempvect1)]
+                
+                contrastdata$C1_n <- length(tempvect1)
+                contrastdata$C1_uniquen <- data.table::uniqueN(tempvectunique1)
+                contrastdata$C1_mean <- mean(tempvect1)
+                contrastdata$C1_sd <- sd(tempvect1)
+                
                 if (factorsinvolvedL > 1) {
-                  tempvect <- subworkingdatabase[which(subworkingdatabase[,otherfactorsinvolved[1]] == checkname2), dependentvariable[1]]
-                  tempvectunique <- subworkingdatabase[which(subworkingdatabase[,otherfactorsinvolved[1]] == checkname2), subjectid[1]]
+                  tempdt2 <- subworkingdatabase[get(otherfactorsinvolved[1]) == checkname2]
                 } else {
-                  tempvect <- subworkingdatabase[which(subworkingdatabase[,currentfactor[1]] == checkname2), dependentvariable[1]]
-                  tempvectunique <- subworkingdatabase[which(subworkingdatabase[,currentfactor[1]] == checkname2), subjectid[1]]
+                  tempdt2 <- subworkingdatabase[get(currentfactor[1]) == checkname2]
                 }
-                tempvect <- tempvect[which(!is.na(tempvect))]
-                contrastdata$C2_n <- length(tempvect)
-                contrastdata$C2_uniquen <- length(unique(tempvectunique))
-                contrastdata$C2_mean <- mean(tempvect, na.rm=TRUE)
-                contrastdata$C2_sd <- sd(tempvect, na.rm=TRUE)
+                tempvect2 <- tempdt2[[dependentvariable[1]]]
+                tempvectunique2 <- tempdt2[[subjectid[1]]]
+                tempvect2 <- tempvect2[!is.na(tempvect2)]
+                
+                contrastdata$C2_n <- length(tempvect2)
+                contrastdata$C2_uniquen <- data.table::uniqueN(tempvectunique2)
+                contrastdata$C2_mean <- mean(tempvect2)
+                contrastdata$C2_sd <- sd(tempvect2)
                 
                 contrastdata$df <- as.numeric(posthoctemptestsub$df[currentContrastLine])
                 contrastdata$t <- as.numeric(posthoctemptestsub$t.ratio[currentContrastLine])
@@ -354,9 +362,9 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 contrastdata$p <- as.numeric(posthoctemptestsub$p.value[currentContrastLine])
                 
                 
-                ncp <- pkgcond::suppress_conditions(suppressWarnings(MBESS::conf.limits.nct(ncp = as.numeric(contrastdata$t),
+                ncp <- invisible(pkgcond::suppress_conditions(suppressWarnings(MBESS::conf.limits.nct(ncp = as.numeric(contrastdata$t),
                                                                                             df = as.numeric(contrastdata$df),
-                                                                                            conf.level = confidenceinterval)))
+                                                                                            conf.level = confidenceinterval))))
                 
                 subouttable$contrast[currentContrastLine] <- currentfactor[1]
                 subouttable$df[currentContrastLine] <- contrastdata$df
@@ -366,10 +374,9 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 
                 subouttable$p.value[currentContrastLine] <- contrastdata$p
                 subouttable$p.conf.int.lower[currentContrastLine] <- 2*pt(ncp$Upper.Limit, contrastdata$df, lower=FALSE) 
-                subouttable$p.conf.int.upper[currentContrastLine] <- 2*pt(ncp$Lower.Limit, contrastdata$df, lower=FALSE) 
-                if (subouttable$p.conf.int.upper[currentContrastLine] > 0.99) {
-                  subouttable$p.conf.int.upper[currentContrastLine] <- 0.99
-                }
+                subouttable$p.conf.int.upper[currentContrastLine] <- min(c(2*pt(ncp$Lower.Limit, contrastdata$df, lower=FALSE),
+                                                                           0.99)) 
+
                 
                 #cat(sprintf('p val comparison: %.2f (model), %.2f (calc)\n', contrastdata$p, (2*pt(abs(contrastdata$t), contrastdata$df, lower=FALSE))))
                 
@@ -390,31 +397,28 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 if (otherfactorsinvolved %in% within) {
                   # within subjects
                   
-                  # collapse across unnecesary levels - no need given ML approach
-                  tempcal <- sprintf("subworkingdatabase <- doBy::summaryBy(%s ~ %s + %s, FUN=c(mean), data=subworkingdatabase, keep.names=TRUE)", dependentvariable[1], subjectid[1], paste(factorsinvolved, collapse=sprintf("+")))
-                  suppressWarnings(eval(parse(text=tempcal)))
+                  # collapse across unnecesary levels
+                  subworkingdatabase <- data.table::as.data.table(subworkingdatabase)
+                  bycols <- c(subjectid[1], factorsinvolved)
+                  subworkingdatabase <- subworkingdatabase[, lapply(.SD, mean, na.rm=TRUE), 
+                                                           by = bycols, 
+                                                           .SDcols = dependentvariable[1]]
                   
-                  # obtain correlation estimate
-                  uniqueids <- unique(subworkingdatabase[,subjectid[1]])
-                  cortestdata <- data.frame(matrix(NA, nrow=length(uniqueids), ncol=2))
-                  colnames(cortestdata) <- c('C1', 'C2')
-                  for (cRCorrtest in 1:length(uniqueids)) {
-                    checkindx <- which(subworkingdatabase[,subjectid[1]] == uniqueids[cRCorrtest] &
-                                         subworkingdatabase[,otherfactorsinvolved[1]] == contrastdata$C1_name)
-                    if (length(checkindx) > 0) {
-                      cortestdata[cRCorrtest, 1] <- subworkingdatabase[checkindx, dependentvariable[1]]
-                    }
-                    checkindx <- which(subworkingdatabase[,subjectid[1]] == uniqueids[cRCorrtest] &
-                                         subworkingdatabase[,otherfactorsinvolved[1]] == contrastdata$C2_name)
-                    if (length(checkindx) > 0) {
-                      cortestdata[cRCorrtest, 2] <- subworkingdatabase[checkindx, dependentvariable[1]]
-                    }
-                  }
+                  # Get data for C1 and C2
+                  c1data <- subworkingdatabase[get(otherfactorsinvolved[1]) == contrastdata$C1_name, 
+                                               .(C1 = get(dependentvariable[1])), 
+                                               by = eval(subjectid[1])]
+                  
+                  c2data <- subworkingdatabase[get(otherfactorsinvolved[1]) == contrastdata$C2_name, 
+                                               .(C2 = get(dependentvariable[1])), 
+                                               by = eval(subjectid[1])]
+                  cortestdata <- merge(c1data, c2data, by = subjectid[1])
                   cortestdata <- cortestdata[stats::complete.cases(cortestdata),]
+                  cortestdata <- as.data.frame(cortestdata)
                   
                   # stupid simple hack for insufficient finite observations
                   for (cRCorrtest in 1:4) {
-                    if ((length(cortestdata[which(!is.na(cortestdata[,1])),1]) < 5) | (length(cortestdata[which(!is.na(cortestdata[,2])),2]) < 5)) {
+                    if (nrow(cortestdata) < 5) {
                       cortestdata <- rbind(cortestdata, cortestdata, cortestdata)
                     }
                   }
@@ -460,6 +464,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               outtable <- rbind(outtable, subouttable)
               
             } # hold constant
+            
           } # error trap for emmeans
           
           # need to output table to res
