@@ -58,8 +58,10 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
     df = "Kenward-Roger"
   }
   emmeansdf <- tolower(df)
-  if (emmeansdf != "satterthwaite") {
+  if (df = "Kenward-Roger") {
     emmeansdf <- 'kenward-roger'
+  } else {
+    emmeansdf <- 'satterthwaite'
   }
   
   # check that we are dealing with a lmer fit

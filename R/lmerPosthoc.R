@@ -140,8 +140,10 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     df = "Kenward-Roger"
   }
   emmeansdf <- tolower(df)
-  if (emmeansdf != "satterthwaite") {
+  if (df = "Kenward-Roger") {
     emmeansdf <- 'kenward-roger'
+  } else {
+    emmeansdf <- 'satterthwaite'
   }
   
   tempdbs <- tryCatch({
