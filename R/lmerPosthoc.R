@@ -131,7 +131,13 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   if (!is.null(df)) {
     if (toupper(df) == toupper("Kenward-Roger")) {
       df = "Kenward-Roger"
+    } else if (toupper(df) == toupper("KR")) {
+      df = "Kenward-Roger"
     } else if (toupper(df) == toupper("Shattertwaite")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("S")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("satterthwaite")) {
       df = "Shattertwaite"
     } else if (toupper(df) == toupper("Traditional")) {
       df = "Traditional"

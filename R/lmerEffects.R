@@ -248,7 +248,13 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   if (!is.null(df)) {
     if (toupper(df) == toupper("Kenward-Roger")) {
       df = "Kenward-Roger"
+    } else if (toupper(df) == toupper("KR")) {
+      df = "Kenward-Roger"
     } else if (toupper(df) == toupper("Shattertwaite")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("S")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("satterthwaite")) {
       df = "Shattertwaite"
     } else if (toupper(df) == toupper("Traditional")) {
       df = "Traditional"
@@ -314,9 +320,9 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   # solution is to use Satterthwaite for large datasets
   as <- tryCatch({
     if (toupper(df) == toupper("Shattertwaite")) {
-      as <- invisible(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3))))
+      as <- invisible(suppressWarnings(suppressMessages(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3))))))
     } else {
-      as <- invisible(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3, ddf = "Kenward-Roger"))))
+      as <- invisible(suppressWarnings(suppressMessages(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3, ddf = "Kenward-Roger"))))))
     }
   }, error = function(e) {
     as <- NULL

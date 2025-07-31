@@ -49,7 +49,13 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
   if (!is.null(df)) {
     if (toupper(df) == toupper("Kenward-Roger")) {
       df = "Kenward-Roger"
+    } else if (toupper(df) == toupper("KR")) {
+      df = "Kenward-Roger"
     } else if (toupper(df) == toupper("Shattertwaite")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("S")) {
+      df = "Shattertwaite"
+    } else if (toupper(df) == toupper("satterthwaite")) {
       df = "Shattertwaite"
     } else if (toupper(df) == toupper("Traditional")) {
       df = "Traditional"
@@ -214,14 +220,14 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
             smp <- subworkingdatabase
             subfit <- tryCatch({
               model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula))
-              subfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))
+              subfit <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))))
             }, error = function(e) {
               cat(sprintf('\nThis error is usually the result of too many random factors specified for the interaction.\nUnable to run decomposition anova with the formula: %s ~ %s + %s\n', dependentvariable[1], fixedformula, randomformula))
               subfit <- NULL
             })
             if (!is.null(subfit)) {
               # get table
-              subresults <- lmerEffects(subfit, dependentvariable=dependentvariable, subjectid = subjectid, within=within, df = df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=smp)
+              subresults <- invisible(suppressWarnings(suppressMessages(lmerEffects(subfit, dependentvariable=dependentvariable, subjectid = subjectid, within=within, df = df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=smp))))
               # get posthoc
               subresults <- lmerPosthoc(subresults, between=between, within=within, covariates=covariates, planned=planned, posthoccorrection='none', confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit-1, calltype='subprocess', progressbar=progressbar)
               
