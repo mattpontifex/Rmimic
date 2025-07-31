@@ -242,9 +242,9 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
           posthoctemptestfull <- tryCatch({
             emm_formula <- as.formula(paste("~", paste(effectofinterest, collapse = "*")))
             if (factorsinvolvedL > 1) {
-              posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))
+              posthoctemptestfull <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))))
             } else {
-              posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))
+              posthoctemptestfull <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))))
             }
             posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             
@@ -262,13 +262,13 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               }
               
               model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula[2]))
-              fixfit <- invisible(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))
+              fixfit <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))))
               
               # now compute the pairwise contrast
               if (factorsinvolvedL > 1) {
-                posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))
+                posthoctemptestfull <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), by=currentfactor, adjust='none'))))))
               } else {
-                posthoctemptestfull <- invisible(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))
+                posthoctemptestfull <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(summary(pairs(emmeans::emmeans(fit, emm_formula, adjust = 'none', mode=emmeansdf), adjust='none'))))))
               }
               posthoctemptestfull <- as.data.frame(posthoctemptestfull)
             }
@@ -368,9 +368,9 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                 contrastdata$p <- as.numeric(posthoctemptestsub$p.value[currentContrastLine])
                 
                 
-                ncp <- invisible(pkgcond::suppress_conditions(suppressWarnings(MBESS::conf.limits.nct(ncp = as.numeric(contrastdata$t),
+                ncp <- invisible(pkgcond::suppress_conditions(suppressMessages(suppressWarnings(MBESS::conf.limits.nct(ncp = as.numeric(contrastdata$t),
                                                                                             df = as.numeric(contrastdata$df),
-                                                                                            conf.level = confidenceinterval))))
+                                                                                            conf.level = confidenceinterval)))))
                 
                 subouttable$contrast[currentContrastLine] <- currentfactor[1]
                 subouttable$df[currentContrastLine] <- contrastdata$df
@@ -431,7 +431,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
                   correlationtestresult <- tryCatch({
                     correlationtestresult <- tryCatch({
                       # Percentage bend - robust to outlier
-                      sR2 <- WRS2::pbcor(cortestdata$C1, cortestdata$C2, beta=0.2, ci=FALSE, alpha=1-confidenceinterval)
+                      sR2 <- invisible(suppressWarnings(suppressMessages(WRS2::pbcor(cortestdata$C1, cortestdata$C2, beta=0.2, ci=FALSE, alpha=1-confidenceinterval))))
                       correlationtestresult <- sR2$cor
                       if (is.na(correlationtestresult)) {
                         # if fails to return a result, run standard correlation
