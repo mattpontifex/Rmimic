@@ -346,7 +346,6 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
      # remove decode
      mastersim_data$newvarnameforBTW <- NULL # remove it
      mastersim_data$newvarnameforWT <- NULL # remove it 
-     mastersim_data$newvarnameforRF <- NULL # remove it
      
     # return same order
     tempdbs <- stats::model.frame(fit)
