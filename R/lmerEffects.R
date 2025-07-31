@@ -34,7 +34,7 @@
 #'
 #' @export
 
-lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL, df = NULL, confidenceinterval=0.95, studywiseAlpha=0.05, suppresstext=FALSE, smp=NULL) {
+lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL, df = NULL, confidenceinterval=0.95, studywiseAlpha=0.05, suppresstext=FALSE, smp=NULL, verbose=FALSE) {
   
   # debug
   debug <- FALSE
@@ -202,7 +202,7 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     }
   }
   
-  
+  starttime <- Sys.time()
   # see if the model was fit with numeric factors
   boolcheckfactors <- rep_len(1, length(colnames(tempdbs)))
   for (cR in 1:length(boolcheckfactors)) {
@@ -226,7 +226,11 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
       fit <- lmerTest::lmer(formula = model_formula, data = tempdbs)
     })
   }
+  if (verbose) {
+    cat(sprintf('  lmerEffects(): time to check model - %.2f sec\n', Sys.time() - starttime))
+  }
   
+  starttime <- Sys.time()
   res$fit <- fit
   if (!is.null(outstring)) {
     if (!(outstring == '')) {
@@ -259,19 +263,18 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   # check how many unique participants there are
   if (!is.null(subjectid)) {
     res$subjectid <- subjectid
-    numparticipants <- tryCatch({
-      tempdbs <- stats::model.frame(fit)
-      numparticipants <- length(unique(tempdbs[,subjectid]))
-    }, error = function(e) {
-      numparticipants <- NULL
-    })
+    numparticipants <- tryCatch(
+      {
+        tempdbs <- data.table::as.data.table(stats::model.frame(fit))
+        data.table::uniqueN(tempdbs[[subjectid]])
+      },
+      error = function(e) NULL
+    )
   } else {
-    numparticipants <- tryCatch({
-      tempdbs <- stats::model.frame(fit)
-      numparticipants <- nrow(tempdbs)
-    }, error = function(e) {
-      numparticipants <- NULL
-    })
+    numparticipants <- tryCatch(
+      nrow(data.table::as.data.table(stats::model.frame(fit))),
+      error = function(e) NULL
+    )
   }
   res$numparticipants <- numparticipants
   
@@ -290,12 +293,25 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   
   # see if the model may be over-fit
   res$booloverfitwarning <- FALSE
-  if (lme4::isSingular(fit) == TRUE) {
+  singulartest <- invisible(suppressMessages(suppressWarnings(lme4::isSingular(fit))))
+  if (singulartest == TRUE) {
     res$booloverfitwarning <- TRUE
-    warning("Warning: Model may be over-fit.")
+    #warning("Warning: Model may be over-fit.")
+  }
+  if (verbose) {
+    cat(sprintf('  lmerEffects(): time to determine parameters - %.2f sec\n', Sys.time() - starttime))
   }
   
+  
+  #Time difference of 0.989 secs
+  starttime <- Sys.time()
   # Compute ANOVA table for model
+  # note KR is computationally intensive and slow for large datasets
+  # could use 
+  # as <- afex::mixed(as.formula(Reduce(paste, deparse(stats::formula(fit)))),
+  #           data = stats::model.frame(fit), method = "KR")   # method = "S" for Satterthwaite
+  # however it does not provide sum of square information which means no parial eta squared calculation
+  # solution is to use Satterthwaite for large datasets
   as <- tryCatch({
     if (toupper(df) == toupper("Shattertwaite")) {
       as <- invisible(data.frame(pkgcond::suppress_conditions(stats::anova(fit, type = 3))))
@@ -305,6 +321,9 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   }, error = function(e) {
     as <- NULL
   })
+  if (verbose) {
+    cat(sprintf('  lmerEffects(): time to compute anova - %.2f sec\n', Sys.time() - starttime))
+  }
   
   # Supplement ANOVA table for model
   if (!is.null(as)) {
@@ -364,6 +383,8 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     res$stats <- dataframeout
   }
   
+  #Time difference of 0.1391 secs
+  starttime <- Sys.time()
   #https://www.rensvandeschoot.com/tutorials/lme4/
   # lmerTest::ranova tries to access data from the parent environment rather than data through the call
   # bootstrap function can pass data through smp 
@@ -375,6 +396,10 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     fit <- invisible(update(fit, data=tempdbs, evaluate = TRUE)) # tell model to update itself with the old data
     as <- invisible(data.frame(lmerTest::ranova(fit))) # magically this function works again
   })
+  if (verbose) {
+    cat(sprintf('  lmerEffects(): time to compute ranova - %.2f sec\n', Sys.time() - starttime))
+  }
+  
   if (!is.null(as)) {
     as <- as[2:nrow(as),]
     dataframeout <- data.frame(matrix(NA,nrow=nrow(as),ncol=5))
@@ -397,12 +422,16 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
   dataframeout <- data.frame(matrix(NA,nrow=3,ncol=4))
   colnames(dataframeout) <- c('portion', 'effects', 'ci.lower', 'ci.upper')
   dataframeout$portion <- c('Fixed', 'Random', 'Model')  
+  starttime <- Sys.time()
   as <- tryCatch({
     as <- invisible(suppressWarnings(MuMIn::r.squaredGLMM(fit)))
   }, error = function(e) {
     as <- NULL
     stop('Unable to compute the MuMIn::r.squaredGLMM(fit) for this model. Please verify that the model is correct.')
   })
+  if (verbose) {
+    cat(sprintf('  lmerEffects(): time to compute rsquared - %.2f sec\n', Sys.time() - starttime))
+  }
   if (!is.null(as)) {
     as[3] <- as[2] # model
     #random = model - fixed
@@ -432,10 +461,14 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     res$rsquared <- dataframeout
   }
   
+   starttime <- Sys.time()
   if (!suppresstext) {
     # obtain text outputs
-    res <- Rmimic::lmerEffects2text(res)
+    res <- lmerEffects2text(res)
   }
+   if (verbose) {
+     cat(sprintf('  lmerEffects(): time to process text- %.2f sec\n', Sys.time() - starttime))
+   }
  
   options(warn = oldw) # turn warnings back to original settings
   return(res)

@@ -208,7 +208,7 @@ lmerPosthocsubprocess <- function(fit, dependentvariable, subjectid, effectofint
               factortag <- currentfactor
             }
               
-            # run the anova on the factor of interest using the subsetted data
+            # run the test on the factor of interest using the subsetted data
             smp <- subworkingdatabase
             subfit <- tryCatch({
               model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula))

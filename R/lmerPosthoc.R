@@ -30,7 +30,7 @@
 #'                
 #' @export
 
-lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dependentvariable=NULL, subjectid=NULL, df = NULL, planned=NULL, suppress=NULL, posthoccorrection=NULL, confidenceinterval=NULL, studywiseAlpha=NULL, posthoclimit=6, calltype=NULL, progressbar=TRUE) {
+lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dependentvariable=NULL, subjectid=NULL, df = NULL, planned=NULL, suppress=NULL, posthoccorrection=NULL, confidenceinterval=NULL, studywiseAlpha=NULL, posthoclimit=6, calltype=NULL, verbose=FALSE, progressbar=TRUE) {
   
   debug <- FALSE
   
@@ -69,12 +69,16 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   # CHECK TO MAKE SURE THAT lmerEffects HAS BEEN RUN
   listofoutputsfromlmerEffects <- c('fit', 'stats', 'randomstats', 'rsquared')
   if (!all(listofoutputsfromlmerEffects %in% names(results))) {
+    starttime <- Sys.time()
     # try running lmerEffects
     results <- tryCatch({
-      results <- invisible(lmerEffects(results, dependentvariable=dependentvariable, subjectid=subjectid, within=within, df=df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=NULL))
+      results <- invisible(suppressWarnings(suppressMessages(lmerEffects(results, dependentvariable=dependentvariable, subjectid=subjectid, within=within, df=df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=NULL, verbose=verbose))))
     }, error = function(e) {
       results <- NULL
     })
+    if (verbose) {
+      cat(sprintf('  lmerPosthoc(): time to run lmerEffects - %.2f sec\n', Sys.time() - starttime))
+    }
   }
   
   if (is.null(studywiseAlpha)) {
@@ -303,8 +307,14 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
         }
         
         if (workingdbs$decompose[currentAnovaLine]) {
+          starttime <- Sys.time()
+          
           # obtain breakdowns
           tempresult <- lmerPosthocsubprocess(results$fit, results$dependentvariable, results$subjectid, workingdbs$Effect[currentAnovaLine], within=within, between=between, covariates=covariates, planned=subplanned, df=emmeansdf, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit, progressbar=progressbar)
+          
+          if (verbose) {
+            cat(sprintf('  lmerPosthoc(): time to decompose effect %d - %.2f sec\n', currentAnovaLine, Sys.time() - starttime))
+          }
           
           if (length(names(tempresult)) > 0) {
             # store results
@@ -323,13 +333,22 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   } # fit exists
   
   # obtain text outputs
+  starttime <- Sys.time()
   results <- lmerEffects2text(results)
+  if (verbose) {
+    cat(sprintf('  lmerPosthoc(): time to process text - %.2f sec\n', Sys.time() - starttime))
+  }
   
   if (is.null(calltype)) {
     # perform posthoc correction
     if (!is.null(posthoccorrection)) {
       if ((tolower(posthoccorrection) != 'false') | (tolower(posthoccorrection) != 'none')) {
+        
+        starttime <- Sys.time()
         results <- lmerPosthocCorrection(results, method=posthoccorrection, studywiseAlpha=studywiseAlpha, FDRC=0.05)
+        if (verbose) {
+          cat(sprintf('  lmerPosthoc(): time to compute post hoc corrections - %.2f sec\n', Sys.time() - starttime))
+        }
       }
     }
   }
