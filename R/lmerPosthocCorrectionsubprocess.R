@@ -46,33 +46,37 @@ lmerPosthocCorrectionsubprocess <- function(results) {
         
       } else {
         # element is a structure
-        # recursive call
-        if ('posthoc' %in% names(tempelement)) {
-          tempelement <- lmerPosthocCorrectionsubprocess(tempelement)
-          tempelement$posthoclinkmatrix$location <- paste(uniquenames[cUN], tempelement$posthoclinkmatrix$location, sep='$posthoc$')
+        
+        if (length(tempelement) > 0) {
+          
+          # recursive call
+          if ('posthoc' %in% names(tempelement)) {
+            tempelement <- lmerPosthocCorrectionsubprocess(tempelement)
+            tempelement$posthoclinkmatrix$location <- paste(uniquenames[cUN], tempelement$posthoclinkmatrix$location, sep='$posthoc$')
+            
+            # merge with main data
+            posthoclinkmatrix <- rbind(posthoclinkmatrix, tempelement$posthoclinkmatrix)
+          }
+          
+          # pull fixed effects anova stats
+          tempelementanova <- tempelement$stats
+          
+          # place data
+          subposthocanovamatrix <- data.frame(matrix(NA, nrow=nrow(tempelementanova), ncol=length(anovacolsofinterest)))
+          colnames(subposthocanovamatrix) <- anovacolsofinterest
+          subposthocanovamatrix$p.value <- tempelementanova$p.value
+          subposthocanovamatrix$significant <- tempelementanova$significance
+          subposthocanovamatrix$row <- seq(1,nrow(tempelementanova), by=1)
+          subposthocanovamatrix$location <- sprintf("%s", uniquenames[cUN])
+          
+          subposthocanovamatrix$factorsinvolved <- tempelementanova$factorsinvolved
+          subposthocanovamatrix$idtag <- tempelementanova$idtag
+          subposthocanovamatrix$textoutput <- tempelementanova$textoutput
           
           # merge with main data
-          posthoclinkmatrix <- rbind(posthoclinkmatrix, tempelement$posthoclinkmatrix)
+          posthocanovamatrix <- rbind(posthocanovamatrix, subposthocanovamatrix)
+          
         }
-        
-        # pull fixed effects anova stats
-        tempelementanova <- tempelement$stats
-        
-        # place data
-        subposthocanovamatrix <- data.frame(matrix(NA, nrow=nrow(tempelementanova), ncol=length(anovacolsofinterest)))
-        colnames(subposthocanovamatrix) <- anovacolsofinterest
-        subposthocanovamatrix$p.value <- tempelementanova$p.value
-        subposthocanovamatrix$significant <- tempelementanova$significance
-        subposthocanovamatrix$row <- seq(1,nrow(tempelementanova), by=1)
-        subposthocanovamatrix$location <- sprintf("%s", uniquenames[cUN])
-        
-        subposthocanovamatrix$factorsinvolved <- tempelementanova$factorsinvolved
-        subposthocanovamatrix$idtag <- tempelementanova$idtag
-        subposthocanovamatrix$textoutput <- tempelementanova$textoutput
-        
-        # merge with main data
-        posthocanovamatrix <- rbind(posthocanovamatrix, subposthocanovamatrix)
-        
       }
     }
     results$posthoclinkmatrix <- posthoclinkmatrix
