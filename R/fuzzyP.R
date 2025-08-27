@@ -1,6 +1,6 @@
 #' fuzzyP
 #'
-#' @description Function to properly round p values. Returns several values allowing \cr the user to choose what rounded value is appropriate.
+#' @description Function to properly round p values. Returns several values allowing the user to choose what rounded value is appropriate.
 #'
 #' @param datain Significance value.
 #' @param alpha Critical value for alpha.
@@ -21,134 +21,128 @@
 #'
 #' @export
 
-fuzzyP <- function(datain, studywiseAlpha=0.05, html=FALSE) {
-
+fuzzyP <- function(datain, studywiseAlpha = 0.05, html = FALSE) {
+  # --- helpers ---------------------------------------------------------------
+  is_scalar_numeric <- function(x) is.numeric(x) && length(x) == 1L
+  # count decimals in alpha after removing trailing zeros
+  decimals_of <- function(x) {
+    sx <- sub("0+$", "", as.character(x))
+    parts <- strsplit(sx, ".", fixed = TRUE)[[1]]
+    if (length(parts) == 2L) nchar(parts[2]) else 0L
+  }
+  fmt_fixed <- function(x, d) formatC(x, format = "f", digits = d)
+  # trim trailing zeros but keep "0." from becoming "0"
+  trim_trailing_zeros <- function(s) {
+    if (is.na(s)) return(s)
+    s <- sub("0+$", "", s)
+    s <- sub("\\.$", "", s)
+    s
+  }
+  # make "< 0.001" threshold string & numeric for given digits d
+  lower_str_num <- function(d) {
+    # e.g., d=3 -> "0.001"
+    str <- paste0("0.", paste(rep("0", max(0, d - 1L)), collapse = ""), "1")
+    num <- as.numeric(str)
+    list(str = str, num = num)
+  }
+  # choose symbols
   equalityparameters <- c('<', '=', '>')
-  if (html) {
+  if (isTRUE(html)) {
     equalityparameters <- c('&lt;', '&#61;', '&gt;')
   }
-  decimalprecision <- nchar(strsplit(sub('0+$', '', as.character(studywiseAlpha)), ".", fixed = TRUE)[[1]][[2]])
-  studywiseAlpharounding <- sort(seq(decimalprecision, (decimalprecision+3), by=1), decreasing=TRUE)
+  # robust compare epsilon (to dampen float wobbles)
+  eps <- .Machine$double.eps * 10
   
-  modifier <- equalityparameters[2]
-  if (!is.na(datain)) {
-    if (is.numeric(datain)) {
-      
-      # round data based upon precision of alpha parameter
-      checkvalue <- datain
-      for (cSWA in 1:length(studywiseAlpharounding)) {
-        checkvalue <- round(checkvalue, digits=studywiseAlpharounding[cSWA])
-        if (cSWA == (length(studywiseAlpharounding)-1)) {
-          if (studywiseAlpharounding[cSWA] == 3) {
-            report <- sprintf('%0.3f', round(checkvalue, digits=studywiseAlpharounding[cSWA]))
-          } else if (studywiseAlpharounding[cSWA] == 4) {
-            report <- sprintf('%0.4f', round(checkvalue, digits=studywiseAlpharounding[cSWA]))
-          } else if (studywiseAlpharounding[cSWA] == 5) {
-            report <- sprintf('%0.5f', round(checkvalue, digits=studywiseAlpharounding[cSWA]))
-          } else if (studywiseAlpharounding[cSWA] == 6) {
-            report <- sprintf('%0.6f', round(checkvalue, digits=studywiseAlpharounding[cSWA]))
-          }
-        }
-      }
-      interpret <- checkvalue # rounded to 2 decimal places (if alpha = 0.05)
-      if ((interpret > 0) & (interpret < 1)) {
-        currentprecision <- tryCatch({
-          currentprecision <- nchar(strsplit(sub('0+$', '', as.character(checkvalue)), ".", fixed = TRUE)[[1]][[2]])
-        }, error = function(e) {
-          currentprecision <- 2
-        })
-      } else {
-        currentprecision <- 1
-      }
-      if (currentprecision > 5) {
-        currentprecision <- 5
-      }
-      if (currentprecision == 0) {
-        currentprecision <- 1
-      }
-      if (datain > 0.99) {
-        report <- "0.9"
-        modifier <- equalityparameters[3]
-      } else if (datain > (studywiseAlpha*10)) {
-        # doesnt really matter as it is not even close
-        if (currentprecision == 2) {
-          report <- sprintf('%0.1f', round(interpret, digits=(currentprecision-1)))
-        } else if (currentprecision == 3) {
-          report <- sprintf('%0.2f', round(interpret, digits=(currentprecision-1)))
-        } else if (currentprecision == 4) {
-          report <- sprintf('%0.3f', round(interpret, digits=(currentprecision-1)))
-        } else if (currentprecision == 5) {
-          report <- sprintf('%0.4f', round(interpret, digits=(currentprecision-1)))
-        }
-      } else {
-        # round the close number as it is used for posthoc
-        tempvect <- strsplit(sub('0+$', '', as.character(studywiseAlpha)), ".", fixed = TRUE)[[1]]
-        lowerbound <- as.numeric(sprintf('%s.%s51', tempvect[1], tempvect[2]))
-        if (as.numeric(report) < lowerbound) {
-          if (currentprecision == 2) {
-            interpret <- floor(as.numeric(report) * 100) / 100
-          } else if (currentprecision == 3) {
-            interpret <- floor(as.numeric(report) * 1000) / 1000
-          } else if (currentprecision == 4) {
-            interpret <- floor(as.numeric(report) * 10000) / 10000
-          } else if (currentprecision == 5) {
-            interpret <- floor(as.numeric(report) * 100000) / 100000
-          }
-        }
-        # round
-        lowerbound <- c(0.001, '0.001')
-        if (currentprecision == 3) {
-          lowerbound <- c(0.0001, '0.0001')
-        } else if (currentprecision == 4) {
-          lowerbound <- c(0.00001, '0.00001')
-        } else if (currentprecision == 5) {
-          lowerbound <- c(0.000001, '0.000001')
-        }
-        if (datain < lowerbound[1]) {
-          report <- lowerbound[2]
-          modifier <- equalityparameters[1]
-        }
-      }
-    } else {
-      report <- NA
-      interpret <- 1
-    }
+  # --- validation ------------------------------------------------------------
+  if (!is_scalar_numeric(studywiseAlpha) || !is.finite(studywiseAlpha)) {
+    stop("studywiseAlpha must be a single finite numeric.")
+  }
+  if (!(studywiseAlpha > 0 && studywiseAlpha < 1)) {
+    stop("studywiseAlpha must be in (0, 1).")
+  }
+  if (!is.logical(html) || length(html) != 1L) html <- FALSE
+  
+  # shape outputs for NA / non-numeric early
+  if (!is_scalar_numeric(datain) || is.na(datain) || !is.finite(datain)) {
+    return(list(
+      interpret    = 1,
+      report       = NA_character_,
+      exact        = datain,
+      modifier     = equalityparameters[2],
+      significance = FALSE
+    ))
+  }
+  
+  # clamp to [0,1]
+  p_exact <- datain
+  if (p_exact < 0 - eps) {
+    p_exact <- 0
+  }
+  if (p_exact > 1 + eps) {
+    p_exact <- 1
+  }
+  p_exact <- max(0, min(1, p_exact))
+  
+  # --- rounding policy -----------------------------------
+  # Base precision is tied to alpha's *meaningful* decimals, then bounded
+  alpha_decimals <- decimals_of(studywiseAlpha)  # e.g., 0.050 -> 2
+  d_interpret <- min(max(alpha_decimals, 2L), 6L)
+  d_report <- min(d_interpret + 1L, 6L)
+  
+  # floor interpret if above alpha after rounding
+  p_round <- round(p_exact, digits = d_interpret)
+  if (p_exact > studywiseAlpha && p_round > studywiseAlpha) {
+    # if it would round *above* alpha, force floor
+    p_interpret_num <- floor(p_exact * 10^d_interpret) / 10^d_interpret
   } else {
-    report <- NA
-    interpret <- 1
+    p_interpret_num <- p_round
   }
-  significance <- FALSE
-  if (interpret <= studywiseAlpha) {
-    significance <- TRUE
-  }
-  for (cInt in 1:3) {
-    if (!is.na(report)) {
-      if (substr(report, nchar(report), nchar(report)) == "0") {
-        if (substr(report, 1, nchar(report)-1) != '0.') {
-          report <- substr(report, 1, nchar(report)-1)
-        }
-      }
+  
+  report_str <- fmt_fixed(round(p_exact, digits = d_report), d_report)
+  if (studywiseAlpha <= 0.05 + eps) {
+    if (p_exact >= 0.3) {
+      report_str <- fmt_fixed(round(p_exact, 1), 1)
     }
   }
   
-  res <- list()
-  res$interpret <- interpret
-  res$report <- report
-  res$exact <- datain
-  res$modifier <- modifier
-  res$significance <- significance
+  # extreme small p
+  lb <- lower_str_num(d_report)
+  modifier <- equalityparameters[2]
+  if (p_exact + eps < lb$num) {
+    report_str <- lb$str
+    modifier <- equalityparameters[1]
+  }
   
-  # hold over data checks
-  if (!is.na(res$report)) {
-    if ((res$report == "0.000") | (res$report == "0.00") | (res$report == "0.0") | (res$report == "0") | (res$report == "0.")) {
-      res$report <- "0.001"
-      res$modifier <- equalityparameters[1]
+  # huge p near 1
+  if (p_exact > 0.9 + eps) {
+    report_str <- "0.9"
+    modifier <- equalityparameters[3]
+  }
+  
+  # significance test
+  significance <- (p_interpret_num <= studywiseAlpha + eps)
+  
+  # final tidy of the printed report (trim trailing zeros sensibly)
+  report_str <- trim_trailing_zeros(report_str)
+  
+  # guardrails: avoid printing impossible 0 or 1 snapshots
+  if (!is.na(report_str)) {
+    if (report_str %in% c("0", "0.", "0.0", "0.00", "0.000", "0.0000", "0.00000", "0.000000")) {
+      report_str <- lower_str_num(max(3L, d_report))$str
+      modifier <- equalityparameters[1]
     }
-    if ((res$report == '1') | (res$report == '1.') | (res$report == '1.0') | (res$report == '1.00') | (res$report == '1.000')) {
-      res$report <- "0.99"
-      res$modifier <- equalityparameters[3]
+    if (report_str %in% c("1", "1.", "1.0", "1.00", "1.000", "1.0000", "1.00000", "1.000000")) {
+      report_str <- "0.9"
+      modifier <- equalityparameters[3]
     }
   }
   
+  res <- list(
+    interpret    = p_interpret_num,  # numeric
+    report       = report_str,       # character
+    exact        = datain,           # original input (pre-clamp), for transparency
+    modifier     = modifier,         # "<", "=", ">", HTML-safe if requested
+    significance = isTRUE(significance)
+  )
   return(res)
 }
