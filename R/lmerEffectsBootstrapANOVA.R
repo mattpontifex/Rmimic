@@ -66,6 +66,59 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
     bootstrap$reporteddata <- 'simulated'
   }
   
+  # Define function for MAD outliers
+  runmad <- function(x) {
+    idx_outliers <- integer(0)
+    # ensure numeric
+    if (!is.numeric(x)) {
+      return(x)
+    }
+    x_ok <- x[!is.na(x) & is.finite(x)]
+    if (length(x_ok) >= 3) {
+      med <- tryCatch(
+        stats::median(x_ok),
+        error = function(e) {
+          #warning("Median computation failed: ", conditionMessage(e))
+          return(NA_real_)
+        }
+      )
+      mad_raw <- tryCatch(
+        stats::mad(x_ok, constant = 1, na.rm = TRUE),
+        error = function(e) {
+          #warning("MAD computation failed: ", conditionMessage(e))
+          return(NA_real_)
+        }
+      )
+      # scale MAD to be comparable to SD (consistent with normal): *1.4826
+      scale <- tryCatch({
+        if (is.finite(mad_raw) && mad_raw > 0) {
+          mad_raw * 1.4826
+        } else {
+          stats::IQR(x_ok, na.rm = TRUE) / 1.349
+        }
+      }, error = function(e) {
+        #warning("Scale computation failed: ", conditionMessage(e))
+        return(NA_real_)
+      })
+      if (is.finite(scale) && scale > 0 && !is.na(med)) {
+        z <- tryCatch(
+          abs(x - med) / scale,
+          error = function(e) {
+            #warning("Z-score computation failed: ", conditionMessage(e))
+            return(rep(NA_real_, length(x)))
+          }
+        )
+        idx_outliers <- which(z > 3.5) # MAD threshold for outliers (robust)
+      }
+      # replace outliers with NA, then drop them
+      if (length(idx_outliers) > 0) {
+        x[idx_outliers] <- NA
+        x <- x[!is.na(x)]
+      }
+    }
+    return(x)
+  }
+  
   # Define function for a single repetition
   run_one <- function(results, resample_min, resample_max, subsample, inflation, method) {
     # populates dataset subsampled from the original sample with replacement
@@ -280,6 +333,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
       for (cC in 1:length(colsofinterest)) {
         tempvect <- as.numeric(unlist(tempdbs[[colsofinterest[cC]]]))
         tempvect <- tempvect[which(!is.na(tempvect))]
+        tempvect <- runmad(tempvect)
         if (bootstrap$average == 'median') {
           newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
         } else {
@@ -388,6 +442,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
         if (cC %in% names(tempdbs)) {
           tempvect <- tempdbs[[cC]]
           tempvect <- tempvect[!is.na(tempvect)]
+          tempvect <- runmad(tempvect)
           if (length(tempvect)) {
             val <- if (bootstrap$average == "median") median(tempvect, na.rm=TRUE) else mean(tempvect, na.rm=TRUE)
             newstats[cR, (cC) := val]
@@ -405,6 +460,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
       if (all(c('F.value') %in% colnames(newstats))) {
         tempvect <- tempdbs[["F.value"]]
         tempvect <- tempvect[!is.na(tempvect)]
+        tempvect <- runmad(tempvect)
         ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
         if (!is.na(ci_boot[1])) {
           if (ci_boot[1] < 0) {ci_boot[1] <- 0}
@@ -421,6 +477,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
       if (all(c('p.value') %in% colnames(newstats))) {
         tempvect <- tempdbs[["p.value"]]
         tempvect <- tempvect[!is.na(tempvect)]
+        tempvect <- runmad(tempvect)
         ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
         if (!is.na(ci_boot[1])) {
           if (ci_boot[1] < 0) {ci_boot[1] <- 0}
@@ -437,6 +494,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
       if (all(c('ci.lower', 'ci.upper') %in% colnames(newstats))) {
         tempvect <- tempdbs[["effects"]]
         tempvect <- tempvect[!is.na(tempvect)]
+        tempvect <- runmad(tempvect)
         ci_boot <- quantile(tempvect, probs = c(0.05, 0.95), na.rm=TRUE) # one sided
         if (!is.na(ci_boot[1])) {
           if (ci_boot[1] < 0) {ci_boot[1] <- 0}
