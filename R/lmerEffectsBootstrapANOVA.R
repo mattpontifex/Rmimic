@@ -34,6 +34,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
   
   bootstrap <- tryCatch({
     bootstrap <- list(...) 
+    bootstrap <- bootstrap[[1]]
   }, error = function(e) {
     bootstrap <- list() 
   })
