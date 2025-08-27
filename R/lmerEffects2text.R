@@ -357,9 +357,9 @@ lmerEffects2text <- function(res, tag='', subtag='', testconfidence=FALSE, signi
     outputnames <- names(tempdbs)
     for (cOutputNames in 1:length(outputnames)) {
       workingdataout <- NULL
-      #textcall <- sprintf("workingdataout <- tempdbs$%s", outputnames[cOutputNames])
-      #eval(parse(text=textcall))
-      workingdataout <- tempdbs[[outputnames[cOutputNames]]]
+      textcall <- sprintf("workingdataout <- tempdbs$%s", outputnames[cOutputNames])
+      eval(parse(text=textcall))
+      #workingdataout <- tempdbs[[outputnames[cOutputNames]]]
       if (!is.null(workingdataout)) {
         if (is.data.frame(workingdataout)) {
           # posthoc tests
