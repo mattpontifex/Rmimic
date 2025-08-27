@@ -175,11 +175,13 @@ lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL
     
     rvers <- unlist(strsplit(R.version.string, " "))
     rvers <- paste(rvers[1:length(rvers)-1], collapse=" ")
-    rvers <- substr(rvers, 1, nchar(rvers)-6)
-    outstring <- sprintf('%s Analyses were conducted using the lme4 (Bates et al., %s), lmerTest (Kuznetsova et al., %s), and Rmimic (Pontifex, 2020) packages in %s).', outstring, 
+    outstring <- sprintf('%s Analyses were conducted using the lme4 (Bates et al., %s), lmerTest (Kuznetsova et al., %s), and Rmimic (Pontifex, 2020) packages in %s (%s).', outstring, 
                          strsplit(as.character(utils::packageDate("lme4")),"-")[[1]][1],
                          strsplit(as.character(utils::packageDate("lmerTest")),"-")[[1]][1],
-                         rvers)
+                         rvers, gsub("^\\((\\d{4}).*", "\\1", unlist(strsplit(R.version.string, " "))[4]))
+    
+    
+    
     
     
   }, error = function(e) {
