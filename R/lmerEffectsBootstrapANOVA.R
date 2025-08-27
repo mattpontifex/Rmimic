@@ -445,7 +445,60 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
   # remove folder
   unlink(bootstrap$tmpdir, recursive = TRUE)
   
+  # redo text
   results <- lmerEffects2text(results)
+  
+  
+  # tag messageout 
+  if ('messageout' %in% names(results)) {
+    
+    outstring <- sprintf('Unstandardized effects were computed based upon bootstrapped analyses with')
+    if (bootstrap$method == "resample") {
+      outstring <- sprintf('%s %d resamples', outstring, bootstrap$repetitions)
+      if (!((bootstrap$resample_min == nrow(stats::model.frame(results$fit))) & (bootstrap$resample_max == nrow(stats::model.frame(results$fit))))) {
+        outstring <- sprintf('%s allowing the total number of cases to vary from %d (%.1f%%) to %d (%.1f%%)',
+                             outstring, bootstrap$resample_min, round((bootstrap$resample_min/bootstrap$totalsample)*100, digits=1),
+                             resample_max, round((bootstrap$resample_max/bootstrap$totalsample)*100, digits=1))
+      }
+      outstring <- sprintf('%s of the original dataset (with replacement).', outstring)
+    }
+    if ((bootstrap$method == "parametric") | (bootstrap$method == "nonparametric")) {
+      if (bootstrap$method == "parametric") {
+        outstring <- sprintf('%s %d datasets simulated from a multivariate normal distribution using the MASS mvrnorm function (Venables &#38; Ripley, 2002).', outstring, bootstrap$repetitions)
+      } else {
+        outstring <- sprintf('%s %d datasets simulated from a multivariate non-normal distribution using the mnonr unonr function (Qu &#38; Zhang, 2020).', outstring, bootstrap$repetitions)
+      }
+      outstring <- sprintf('%s For each simulation the covariance matrix was informed by', outstring)
+      if (bootstrap$subsample < 1.0) {
+        outstring <- sprintf('%s a subsample of %.1f%% of the original data', outstring, round((bootstrap$subsample)*100, digits=1))
+      } else {
+        outstring <- sprintf('%s the full sample of original data', outstring)
+      }
+      if (bootstrap$inflation > 1.0) {
+        outstring <- sprintf('%s and extrapolated to a final sample of %.0f participants', outstring, floor(results$numparticipants*bootstrap$inflation))
+      } else {
+        outstring <- sprintf('%s.', outstring)
+      }
+    }
+    if (bootstrap$method == "default") {
+      outstring <- sprintf('%s %d datasets simulated by drawing random samples from the conditional distribution of the outcome variable given the estimated model parameters', outstring, bootstrap$repetitions)
+      
+      if (!((bootstrap$resample_min == nrow(stats::model.frame(results$fit))) & (bootstrap$resample_max == nrow(stats::model.frame(results$fit))))) {
+        outstring <- sprintf('%s allowing the total number of cases to vary from %d (%.1f%%) to %d (%.1f%%) of the original dataset (with replacement)',
+                             outstring, bootstrap$resample_min, round((bootstrap$resample_min/bootstrap$totalsample)*100, digits=1),
+                             bootstrap$resample_max, round((bootstrap$resample_max/bootstrap$totalsample)*100, digits=1))
+      }
+      outstring <- sprintf('%s.', outstring)
+      
+      if (!is.null(bootstrap$subsample)) {
+        if (bootstrap$subsample < 1.0) {
+          outstring <- sprintf('%s For each simulation, the conditional distribution of the outcome variable was informed by', outstring)
+          outstring <- sprintf('%s a subsample of %.1f%% of the original data within each between subjects factor.', outstring, round((bootstrap$subsample)*100, digits=1))
+        }
+      }
+    }
+    results$messageout <- sprintf('%s %s', results$messageout, outstring)
+  }
   
   return(results)
 }
