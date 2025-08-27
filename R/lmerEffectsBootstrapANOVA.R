@@ -231,87 +231,103 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
   # check final result
   Sys.sleep(1) # to make sure files are written
   
-  # summarize descriptives
-  file_list <- list.files(bootstrap$tmpdir, pattern = "^result_descriptives_.*\\.csv$", full.names=TRUE)
-  if (length(file_list) > 100) {
-    #datain <- data.table::rbindlist(future_lapply(file_list, data.table::fread), use.names=TRUE, fill=TRUE)
-    # Enable progress handler
-    #handlers("txtprogressbar") 
-    handlers(list(
-      handler_progress(
-        format   = "lmerEffectsBootstrapANOVA() compiling data [:bar] :percent :eta",
-        width    = 120,
-        complete = "="
-      )
-    ))
-    datain <- with_progress({
-      step <- ceiling(length(file_list) / 10)        # 10% intervals
-      p <- progressor(steps = 10)    # progress bar with 10 ticks
-      data.table::rbindlist(
-        future_lapply(seq_along(file_list), function(i) {
-          out <- data.table::fread(file_list[i])
-          if ((i %% step == 0) || (i == length(file_list))) {
-            p()
+  
+  subtag <- 'simulated'
+  if ((bootstrap$reporteddata == 'actual') | (bootstrap$reporteddata == 'raw')) {
+    subtag <- 'raw'
+  } else if (bootstrap$reporteddata == "resample") {
+    subtag <- 'resampled'
+  }
+  
+  # if not raw then need to update
+  if (subtag != 'raw') {
+    # summarize descriptives
+    file_list <- list.files(bootstrap$tmpdir, pattern = "^result_descriptives_.*\\.csv$", full.names=TRUE)
+    if (length(file_list) > 100) {
+      #datain <- data.table::rbindlist(future_lapply(file_list, data.table::fread), use.names=TRUE, fill=TRUE)
+      # Enable progress handler
+      #handlers("txtprogressbar") 
+      handlers(list(
+        handler_progress(
+          format   = "lmerEffectsBootstrapANOVA() compiling data [:bar] :percent :eta",
+          width    = 120,
+          complete = "="
+        )
+      ))
+      datain <- with_progress({
+        step <- ceiling(length(file_list) / 10)        # 10% intervals
+        p <- progressor(steps = 10)    # progress bar with 10 ticks
+        data.table::rbindlist(
+          future_lapply(seq_along(file_list), function(i) {
+            out <- data.table::fread(file_list[i])
+            if ((i %% step == 0) || (i == length(file_list))) {
+              p()
+            }
+            out
+          }),
+          use.names = TRUE, fill = TRUE
+        )
+      })
+    } else {
+      datain <- data.table::rbindlist(lapply(file_list, data.table::fread), use.names=TRUE, fill=TRUE)
+    }
+    
+    newstats <- results$descriptives
+    for (cR in 1:nrow(newstats)) {
+      
+      tempdbs <- datain[Group == newstats$Group[cR]]
+      colsofinterest <- c("N", "Missing", "Mean", "Median", "SD", "SE")
+      for (cC in 1:length(colsofinterest)) {
+        tempvect <- as.numeric(unlist(tempdbs[[colsofinterest[cC]]]))
+        tempvect <- tempvect[which(!is.na(tempvect))]
+        if (bootstrap$average == 'median') {
+          newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
+        } else {
+          newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+        }
+      }
+      
+      if (subtag == 'resampled') {
+        distributiontable <- data.table::rbindlist(
+          lapply(tempdbs$DistributionData, function(x) as.list(as.numeric(strsplit(x, ",")[[1]]))),
+          fill = TRUE, use.names=FALSE
+        )
+        data.table::setDT(distributiontable)
+        if (nrow(distributiontable) > 0) {
+          if (bootstrap$average == "median") {
+            newstats$DistributionData[cR] <- paste(miscTools::colMedians(as.matrix(distributiontable), na.rm=TRUE), collapse=",")
+          } else {
+            newstats$DistributionData[cR] <- paste(colMeans(distributiontable, na.rm=TRUE), collapse=",")
           }
-          out
-        }),
-        use.names = TRUE, fill = TRUE
-      )
-    })
-  } else {
-    datain <- data.table::rbindlist(lapply(file_list, data.table::fread), use.names=TRUE, fill=TRUE)
-  }
-  newstats <- results$descriptives
-  for (cR in 1:nrow(newstats)) {
-    tempdbs <- datain[Group == newstats$Group[cR]]
-    colsofinterest <- c("N", "Missing", "Mean", "Median", "SD", "SE")
-    for (cC in 1:length(colsofinterest)) {
-      tempvect <- as.numeric(unlist(tempdbs[[colsofinterest[cC]]]))
-      tempvect <- tempvect[which(!is.na(tempvect))]
-      if (bootstrap$average == 'median') {
-        newstats[cR,colsofinterest[cC]] <- median(tempvect, na.rm=TRUE)
-      } else {
-        newstats[cR,colsofinterest[cC]] <- mean(tempvect, na.rm=TRUE)
+        }
+      
+        # decision rule
+        decisionindx <- tempdbs[DistributionDecision == "Normal", .N]
+        if (decisionindx > 0) {
+          if ((decisionindx / nrow(tempdbs)) >= 0.6) {
+            newstats$DistributionDecision[cR] <- "Normal"
+          } else {
+            newstats$DistributionDecision[cR] <- "Not Normal"
+          }
+        }
       }
     }
     
-    distributiontable <- data.table::rbindlist(
-      lapply(tempdbs$DistributionData, function(x) as.list(as.numeric(strsplit(x, ",")[[1]]))),
-      fill = TRUE, use.names=FALSE
-    )
-    data.table::setDT(distributiontable)
-    if (nrow(distributiontable) > 0) {
-      if (bootstrap$average == "median") {
-        newstats$DistributionData[cR] <- paste(miscTools::colMedians(as.matrix(distributiontable), na.rm=TRUE), collapse=",")
-      } else {
-        newstats$DistributionData[cR] <- paste(colMeans(distributiontable, na.rm=TRUE), collapse=",")
-      }
-    }
+    # dirty but effective
+    newstats$Mean <- round(round(round(round(as.numeric(newstats$Mean), digits=4), digits=3), digits=2), digits=1)
+    newstats$Median <- round(round(round(round(as.numeric(newstats$Median), digits=4), digits=3), digits=2), digits=1)
+    newstats$SD <- round(round(round(round(as.numeric(newstats$SD), digits=4), digits=3), digits=2), digits=1)
+    newstats$SE <- round(round(round(round(as.numeric(newstats$SE), digits=4), digits=3), digits=2), digits=1)
     
-    # decision rule
-    decisionindx <- tempdbs[DistributionDecision == "Normal", .N]
-    if (decisionindx > 0) {
-      if ((decisionindx / nrow(tempdbs)) >= 0.6) {
-        newstats$DistributionDecision[cR] <- "Normal"
-      } else {
-        newstats$DistributionDecision[cR] <- "Not Normal"
-      }
-    }
+    newstats$Mean <- sprintf('%.1f', newstats$Mean)
+    newstats$Median <- sprintf('%.1f', newstats$Median)
+    newstats$SD <- sprintf('%.1f', newstats$SD)
+    newstats$SE <- sprintf('%.1f', newstats$SE)
+    
+    results$descriptives <- newstats
+    rm(newstats)
+    
   }
-  
-  # dirty but effective
-  newstats$Mean <- round(round(round(round(as.numeric(newstats$Mean), digits=4), digits=3), digits=2), digits=1)
-  newstats$Median <- round(round(round(round(as.numeric(newstats$Median), digits=4), digits=3), digits=2), digits=1)
-  newstats$SD <- round(round(round(round(as.numeric(newstats$SD), digits=4), digits=3), digits=2), digits=1)
-  newstats$SE <- round(round(round(round(as.numeric(newstats$SE), digits=4), digits=3), digits=2), digits=1)
-  
-  newstats$Mean <- sprintf('%.1f', newstats$Mean)
-  newstats$Median <- sprintf('%.1f', newstats$Median)
-  newstats$SD <- sprintf('%.1f', newstats$SD)
-  newstats$SE <- sprintf('%.1f', newstats$SE)
-  
-  results$descriptives <- newstats
-  rm(newstats)
   
   # summarize stats
   statsofinterst <- c('stats', 'randomstats', 'rsquared')
@@ -448,7 +464,6 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
   
   # redo text
   results <- lmerEffects2text(results)
-  
   
   # tag messageout 
   if ('messageout' %in% names(results)) {
