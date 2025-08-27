@@ -242,11 +242,11 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     
     # check to see if bootstrapping should be performed
     if (!is.null(bootstrap)) {
-      #results <- tryCatch({
+      results <- tryCatch({
         results <- lmerEffectsBootstrapANOVA(results, bootstrap)
-      #}, error = function(e) {
-      #  results <- results
-      #})
+      }, error = function(e) {
+        results <- results
+      })
     }
     
     workingdbs <- tryCatch({
@@ -342,7 +342,11 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
           starttime <- Sys.time()
           
           # obtain breakdowns
-          tempresult <- invisible(suppressWarnings(suppressMessages(lmerPosthocsubprocess(results$fit, results$dependentvariable, results$subjectid, workingdbs$Effect[currentAnovaLine], within=within, between=between, covariates=covariates, planned=subplanned, df=emmeansdf, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit, progressbar=progressbar))))
+          tempresult <- results
+          tempresult$planned <- subplanned
+          tempresult$covariates <- covariates
+          tempresult$progressbar <- progressbar
+          tempresult <- invisible(suppressWarnings(suppressMessages(lmerPosthocsubprocess(tempresult, workingdbs$Effect[currentAnovaLine]))))
           
           if (verbose) {
             cat(sprintf('  lmerPosthoc(): time to decompose effect %d - %.2f sec\n', currentAnovaLine, Sys.time() - starttime))
