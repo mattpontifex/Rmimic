@@ -9,6 +9,7 @@
 #' @param planned text list specifying any effect to show the post-hoc comparisons even if they are not significant.
 #' @param suppress text list specifying any effect to ignore even if it is significant.
 #' @param posthoccorrection text parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Sidak. None will skip post hoc corrections.
+#' @param bootstrap list paramater to indicate if bootstrapping should be performed. Default is NULL. List should provide the call elements for lmerEffectsBootstrapANOVA and be in the form list('repetitions' = 10000, 'subsample'=0.96, 'inflation'=1.0, 'method'='default')
 #' @param confidenceinterval Decimal representation of confidence interval. Default 0.95.
 #' @param studywiseAlpha Decimal representation of alpha level. Default 0.05.
 #' @param posthoclimit integer specifying how many factors in an interaction should be broken down. Default is 6 indicating posthoc results will be provided for up to a 6 way interaction.
@@ -24,13 +25,14 @@
 #' @examples
 #'
 #'     fit <- lmerTest::lmer(Alertness ~ Group*Time + (1 | PartID), data = Rmimic::alertness)
-#'     results <- Rmimic::lmerEffects(fit, dependentvariable = "Alertness", subjectid = "PartID", df = "Kenward-Roger")
-#'     results <- Rmimic::lmerPosthoc(results, between=c('Group'), within=c('Time'),
-#'                covariates=NULL, planned=c('Group'), posthoccorrection="False Discovery Rate Control", progressbar=TRUE)
+#'     results <- Rmimic::lmerPosthoc(results, dependentvariable = "Alertness", subjectid = "PartID", 
+#'                between=c('Group'), within=c('Time'), covariates=NULL,
+#'                planned=c('Group'), df = "Kenward-Roger",
+#'                posthoccorrection="False Discovery Rate Control", progressbar=TRUE)
 #'                
 #' @export
 
-lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dependentvariable=NULL, subjectid=NULL, df = NULL, planned=NULL, suppress=NULL, posthoccorrection=NULL, confidenceinterval=NULL, studywiseAlpha=NULL, posthoclimit=6, calltype=NULL, verbose=FALSE, progressbar=TRUE) {
+lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dependentvariable=NULL, subjectid=NULL, df = NULL, planned=NULL, suppress=NULL, posthoccorrection=NULL, bootstrap=NULL, confidenceinterval=NULL, studywiseAlpha=NULL, posthoclimit=6, calltype=NULL, verbose=FALSE, progressbar=TRUE, ...) {
   
   debug <- FALSE
   
@@ -69,6 +71,9 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   # CHECK TO MAKE SURE THAT lmerEffects HAS BEEN RUN
   listofoutputsfromlmerEffects <- c('fit', 'stats', 'randomstats', 'rsquared')
   if (!all(listofoutputsfromlmerEffects %in% names(results))) {
+    if (!is.null(bootstrap)) {
+      df = "Shattertwaite" # computation time becomes extreme otherwise
+    }
     starttime <- Sys.time()
     # try running lmerEffects
     results <- tryCatch({
@@ -104,6 +109,9 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     }
   }
   
+  if (!is.null(bootstrap)) {
+    df = "Shattertwaite" # computation time becomes extreme otherwise
+  }
   if (is.null(df)) {
     df <- tryCatch({
       df <- results$df
@@ -232,6 +240,15 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
       results$suppress <- suppress
     }
     
+    # check to see if bootstrapping should be performed
+    if (!is.null(bootstrap)) {
+      #results <- tryCatch({
+        results <- lmerEffectsBootstrapANOVA(results, bootstrap)
+      #}, error = function(e) {
+      #  results <- results
+      #})
+    }
+    
     workingdbs <- tryCatch({
       workingdbs <- results$stats
     }, error = function(e) {
@@ -342,7 +359,20 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   
   # obtain text outputs
   starttime <- Sys.time()
-  results <- lmerEffects2text(results)
+  if (is.null(bootstrap)) {
+    results <- lmerEffects2text(results)
+  } else {
+    subtag <- 'simulated'
+    if ("reporteddata" %in% names(bootstrap)) {
+      if ((bootstrap$reporteddata == 'actual') | (bootstrap$reporteddata == 'raw')) {
+        subtag <- 'raw'
+      } else if (bootstrap$reporteddata == "resample") {
+        subtag <- 'resampled'
+      }
+    }
+    results <- lmerEffects2text(results, subtag=subtag, testconfidence=TRUE, significanceconfidence=TRUE)
+  }
+  
   if (verbose) {
     cat(sprintf('  lmerPosthoc(): time to process text - %.2f sec\n', Sys.time() - starttime))
   }

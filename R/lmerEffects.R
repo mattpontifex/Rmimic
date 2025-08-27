@@ -34,7 +34,7 @@
 #'
 #' @export
 
-lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL, df = NULL, confidenceinterval=0.95, studywiseAlpha=0.05, suppresstext=FALSE, smp=NULL, verbose=FALSE) {
+lmerEffects <- function(fit, dependentvariable=NULL, subjectid=NULL, within=NULL, df = NULL, confidenceinterval=0.95, studywiseAlpha=0.05, suppresstext=FALSE, smp=NULL, verbose=FALSE, ...) {
   
   # debug
   debug <- FALSE
