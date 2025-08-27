@@ -315,6 +315,13 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
           workingdbs$decompose[currentAnovaLine] <- TRUE
         }
         
+        # see if it is a simple decomp
+        if (length(factorsinvolved) == 1) {
+          tempdbs <- stats::model.frame(results$fit)
+          if (length(unique(tempdbs[,factorsinvolved])) < 3) {
+            workingdbs$decompose[currentAnovaLine] <- TRUE
+          }
+        }
       }
       
       if (!is.null(calltype)) {
