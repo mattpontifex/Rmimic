@@ -51,6 +51,7 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
   progressbar <- results$progressbar 
   covariates <- results$covariates 
   planned <- results$planned 
+  bootstrap <- results$bootstrap
   
   debug <- FALSE
   if (debug) {
@@ -242,7 +243,7 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
               # get table
               subresults <- invisible(suppressWarnings(suppressMessages(lmerEffects(subfit, dependentvariable=dependentvariable, subjectid = subjectid, within=within, df = df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=smp))))
               # get posthoc
-              subresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(subresults, between=between, within=within, covariates=covariates, planned=planned, posthoccorrection='none', bootstrap=results$bootstrap, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit-1, calltype='subprocess', progressbar=progressbar))))
+              subresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(subresults, between=between, within=within, covariates=covariates, planned=planned, posthoccorrection='none', bootstrap=bootstrap, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit-1, calltype='subprocess', progressbar=progressbar))))
               
               # need to output subresults to res
               if (length(names(subresults)) > 0) {

@@ -110,7 +110,9 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   }
   
   if (!is.null(bootstrap)) {
-    df = "Shattertwaite" # computation time becomes extreme otherwise
+    if (any(bootstrap)) {
+      df = "Shattertwaite" # computation time becomes extreme otherwise
+    }
   }
   if (is.null(df)) {
     df <- tryCatch({
@@ -243,7 +245,11 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     # check to see if bootstrapping should be performed
     if (!is.null(bootstrap)) {
       results <- tryCatch({
-        results <- lmerEffectsBootstrapANOVA(results, bootstrap)
+        if (any(bootstrap)) {
+          results <- lmerEffectsBootstrapANOVA(results, bootstrap)
+        } else {
+          results <- results
+        }
       }, error = function(e) {
         results <- results
       })
@@ -346,6 +352,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
           tempresult$planned <- subplanned
           tempresult$covariates <- covariates
           tempresult$progressbar <- progressbar
+          tempresult$bootstrap <- bootstrap
           tempresult <- invisible(suppressWarnings(suppressMessages(lmerPosthocsubprocess(tempresult, workingdbs$Effect[currentAnovaLine]))))
           
           if (verbose) {
