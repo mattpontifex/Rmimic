@@ -270,18 +270,20 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
           outtable <- lmerPosthocsubprocessContrasts(fit, emmeansdf, effectofinterest, currentfactor, factorsinvolved, otherfactorsinvolved, dependentvariable, decomptext, subjectid, confidenceinterval, studywiseAlpha, within, factortag)
 
           # check to see if bootstrapping should be performed
-          #if (!is.null(results$bootstrap)) {
-          #  contrastin <- list()
-          #  contrastin$emmeansdf <- emmeansdf
-          #  contrastin$effectofinterest <- effectofinterest
-          #  contrastin$currentfactor <- currentfactor
-          #  contrastin$factorsinvolved <- factorsinvolved
-          #  contrastin$otherfactorsinvolved <- otherfactorsinvolved
-          #  contrastin$decomptext <- decomptext
-          #  contrastin$factortag <- factortag
-          #  contrastin$outtable <- outtable
-          #  outtable <- lmerEffectsBootstrapContrast(results, contrastin, results$bootstrap$repetitions, results$bootstrap$resample_min, results$bootstrap$resample_max, results$bootstrap$subsample, results$bootstrap$inflation, results$bootstrap$method, results$bootstrap$tmpdir, results$bootstrap$average, results$bootstrap$reporteddata)
-          #}
+          if (!is.null(bootstrap)) {
+            if (!isFALSE(bootstrap)) {
+              contrastin <- list()
+              contrastin$emmeansdf <- emmeansdf
+              contrastin$effectofinterest <- effectofinterest
+              contrastin$currentfactor <- currentfactor
+              contrastin$factorsinvolved <- factorsinvolved
+              contrastin$otherfactorsinvolved <- otherfactorsinvolved
+              contrastin$decomptext <- decomptext
+              contrastin$factortag <- factortag
+              contrastin$outtable <- outtable
+              outtable <- lmerEffectsBootstrapContrast(results, contrastin, bootstrap)
+            }
+          }
           # need to output table to res
           if (nrow(outtable) > 0) {
             res[[sprintf("Posthoc_%s", factortag)]] <- outtable

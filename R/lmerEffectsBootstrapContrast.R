@@ -29,7 +29,94 @@
 #' 
 #' @export
 
-lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resample_min=NULL, resample_max=NULL, subsample=0.96, inflation=1.0, method='default', tmpdir=NULL, average='median', reporteddata='simulated') {
+lmerEffectsBootstrapContrast <- function(results, contrastin, bootstrap, ...) {
+  
+  dots <- tryCatch({
+    dots <- list(...) 
+  }, error = function(e) {
+    dots <- list() 
+  })
+  if (!('repetitions' %in% tolower(names(bootstrap)))) {
+    bootstrap$repetitions <- 100
+  }
+  if (!('resample_min' %in% tolower(names(bootstrap)))) {
+    bootstrap$resample_min <- nrow(stats::model.frame(results$fit))
+  }
+  if (!('resample_max' %in% tolower(names(bootstrap)))) {
+    bootstrap$resample_max <- nrow(stats::model.frame(results$fit))
+  }
+  if (!('subsample' %in% tolower(names(bootstrap)))) {
+    bootstrap$subsample <- 1.0
+  }
+  if (!('inflation' %in% tolower(names(bootstrap)))) {
+    bootstrap$inflation <- 1.0
+  }
+  if (!('method' %in% tolower(names(bootstrap)))) {
+    bootstrap$method <- 'default'
+  }
+  if (!('tmpdir' %in% tolower(names(bootstrap)))) {
+    bootstrap$tmpdir <- ''
+  }
+  if (!('average' %in% tolower(names(bootstrap)))) {
+    bootstrap$average <- 'median'
+  }
+  if (!('reporteddata' %in% tolower(names(bootstrap)))) {
+    bootstrap$reporteddata <- 'simulated'
+  }
+  
+  # Define function for MAD outliers
+  runmad <- function(x) {
+    idx_outliers <- integer(0)
+    # ensure numeric
+    if (!is.numeric(x)) {
+      return(x)
+    }
+    x_ok <- x[!is.na(x) & is.finite(x)]
+    if (length(x_ok) >= 3) {
+      med <- tryCatch(
+        stats::median(x_ok),
+        error = function(e) {
+          #warning("Median computation failed: ", conditionMessage(e))
+          return(NA_real_)
+        }
+      )
+      mad_raw <- tryCatch(
+        stats::mad(x_ok, constant = 1, na.rm = TRUE),
+        error = function(e) {
+          #warning("MAD computation failed: ", conditionMessage(e))
+          return(NA_real_)
+        }
+      )
+      # scale MAD to be comparable to SD (consistent with normal): *1.4826
+      scale <- tryCatch({
+        if (is.finite(mad_raw) && mad_raw > 0) {
+          mad_raw * 1.4826
+        } else {
+          stats::IQR(x_ok, na.rm = TRUE) / 1.349
+        }
+      }, error = function(e) {
+        #warning("Scale computation failed: ", conditionMessage(e))
+        return(NA_real_)
+      })
+      if (is.finite(scale) && scale > 0 && !is.na(med)) {
+        z <- tryCatch(
+          abs(x - med) / scale,
+          error = function(e) {
+            #warning("Z-score computation failed: ", conditionMessage(e))
+            return(rep(NA_real_, length(x)))
+          }
+        )
+        idx_outliers <- which(z > 3.5) # MAD threshold for outliers (robust)
+      }
+      # replace outliers with NA, then drop them
+      if (length(idx_outliers) > 0) {
+        x[idx_outliers] <- NA
+        x <- x[!is.na(x)]
+      }
+    }
+    return(x)
+  }
+  
   options(warn = -1)
   
   # Define function for a single repetition
@@ -80,27 +167,27 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
 
   totalsample <- nrow(stats::model.frame(results$fit))
-  if (is.null(resample_min)) {
-    resample_min <- nrow(stats::model.frame(results$fit))
+  if (is.null(bootstrap$resample_min)) {
+    bootstrap$resample_min <- nrow(stats::model.frame(results$fit))
   }
-  if (is.null(resample_max)) {
-    resample_max <- nrow(stats::model.frame(results$fit))
+  if (is.null(bootstrap$resample_max)) {
+    bootstrap$resample_max <- nrow(stats::model.frame(results$fit))
   }  
   
-  if (!is.null(method)) {
-    if (toupper(method) == toupper("resample")) {
-      method = "resample"
-    } else if (toupper(method) == toupper("parametric")) {
-      method = "parametric"
-    } else if (toupper(method) == toupper("nonparametric")) {
-      method = "nonparametric"
-    } else if (toupper(method) == toupper("default")) {
-      method = "default"
+  if (!is.null(bootstrap$method)) {
+    if (toupper(bootstrap$method) == toupper("resample")) {
+      bootstrap$method = "resample"
+    } else if (toupper(bootstrap$method) == toupper("parametric")) {
+      bootstrap$method = "parametric"
+    } else if (toupper(bootstrap$method) == toupper("nonparametric")) {
+      bootstrap$method = "nonparametric"
+    } else if (toupper(bootstrap$method) == toupper("default")) {
+      bootstrap$method = "default"
     } else {
-      method = "default"
+      bootstrap$method = "default"
     }
   } else {
-    method = "default"
+    bootstrap$method = "default"
   }
   
   # Set up parallel plan
@@ -111,16 +198,16 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   plan(multisession, workers = n_workers)
   
   # Parameters
-  max_files <- repetitions
+  max_files <- bootstrap$repetitions
   repetitions <- floor(max_files+(n_workers*2))  # ask for more
-  if (tmpdir == '') {
+  if (bootstrap$tmpdir == '') {
     #tmpdir <- file.path(getwd(), paste(sample(c(0:9, letters, LETTERS), 10, replace = TRUE), collapse = ""))
-    tmpdir <- tempfile(pattern = "anova", tmpdir = getwd(), fileext = "")
+    bootstrap$tmpdir <- tempfile(pattern = "anovacontrast", tmpdir = getwd(), fileext = "")
   }
-  dir.create(tmpdir, showWarnings = FALSE)
+  dir.create(bootstrap$tmpdir, showWarnings = FALSE)
   
   # Check how many result files exist
-  file_list <- list.files(tmpdir, pattern = "^result_contrast_.*\\.csv$")
+  file_list <- list.files(bootstrap$tmpdir, pattern = "^result_contrast_.*\\.csv$")
   
   # Update to reflect if any files have already been created
   repetitions <- repetitions - length(file_list) + 1
@@ -148,11 +235,11 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
         invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(progressr)))))
         
         # Check how many result files exist
-        file_list <- list.files(tmpdir, pattern = "^result_contrast_.*\\.csv$")
+        file_list <- list.files(bootstrap$tmpdir, pattern = "^result_contrast_.*\\.csv$")
         
         if (length(file_list) < max_files) {
           smp <- tryCatch({
-            simfit <- run_two(results, resample_min, resample_max, subsample, inflation, method)
+            simfit <- run_two(results, bootstrap$resample_min, bootstrap$resample_max, bootstrap$subsample, bootstrap$inflation, bootstrap$method)
             if (!is.null(simfit)) {
               outtable <- lmerPosthocsubprocessContrasts(simfit, emmeansdf=contrastin$emmeansdf, effectofinterest=contrastin$effectofinterest, currentfactor=contrastin$currentfactor,
                                                          factorsinvolved=contrastin$factorsinvolved, otherfactorsinvolved=contrastin$otherfactorsinvolved,
@@ -160,7 +247,7 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
                                                          dependentvariable=results$dependentvariable[1], 
                                                          subjectid=results$subjectid[1], confidenceinterval=results$confidenceinterval,
                                                          studywiseAlpha=results$studywiseAlpha, within=results$within)
-              data.table::fwrite(outtable, tempfile(pattern = "result_contrast_", tmpdir = tmpdir, fileext = ".csv"), append = FALSE)
+              data.table::fwrite(outtable, tempfile(pattern = "result_contrast_", tmpdir = bootstrap$tmpdir, fileext = ".csv"), append = FALSE)
             }
             smp <- NULL
           }, error = function(e) {
@@ -179,7 +266,7 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   Sys.sleep(1) # to make sure files are written
   
   # summarize descriptives
-  file_list <- list.files(tmpdir, pattern = "^result_contrast_.*\\.csv$", full.names=TRUE)
+  file_list <- list.files(bootstrap$tmpdir, pattern = "^result_contrast_.*\\.csv$", full.names=TRUE)
   if (length(file_list) > 100) {
     #datain <- data.table::rbindlist(future_lapply(file_list, data.table::fread), use.names=TRUE, fill=TRUE)
     # Enable progress handler
@@ -213,12 +300,14 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   # --- summary stats ---
   cols1 <- c("df","t.ratio","p.value","effectsize","correlation")
   agg1 <- datain[, lapply(.SD, function(x) {
-    if (average=="median") median(x, na.rm=TRUE) else mean(x, na.rm=TRUE)
+    x <- runmad(x) 
+    if (bootstrap$average=="median") median(x, na.rm=TRUE) else mean(x, na.rm=TRUE)
   }), by=.(idtag, hold, contrast, decomp), .SDcols=cols1]
   
   # --- confidence intervals ---
   ci_fun <- function(x) {
     x <- x[!is.na(x)]
+    x <- runmad(x) 
     if (length(x)==0) return(c(NA_real_, NA_real_))
     qs <- quantile(x, c(.05,.95), na.rm=TRUE)
     c(lower=max(0, qs[1], na.rm=TRUE), upper=qs[2])
@@ -240,7 +329,8 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   
   cols2 <- c("C1n","C1mean","C1sd","C2n","C2mean","C2sd")
   agg2 <- datain[, lapply(.SD, function(x) {
-    if (average=="median") median(x, na.rm=TRUE) else mean(x, na.rm=TRUE)
+    x <- runmad(x) 
+    if (bootstrap$average=="median") median(x, na.rm=TRUE) else mean(x, na.rm=TRUE)
   }), by=.(idtag, hold, contrast, decomp), .SDcols=cols2]
   # column-bind all columns to agg1
   data.table::setkey(agg2, idtag, hold, contrast, decomp)
@@ -264,7 +354,7 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
     agg1$significant[cdtR] <- outPvalue$significance
   }
   
-  if (reporteddata == "actual") {
+  if (bootstrap$reporteddata == "actual") {
     # make sure we didnt get a name position swap
     checkonce <- TRUE
     for (cR in 1:nrow(newstats)) {
@@ -313,7 +403,7 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, repetitions, resam
   outtable <- agg1 
   
   # remove folder
-  unlink(tmpdir, recursive = TRUE)
+  unlink(bootstrap$tmpdir, recursive = TRUE)
   
   return(outtable)
 }
