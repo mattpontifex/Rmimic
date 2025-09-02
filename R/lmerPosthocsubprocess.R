@@ -240,6 +240,20 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
               subfit <- NULL
             })
             if (!is.null(subfit)) {
+              
+              or_null <- function(x) if (length(x)) x else NULL
+              normalize_vec <- function(x) if (is.null(x)) character(0) else as.character(x)
+              keep_in_interest <- function(x, vars) {
+                x    <- normalize_vec(x)
+                vars <- normalize_vec(vars)
+                x[x %in% vars]
+              }
+              smptempdbs <- stats::model.frame(subfit)
+              varsofinterst <- colnames(smptempdbs)
+              within <- or_null(keep_in_interest(within, varsofinterst))
+              between <- or_null(keep_in_interest(between,    varsofinterst))
+              covariates <- or_null(keep_in_interest(covariates, varsofinterst))
+              
               # get table
               subresults <- invisible(suppressWarnings(suppressMessages(lmerEffects(subfit, dependentvariable=dependentvariable, subjectid = subjectid, within=within, df = df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=smp))))
               # get posthoc

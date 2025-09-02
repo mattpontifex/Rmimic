@@ -72,7 +72,9 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   listofoutputsfromlmerEffects <- c('fit', 'stats', 'randomstats', 'rsquared')
   if (!all(listofoutputsfromlmerEffects %in% names(results))) {
     if (!is.null(bootstrap)) {
-      df = "Shattertwaite" # computation time becomes extreme otherwise
+      if (!isFALSE(bootstrap)) {
+        df = "Shattertwaite" # computation time becomes extreme otherwise
+      }
     }
     starttime <- Sys.time()
     # try running lmerEffects
@@ -110,7 +112,7 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
   }
   
   if (!is.null(bootstrap)) {
-    if (any(bootstrap)) {
+    if (!isFALSE(bootstrap)) {
       df = "Shattertwaite" # computation time becomes extreme otherwise
     }
   }
@@ -245,7 +247,8 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     # check to see if bootstrapping should be performed
     if (!is.null(bootstrap)) {
       results <- tryCatch({
-        if (any(bootstrap)) {
+        if (!isFALSE(bootstrap)) {
+          browser()
           results <- lmerEffectsBootstrapANOVA(results, bootstrap)
         } else {
           results <- results
