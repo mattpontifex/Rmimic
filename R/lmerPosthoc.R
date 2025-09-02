@@ -248,7 +248,6 @@ lmerPosthoc <- function(results, between=NULL, within=NULL, covariates=NULL, dep
     if (!is.null(bootstrap)) {
       results <- tryCatch({
         if (!isFALSE(bootstrap)) {
-          browser()
           results <- lmerEffectsBootstrapANOVA(results, bootstrap)
         } else {
           results <- results
