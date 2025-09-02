@@ -65,6 +65,9 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
   
   }
   
+  if (is.null(progressbar)) {
+    progressbar <- FALSE
+  }
   if (!is.null(df)) {
     if (toupper(df) == toupper("Kenward-Roger")) {
       df = "Kenward-Roger"
@@ -227,7 +230,7 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
             }
               
             # run the test on the factor of interest using the subsetted data
-            smp <- subworkingdatabase
+            smp <- as.data.frame(subworkingdatabase)
             subfit <- tryCatch({
               model_formula <- as.formula(sprintf('%s ~ %s + %s', dependentvariable[1], fixedformula, randomformula))
               subfit <- invisible(suppressWarnings(suppressMessages(pkgcond::suppress_conditions(lmerTest::lmer(formula = model_formula, data = smp)))))
@@ -239,7 +242,7 @@ lmerPosthocsubprocess <- function(results, effectofinterest, ...) {
               # get table
               subresults <- invisible(suppressWarnings(suppressMessages(lmerEffects(subfit, dependentvariable=dependentvariable, subjectid = subjectid, within=within, df = df, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, suppresstext=FALSE, smp=smp))))
               # get posthoc
-              subresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(subfit, between=between, within=within, covariates=covariates, planned=planned, posthoccorrection='none', bootstrap=results$bootstrap, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit-1, calltype='subprocess', progressbar=progressbar))))
+              subresults <- invisible(suppressWarnings(suppressMessages(lmerPosthoc(subresults, between=between, within=within, covariates=covariates, planned=planned, posthoccorrection='none', bootstrap=results$bootstrap, confidenceinterval=confidenceinterval, studywiseAlpha=studywiseAlpha, posthoclimit=posthoclimit-1, calltype='subprocess', progressbar=progressbar))))
               
               # need to output subresults to res
               if (length(names(subresults)) > 0) {
