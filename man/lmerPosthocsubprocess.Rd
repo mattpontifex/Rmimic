@@ -4,30 +4,16 @@
 \alias{lmerPosthocsubprocess}
 \title{lmerPosthocsubprocess}
 \usage{
-lmerPosthocsubprocess(
-  fit,
-  dependentvariable,
-  subjectid,
-  effectofinterest,
-  within,
-  between = NULL,
-  covariates = NULL,
-  planned = NULL,
-  df = NULL,
-  confidenceinterval = 0.95,
-  studywiseAlpha = 0.05,
-  posthoclimit = 6,
-  progressbar = TRUE
-)
+lmerPosthocsubprocess(results, effectofinterest, ...)
 }
 \arguments{
+\item{effectofinterest}{text specifying the effect label to decompose}
+
 \item{fit}{modelfit from the lmer function}
 
 \item{dependentvariable}{text specifying the dependent variable label}
 
 \item{subjectid}{text specifying the subject id label.}
-
-\item{effectofinterest}{text specifying the effect label to decompose}
 
 \item{within}{text list specifying any variables that should be considered as within subjects}
 

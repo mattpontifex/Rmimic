@@ -15,11 +15,14 @@ lmerPosthoc(
   planned = NULL,
   suppress = NULL,
   posthoccorrection = NULL,
+  bootstrap = NULL,
   confidenceinterval = NULL,
   studywiseAlpha = NULL,
   posthoclimit = 6,
   calltype = NULL,
-  progressbar = TRUE
+  verbose = FALSE,
+  progressbar = TRUE,
+  ...
 )
 }
 \arguments{
@@ -36,6 +39,8 @@ lmerPosthoc(
 \item{suppress}{text list specifying any effect to ignore even if it is significant.}
 
 \item{posthoccorrection}{text parameter to indicate what post-hoc comparisons should be performed. Default is False Discovery Rate Control. Other options are Bonferroni, Holm-Bonferroni, Sidak. None will skip post hoc corrections.}
+
+\item{bootstrap}{list paramater to indicate if bootstrapping should be performed. Default is NULL. List should provide the call elements for lmerEffectsBootstrapANOVA and be in the form list('repetitions' = 10000, 'subsample'=0.96, 'inflation'=1.0, 'method'='default')}
 
 \item{confidenceinterval}{Decimal representation of confidence interval. Default 0.95.}
 
@@ -55,9 +60,10 @@ Posthoc decomposition of univariate ANOVA with effect size and confidence interv
 \examples{
 
     fit <- lmerTest::lmer(Alertness ~ Group*Time + (1 | PartID), data = Rmimic::alertness)
-    results <- Rmimic::lmerEffects(fit, dependentvariable = "Alertness", subjectid = "PartID", df = "Kenward-Roger")
-    results <- Rmimic::lmerPosthoc(results, between=c('Group'), within=c('Time'),
-               covariates=NULL, planned=c('Group'), posthoccorrection="False Discovery Rate Control", progressbar=TRUE)
+    results <- Rmimic::lmerPosthoc(results, dependentvariable = "Alertness", subjectid = "PartID", 
+               between=c('Group'), within=c('Time'), covariates=NULL,
+               planned=c('Group'), df = "Kenward-Roger",
+               posthoccorrection="False Discovery Rate Control", progressbar=TRUE)
                
 }
 \author{

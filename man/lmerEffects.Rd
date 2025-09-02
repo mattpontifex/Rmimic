@@ -13,7 +13,9 @@ lmerEffects(
   confidenceinterval = 0.95,
   studywiseAlpha = 0.05,
   suppresstext = FALSE,
-  smp = NULL
+  smp = NULL,
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{

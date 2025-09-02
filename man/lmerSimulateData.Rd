@@ -13,7 +13,10 @@ lmerSimulateData(
   subsample = NULL,
   inflation = NULL,
   parametric = TRUE,
-  method = NULL
+  method = NULL,
+  screen = c(0.1, 0.9),
+  constrain = NULL,
+  verbose = FALSE
 )
 }
 \arguments{

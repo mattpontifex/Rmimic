@@ -21,7 +21,7 @@ lmerEffectsBootstrapSimulationConsolidator(
 \item{results}{List containing boostrapped output.}
 }
 \description{
-Wrapper to perform bootstrap analysis on an lmer object processed through the Rmimic::lmerEffects function. This portion handles the consolidation of the models and summarizes them into a singular model.
+Wrapper to perform bootstrap analysis on an lmer object processed through the Rmimic::lmerPosthoc function. This portion handles the consolidation of the models and summarizes them into a singular model.
 }
 \examples{
 \dontrun{

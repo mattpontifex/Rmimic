@@ -22,7 +22,7 @@ A list with the following elements:
 \item{significance}{Boolean for if the value is less than or equal to the critical alpha.}
 }
 \description{
-Function to properly round p values. Returns several values allowing \cr the user to choose what rounded value is appropriate.
+Function to properly round p values. Returns several values allowing the user to choose what rounded value is appropriate.
 }
 \examples{
     # Round a randomly generated number between 0 and 1.
