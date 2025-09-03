@@ -60,10 +60,10 @@ These functions mimic the overarching outputs of popular commercial statistics s
 several related or inherently sequential tests.
 
 * **lmerPosthoc**: Function that performs posthoc decomposition of univariate ANOVA with effect size and confidence intervals
-* using a multi-level model from the lme4 function. Interactions are decomposed multiple ways (A holding B, B holding A) and
-* superseeding interactions suppress lower level effects tests (no posthoc test of A:B if A:B:C is significant). Tests of A:B
-* can still be obtained using the planned parameter if desired. Optional ability to perform bootstrapping of the model is also
-* included. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. 
+ using a multi-level model from the lme4 function. Interactions are decomposed multiple ways (A holding B, B holding A) and
+ superseeding interactions suppress lower level effects tests (no posthoc test of A:B if A:B:C is significant). Tests of A:B
+ can still be obtained using the planned parameter if desired. Optional ability to perform bootstrapping of the model is also
+ included. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. 
 ```r
     workingdatabase <- Rmimic::alertness
     workingdatabase <- workingdatabase[which(workingdatabase$Condition == 'Condition2'),]
@@ -75,10 +75,10 @@ several related or inherently sequential tests.
                        progressbar=TRUE)
     Rmimic::lmerEffectsSummarize(results, tag='', show='html', outputfile="test.html")
 ```
-<p align="center"><img src="/screencaps/screencap_lmerPosthoc1.png?raw=true" width="600" alt="screencap lmerPosthoc1"></p>
-<p align="center"><img src="/screencaps/screencap_lmerPosthoc2.png?raw=true" width="600" alt="screencap lmerPosthoc2"></p>
-<p align="center"><img src="/screencaps/screencap_lmerPosthoc3.png?raw=true" width="600" alt="screencap lmerPosthoc3"></p>
-<p align="center"><img src="/screencaps/screencap_lmerPosthoc4.png?raw=true" width="600" alt="screencap lmerPosthoc4"></p>
+<p align="center"><img src="/screencaps/screencap_lmerPosthoc1.png?raw=true" width="700" alt="screencap lmerPosthoc1"></p>
+<p align="center"><img src="/screencaps/screencap_lmerPosthoc2.png?raw=true" width="700" alt="screencap lmerPosthoc2"></p>
+<p align="center"><img src="/screencaps/screencap_lmerPosthoc3.png?raw=true" width="700" alt="screencap lmerPosthoc3"></p>
+<p align="center"><img src="/screencaps/screencap_lmerPosthoc4.png?raw=true" width="700" alt="screencap lmerPosthoc4"></p>
 
 
 * **RmimicLMcontrast**: Compute SPSS style results for regression analysis with effect size and confidence intervals. This function takes stats::lm fits for a base model and the model of interest and calculates statistics for the model of interest relative to the base model. This function is also able to take stats::glm binomial family model fits for logistic regression.
