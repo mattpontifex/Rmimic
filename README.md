@@ -63,7 +63,9 @@ several related or inherently sequential tests.
  using a multi-level model from the lme4 function. Interactions are decomposed multiple ways (A holding B, B holding A) and
  superseeding interactions suppress lower level effects tests (no posthoc test of A:B if A:B:C is significant). Tests of A:B
  can still be obtained using the planned parameter if desired. Optional ability to perform bootstrapping of the model is also
- included. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. 
+ included. Main effects and interactions are automatically decomposed using the specified post-hoc corrections. The function
+ will not automatically generate any output, but using lmerEffectsSummarize an HTML output can be generated that enables 
+ expansion of posthoc tests.
 ```r
     workingdatabase <- Rmimic::alertness
     workingdatabase <- workingdatabase[which(workingdatabase$Condition == 'Condition2'),]
@@ -71,7 +73,7 @@ several related or inherently sequential tests.
     results <- Rmimic::lmerPosthoc(fit, dependentvariable="Alertness", subjectid='PartID',
                 between=c('Group'), within=c('Time'), covariates=NULL,
                 planned=NULL, posthoccorrection="False Discovery Rate Control", 
-                bootstrap = list('repetitions'=100, 'subsample'=0.96, 'method'='default'),
+                bootstrap=list('repetitions'=100, 'subsample'=0.96, 'method'='default'),
                 progressbar=TRUE)
     Rmimic::lmerEffectsSummarize(results, tag='', show='html', outputfile="test.html")
 ```
