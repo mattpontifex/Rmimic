@@ -69,10 +69,10 @@ several related or inherently sequential tests.
     workingdatabase <- workingdatabase[which(workingdatabase$Condition == 'Condition2'),]
     fit <- lmerTest::lmer(Alertness ~ Group*Time + (1 | PartID), data = workingdatabase)
     results <- Rmimic::lmerPosthoc(fit, dependentvariable="Alertness", subjectid='PartID',
-                       between=c('Group'), within=c('Time'), covariates=NULL,
-                       planned=NULL, posthoccorrection="False Discovery Rate Control", 
-                       bootstrap = list('repetitions'=100, 'subsample'=0.96, 'method'='default'),
-                       progressbar=TRUE)
+                between=c('Group'), within=c('Time'), covariates=NULL,
+                planned=NULL, posthoccorrection="False Discovery Rate Control", 
+                bootstrap = list('repetitions'=100, 'subsample'=0.96, 'method'='default'),
+                progressbar=TRUE)
     Rmimic::lmerEffectsSummarize(results, tag='', show='html', outputfile="test.html")
 ```
 <p align="center"><img src="/screencaps/screencap_lmerPosthoc1.png?raw=true" width="700" alt="screencap lmerPosthoc1"></p>
