@@ -144,9 +144,11 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
     }
     
     if (!is.null(smp)) {
+      smp <- as.data.frame(smp)
       # rerun model on new data
       newfit <- tryCatch({
-        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
+        #newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
+        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, formula = formula(results$fit), data = smp, evaluate = TRUE))))
       }, error = function(e) {
         cat(sprintf('lmerSimulateData - model failure\n'))
         newfit <- NULL
