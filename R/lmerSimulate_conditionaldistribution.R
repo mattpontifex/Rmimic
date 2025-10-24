@@ -67,7 +67,8 @@ lmerSimulate_conditionaldistribution <- function(fit, dependentvariable=NULL, su
       }
       smp <- data.table::rbindlist(smplist, use.names = TRUE, fill = TRUE)
       
-      fit <- update(fit, data=smp, evaluate = TRUE)
+      #fit <- update(fit, data=smp, evaluate = TRUE)
+      fit <- invisible(suppressWarnings(suppressMessages(update(fit, formula = formula(results$fit), data = smp, evaluate = TRUE))))
     }
   }
   
