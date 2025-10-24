@@ -32,7 +32,7 @@
 #' @export
 
 lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=NULL, subjectid=NULL, subsample=NULL, inflation=NULL, parametric=TRUE, method=NULL, screen=c(0.10, 0.90), constrain=NULL, verbose=FALSE) {
-  
+  invisible(suppressWarnings(suppressPackageStartupMessages(suppressMessages(library(data.table)))))
   # Each repetition of the function would create a new simulated dataset
   # this approach should downweight any individual subject
   # simulation also allows for growing the sample
@@ -347,6 +347,12 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
      mastersim_data$newvarnameforBTW <- NULL # remove it
      mastersim_data$newvarnameforWT <- NULL # remove it 
      
+     # swap ID code for simpler form
+     unique_ids <- unique(mastersim_data[[subjectid]])
+     replacement_codes <- sprintf("ID%02d", seq_along(unique_ids))
+     map <- setNames(replacement_codes, unique_ids)
+     mastersim_data[, (subjectid) := map[ mastersim_data[[subjectid]] ] ]
+     
     # return same order
     tempdbs <- stats::model.frame(fit)
     data.table::setcolorder(mastersim_data, colnames(tempdbs))
@@ -390,9 +396,15 @@ lmerSimulateData <- function(fit, between=NULL, within=NULL, dependentvariable=N
     datamaxval <- tempdbs[, max(get(dependentvariable), na.rm = TRUE)]
     
     mastersim_data <- invisible(lmerSimulate_conditionaldistribution(fit, dependentvariable=dependentvariable, subjectid=subjectid, between=between, targetN=numberofsamples, subsample=subsample))
+    mastersim_data <- data.table::as.data.table(mastersim_data)
+    
+    # swap ID code for simpler form
+    unique_ids <- unique(mastersim_data[[subjectid]])
+    replacement_codes <- sprintf("ID%02d", seq_along(unique_ids))
+    map <- setNames(replacement_codes, unique_ids)
+    mastersim_data[, (subjectid) := map[ mastersim_data[[subjectid]] ] ]
     
     # constrain data to observed values
-    mastersim_data <- data.table::as.data.table(mastersim_data)
     if ((constrain == 'lower') | (constrain == 'both')) {
       mastersim_data[get(dependentvariable) < dataminval, (dependentvariable) := dataminval]
     }

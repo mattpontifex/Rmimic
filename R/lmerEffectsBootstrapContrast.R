@@ -131,22 +131,24 @@ lmerEffectsBootstrapContrast <- function(results, contrastin, bootstrap, ...) {
     if (method == "parametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
+      smp <- invisible(suppressWarnings(suppressMessages(lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=TRUE, method = "covariance"))))
     }
     if (method == "nonparametric") {
       # Useful for growing the sample 
       # keeps the exact same effect size by allowing the group variation to increase with larger samples
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
+      smp <- invisible(suppressWarnings(suppressMessages(lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, parametric=FALSE, method = "covariance"))))
     }
     if (method == "default") {
       # works the best as it is a wrapper around simulate - not ideal for growing the sample as the effect size will grow with it but will keep the data around the original mean and standard deviation
-      smp <- invisible(suppressWarnings(suppressMessages(Rmimic::lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
+      smp <- invisible(suppressWarnings(suppressMessages(lmerSimulateData(results$fit, between=c(results$between, results$covariates), within=results$within, dependentvariable=results$dependentvariable, subjectid=results$subjectid, subsample=subsample, inflation=inflation, method = "conditionaldistribution"))))
     }
     
     if (!is.null(smp)) {
+      smp <- as.data.frame(smp)
       # rerun model on new data
       newfit <- tryCatch({
-        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
+        #newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, data=smp, evaluate = TRUE))))
+        newfit <- invisible(suppressWarnings(suppressMessages(update(results$fit, formula = formula(results$fit), data = smp, evaluate = TRUE))))
       }, error = function(e) {
         cat(sprintf('lmerSimulateData - model failure\n'))
         newfit <- NULL
