@@ -160,6 +160,7 @@ lmerEffectsBootstrapANOVA <- function(results, ...) {
     if (!is.null(newfit)) {
       # extract information
       newresults <- invisible(suppressWarnings(suppressMessages(lmerEffects(newfit, dependentvariable=results$dependentvariable, subjectid=results$subjectid, within=results$within, df = results$df, confidenceinterval=results$confidenceinterval, studywiseAlpha=results$studywiseAlpha, suppresstext=TRUE, smp=smp))))
+      newresults$fixedterms <- c(results$between, results$covariates, results$within)
       newresults$descriptives <- lmerEffects_simpledesc(newresults) # store these
       outresults <- list()
       outresults$descriptives <- newresults$descriptives
